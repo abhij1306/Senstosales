@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Edit2, Save, X, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Edit2, Save, X, ChevronDown, ChevronUp, Plus } from "lucide-react";
 
 export default function PODetailPage() {
     const router = useRouter();
@@ -12,11 +12,14 @@ export default function PODetailPage() {
     const [loading, setLoading] = useState(true);
     const [editMode, setEditMode] = useState(false);
     const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
+    const [hasDC, setHasDC] = useState(false);
+    const [dcId, setDCId] = useState<string | null>(null);
     const [activeTab, setActiveTab] = useState("basic");
 
     useEffect(() => {
         if (!poId) return;
 
+        // Load PO data
         fetch(`http://localhost:8000/api/po/${poId}`)
             .then(res => res.json())
             .then(data => {
@@ -32,6 +35,19 @@ export default function PODetailPage() {
             .catch(err => {
                 console.error("Failed to load PO:", err);
                 setLoading(false);
+            });
+
+        // Check if PO has DC
+        fetch(`http://localhost:8000/api/po/${poId}/dc`)
+            .then(res => res.json())
+            .then(dcData => {
+                if (dcData && dcData.dc_id) {
+                    setHasDC(true);
+                    setDCId(dcData.dc_id);
+                }
+            })
+            .catch(err => {
+                console.log("No DC found for this PO");
             });
     }, [poId]);
 
@@ -154,27 +170,71 @@ export default function PODetailPage() {
         <div className="p-8 max-w-7xl mx-auto">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
-                <div>
+                <div className="flex items-center gap-4">
                     <button
                         onClick={() => router.back()}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-2"
+                        className="text-gray-600 hover:text-gray-900"
                     >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back
+                        <ArrowLeft className="w-5 h-5" />
                     </button>
-                    <h1 className="text-2xl font-semibold text-gray-900">
-                        PO #{header.po_number}
-                    </h1>
-                    <p className="text-sm text-gray-600">
-                        {header.supplier_name}
-                    </p>
+                    <div>
+                        <h1 className="text-2xl font-semibold text-gray-900">
+                            Purchase Order {header.po_number}
+                        </h1>
+                        <p className="text-sm text-gray-500 mt-1">
+                            Date: {header.po_date} | Supplier: {header.supplier_name}
+                        </p>
+                    </div>
                 </div>
-                <button
-                    onClick={() => setEditMode(!editMode)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                    {editMode ? <><X className="w-4 h-4" /> Cancel</> : <><Edit2 className="w-4 h-4" /> Edit</>}
-                </button>
+                <div className="flex gap-3">
+                    {editMode ? (
+                        <>
+                            <button
+                                onClick={() => setEditMode(false)}
+                                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                            >
+                                <X className="w-4 h-4 inline mr-2" />
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    // TODO: Implement save functionality
+                                    alert('Save functionality coming in Phase 2');
+                                }}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                            >
+                                <Save className="w-4 h-4 inline mr-2" />
+                                Save Changes
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <button
+                                onClick={() => {
+                                    if (hasDC && dcId) {
+                                        router.push(`/dc/${dcId}`);
+                                    } else {
+                                        router.push(`/dc/create?po=${header.po_number}`);
+                                    }
+                                }}
+                                className={`px-4 py-2 text-white rounded-lg flex items-center gap-2 ${hasDC
+                                        ? 'bg-blue-600 hover:bg-blue-700'
+                                        : 'bg-green-600 hover:bg-green-700'
+                                    }`}
+                            >
+                                <Plus className="w-4 h-4" />
+                                {hasDC ? 'Edit Challan' : 'Create Challan'}
+                            </button>
+                            <button
+                                onClick={() => setEditMode(true)}
+                                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                            >
+                                <Edit2 className="w-4 h-4 inline mr-2" />
+                                Edit
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
 
             {/* Tabs */}

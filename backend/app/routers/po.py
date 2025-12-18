@@ -79,6 +79,29 @@ def get_po_detail(po_number: int, db: sqlite3.Connection = Depends(get_db)):
     
     return PODetail(header=header, items=items_with_deliveries)
 
+
+@router.get("/{po_number}/dc")
+def check_po_has_dc(po_number: int, db: sqlite3.Connection = Depends(get_db)):
+    """Check if PO has an associated Delivery Challan"""
+    try:
+        dc_row = db.execute("""
+            SELECT id, dc_number FROM delivery_challans 
+            WHERE po_number = ? 
+            LIMIT 1
+        """, (po_number,)).fetchone()
+        
+        if dc_row:
+            return {
+                "has_dc": True,
+                "dc_id": dc_row["id"],
+                "dc_number": dc_row["dc_number"]
+            }
+        else:
+            return {"has_dc": False}
+    except Exception as e:
+        # Table might not exist yet
+        return {"has_dc": False}
+
 @router.post("/upload")
 async def upload_po_html(file: UploadFile = File(...), db: sqlite3.Connection = Depends(get_db)):
     """Upload and parse PO HTML file"""
