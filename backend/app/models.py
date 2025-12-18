@@ -14,11 +14,14 @@ class POHeader(BaseModel):
     po_number: int
     po_date: Optional[str] = None
     supplier_name: Optional[str] = None
+    supplier_gstin: Optional[str] = None
     supplier_code: Optional[str] = None
     supplier_phone: Optional[str] = None
     supplier_fax: Optional[str] = None
     supplier_email: Optional[str] = None
     department_no: Optional[int] = None
+    
+    # Reference Info
     enquiry_no: Optional[str] = None
     enquiry_date: Optional[str] = None
     quotation_ref: Optional[str] = None
@@ -26,6 +29,8 @@ class POHeader(BaseModel):
     rc_no: Optional[str] = None
     order_type: Optional[str] = None
     po_status: Optional[str] = None
+    
+    # Financials & Tax
     tin_no: Optional[str] = None
     ecc_no: Optional[str] = None
     mpct_no: Optional[str] = None
@@ -52,9 +57,11 @@ class POItem(BaseModel):
     unit: Optional[str] = None
     po_rate: Optional[float] = None
     ord_qty: Optional[float] = None
-    rcd_qty: Optional[float] = None
+    rcd_qty: Optional[float] = 0
     item_value: Optional[float] = None
     hsn_code: Optional[str] = None
+    delivered_qty: Optional[float] = 0
+    pending_qty: Optional[float] = None
 
 class POListItem(BaseModel):
     """Purchase Order List Item (Summary)"""
