@@ -36,7 +36,7 @@ def list_pos(db: sqlite3.Connection = Depends(get_db)):
 
 @router.get("/{po_number}", response_model=PODetail)
 def get_po_detail(po_number: int, db: sqlite3.Connection = Depends(get_db)):
-    """Get Purchase Order detail with items"""
+    """Get Purchase Order detail with items and deliveries"""
     
     # Get header
     header_row = db.execute("""
@@ -50,16 +50,34 @@ def get_po_detail(po_number: int, db: sqlite3.Connection = Depends(get_db)):
     
     # Get items
     item_rows = db.execute("""
-        SELECT po_item_no, material_code, material_description, drg_no, mtrl_cat,
+        SELECT id, po_item_no, material_code, material_description, drg_no, mtrl_cat,
                unit, po_rate, ord_qty, rcd_qty, item_value, hsn_code
         FROM purchase_order_items
         WHERE po_number = ?
         ORDER BY po_item_no
     """, (po_number,)).fetchall()
     
-    items = [POItem(**dict(row)) for row in item_rows]
+    # For each item, get deliveries
+    items_with_deliveries = []
+    for item_row in item_rows:
+        item_dict = dict(item_row)
+        item_id = item_dict['id']
+        
+        # Get deliveries for this item
+        delivery_rows = db.execute("""
+            SELECT id, lot_no, dely_qty, dely_date, entry_allow_date, dest_code
+            FROM purchase_order_deliveries
+            WHERE po_item_id = ?
+            ORDER BY lot_no
+        """, (item_id,)).fetchall()
+        
+        deliveries = [dict(d) for d in delivery_rows]
+        
+        # Create POItem with deliveries
+        item_with_deliveries = {**item_dict, 'deliveries': deliveries}
+        items_with_deliveries.append(POItem(**item_with_deliveries))
     
-    return PODetail(header=header, items=items)
+    return PODetail(header=header, items=items_with_deliveries)
 
 @router.post("/upload")
 async def upload_po_html(file: UploadFile = File(...), db: sqlite3.Connection = Depends(get_db)):
@@ -90,3 +108,68 @@ async def upload_po_html(file: UploadFile = File(...), db: sqlite3.Connection = 
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/upload/batch")
+async def upload_po_batch(files: List[UploadFile] = File(...), db: sqlite3.Connection = Depends(get_db)):
+    """Upload and parse multiple PO HTML files"""
+    
+    results = []
+    successful = 0
+    failed = 0
+    
+    ingestion_service = POIngestionService()
+    
+    for file in files:
+        result = {
+            "filename": file.filename,
+            "success": False,
+            "po_number": None,
+            "message": ""
+        }
+        
+        try:
+            # Validate file type
+            if not file.filename.endswith('.html'):
+                result["message"] = "Only HTML files are supported"
+                failed += 1
+                results.append(result)
+                continue
+            
+            # Read and parse HTML
+            content = await file.read()
+            soup = BeautifulSoup(content, "lxml")
+            
+            # Extract data
+            po_header = extract_po_header(soup)
+            po_items = extract_items(soup)
+            
+            if not po_header.get("PURCHASE ORDER"):
+                result["message"] = "Could not extract PO number from HTML"
+                failed += 1
+                results.append(result)
+                continue
+            
+            # Ingest into database
+            success, warnings = ingestion_service.ingest_po(po_header, po_items)
+            
+            if success:
+                result["success"] = True
+                result["po_number"] = po_header.get("PURCHASE ORDER")
+                result["message"] = warnings[0] if warnings else f"Successfully ingested PO {po_header.get('PURCHASE ORDER')}"
+                successful += 1
+            else:
+                result["message"] = "Failed to ingest PO"
+                failed += 1
+                
+        except Exception as e:
+            result["message"] = f"Error: {str(e)}"
+            failed += 1
+        
+        results.append(result)
+    
+    return {
+        "total": len(files),
+        "successful": successful,
+        "failed": failed,
+        "results": results
+    }

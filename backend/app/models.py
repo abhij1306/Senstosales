@@ -47,8 +47,18 @@ class POHeader(BaseModel):
     issuer_phone: Optional[str] = None
     remarks: Optional[str] = None
 
+class PODelivery(BaseModel):
+    """Purchase Order Delivery Schedule"""
+    id: Optional[str] = None
+    lot_no: Optional[int] = None
+    dely_qty: Optional[float] = None
+    dely_date: Optional[str] = None
+    entry_allow_date: Optional[str] = None
+    dest_code: Optional[int] = None
+
 class POItem(BaseModel):
     """Purchase Order Item"""
+    id: Optional[str] = None
     po_item_no: int
     material_code: Optional[str] = None
     material_description: Optional[str] = None
@@ -62,6 +72,7 @@ class POItem(BaseModel):
     hsn_code: Optional[str] = None
     delivered_qty: Optional[float] = 0
     pending_qty: Optional[float] = None
+    deliveries: List['PODelivery'] = []
 
 class POListItem(BaseModel):
     """Purchase Order List Item (Summary)"""

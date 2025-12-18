@@ -1,121 +1,156 @@
-# Sales Manager v2.0
+# SenstoSales - Purchase Order Management System
 
-Local-first PO-DC-Invoice Management System built with Next.js and FastAPI.
+**Version**: 1.0.0 (Base Working Version)  
+**Status**: Core PO Management Complete ✅
 
-## Architecture
+## Overview
 
-- **Frontend**: Next.js 14 (App Router) + TypeScript + Tailwind CSS
-- **Backend**: FastAPI + Python
-- **Database**: SQLite (local file)
-- **Design**: Google Stitch-style minimal UI
+SenstoSales is a comprehensive Purchase Order management system designed for Senstographic (supplier) to manage purchase orders received from buyers (BHEL, NTPC, etc.). The system handles the complete lifecycle from PO ingestion to delivery challan and GST invoice generation.
 
-## Project Structure
+## Features
 
+### ✅ Implemented (Phase 1)
+- **Bulk PO Upload**: Upload multiple HTML PO files at once
+- **PO List**: View all POs with status badges, values, and amendments
+- **PO Detail & Edit**: Complete view and edit of all 45 PO fields
+  - 28 header fields organized in 4 tabs
+  - Items table with 9 columns (including DRG)
+  - Delivery schedules (expandable by default)
+  - Add/Delete items and deliveries
+  - Inline editing with proper validation
+
+### 🚧 Planned (Phase 2+)
+- Save functionality (PUT endpoints)
+- Delivery Challan generation
+- GST Invoice generation
+- Reports and analytics
+
+## Tech Stack
+
+- **Backend**: FastAPI, SQLAlchemy, PostgreSQL/SQLite
+- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
+- **Scraper**: BeautifulSoup4
+
+## Quick Start
+
+### Prerequisites
+- Python 3.9+
+- Node.js 18+
+- npm or yarn
+
+### Installation
+
+1. **Clone the repository**
+```bash
+git clone <repository-url>
+cd SenstoSales
 ```
-├── backend/
-│   ├── app/
-│   │   ├── main.py              # FastAPI entry point
-│   │   ├── db.py                # Database connection
-│   │   ├── models.py            # Pydantic models
-│   │   ├── routers/             # API endpoints
-│   │   │   ├── dashboard.py
-│   │   │   ├── po.py
-│   │   │   ├── dc.py
-│   │   │   └── invoice.py
-│   │   ├── services/            # Business logic
-│   │   │   ├── po_scraper.py    # HTML PO parser
-│   │   │   └── ingest_po.py     # PO ingestion service
-│   │   └── utils/               # Utilities
-│   ├── database/
-│   │   └── business.db          # SQLite database
-│   └── requirements.txt
-│
-├── frontend/
-│   ├── app/                     # Next.js pages
-│   │   ├── layout.tsx
-│   │   ├── page.tsx             # Dashboard
-│   │   ├── po/                  # Purchase Orders
-│   │   ├── dc/                  # Delivery Challans
-│   │   └── invoice/             # Invoices
-│   ├── components/              # React components
-│   │   ├── NavRail.tsx
-│   │   └── KpiCard.tsx
-│   └── lib/
-│       └── api.ts               # API client
-│
-└── migrations/
-    └── v1_initial.sql           # Database schema
-```
 
-## Setup
-
-### Backend
-
+2. **Backend Setup**
 ```bash
 cd backend
 pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Backend will run on `http://localhost:8000`
-
-### Frontend
-
+3. **Frontend Setup**
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-Frontend will run on `http://localhost:3000`
+4. **Access the Application**
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
 
-Create a `.env.local` file in the frontend directory:
+## Project Structure
+
 ```
-NEXT_PUBLIC_API_URL=http://localhost:8000
+SenstoSales/
+├── backend/          # FastAPI backend
+│   ├── app/
+│   │   ├── main.py
+│   │   ├── models.py
+│   │   ├── routers/
+│   │   └── services/
+│   └── database/
+├── frontend/         # Next.js frontend
+│   ├── app/
+│   │   ├── page.tsx
+│   │   └── po/
+│   └── components/
+├── scraper/          # Standalone scraper
+├── migrations/       # SQL migrations
+├── tests/            # Test files (gitignored)
+├── utils/            # Utility scripts
+└── CONTEXT.md        # Complete project documentation
 ```
 
-## Features
+## Documentation
 
-### Current Implementation
+- **[CONTEXT.md](./CONTEXT.md)** - Complete project intelligence, architecture, and guidelines
+- **[API Docs](http://localhost:8000/docs)** - Interactive API documentation (when backend is running)
 
-- **Dashboard**: KPIs and recent activity feed
-- **Purchase Orders**: 
-  - List all POs
-  - Upload HTML PO files (auto-parsed)
-  - View PO details with items
-- **Delivery Challans**: List view
-- **Invoices**: List view
+## Database Schema
 
-### Data Flow
+### Core Tables
+- `purchase_orders` - 30 header fields
+- `po_items` - 10 fields per item (including DRG)
+- `po_deliveries` - 5 fields per delivery
 
-1. Upload PO HTML file via frontend
-2. Backend parses HTML using existing scraper logic
-3. Data is normalized and stored in SQLite
-4. Frontend displays data via REST APIs
+See [CONTEXT.md](./CONTEXT.md) for complete schema details.
 
-## API Endpoints
+## Usage
 
-- `GET /api/dashboard/summary` - Dashboard KPIs
-- `GET /api/activity` - Recent activity
-- `GET /api/po/` - List all POs
-- `GET /api/po/{po_number}` - PO detail
-- `POST /api/po/upload` - Upload PO HTML
-- `GET /api/dc/` - List all DCs
-- `GET /api/invoice/` - List all invoices
+### Upload POs
+1. Navigate to `/po`
+2. Click "Select PO Files"
+3. Choose one or more HTML PO files
+4. Click "Upload"
+5. View results and check PO list
 
-## Design Principles
+### View/Edit PO
+1. Click on PO number in the list
+2. View all details in organized tabs
+3. Click "Edit" to enable editing
+4. Modify fields, add/remove items/deliveries
+5. Click "Save" (coming soon)
 
-- **Local-first**: Runs entirely on localhost
-- **Business-key driven**: PO number, DC number, Invoice number as primary keys
-- **Flexible linking**: Entities can be linked but not enforced
-- **SQL clarity**: Direct SQL queries, no ORM magic
-- **Preserved logic**: All existing scraping/ingestion logic retained
+## Development
 
-## Next Steps
+### Running Tests
+```bash
+# Backend tests
+cd backend
+pytest
 
-See `task.md` for planned enhancements including:
-- Smart global search
-- Quantity reconciliation
-- Linking assistance
-- Alert system
-- Enhanced reports
+# Frontend tests
+cd frontend
+npm test
+```
+
+### Code Style
+- Backend: PEP 8, type hints
+- Frontend: TypeScript strict mode, ESLint
+
+## Contributing
+
+1. Create a feature branch
+2. Make your changes
+3. Test thoroughly
+4. Submit a pull request
+
+## License
+
+Proprietary - Senstographic Internal Use Only
+
+## Support
+
+For issues or questions, contact the development team.
+
+---
+
+**Last Updated**: 2025-12-18  
+**Maintained by**: Senstographic Development Team
