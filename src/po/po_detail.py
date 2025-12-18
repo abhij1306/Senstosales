@@ -65,21 +65,24 @@ def render_po_detail():
     
     st.divider()
     # Items Data Preparation
-    items_data = []
+    data = []
     if items:
         for item in items:
-            items_data.append({
-                "id": item['id'], # Hidden tracking ID
-                "#": item['po_item_no'],
-                "Code": item['material_code'] or "",
-                "Description": item['material_description'] or "",
-                "DRG": item['drg_no'] or "",
-                "Unit": item['unit'] or "",
-                "Qty": float(item['ord_qty'] or 0),
-                "Rate": float(item['po_rate'] or 0),
-                "Value": float(item['item_value'] or 0)
+           # Prepare data for editor
+            # specific handling for row factory
+            row = dict(item)
+            data.append({
+                "id": row.get('id'),
+                "#": row.get('po_item_no'), # Added back for display
+                "Code": row.get('material_code'),
+                "Description": row.get('material_description'),
+                "DRG": row.get('drg_no') or "", # Safe access
+                "Unit": row.get('unit'),
+                "Qty": row.get('ord_qty'),
+                "Rate": row.get('po_rate'),
+                "Value": row.get('item_value')
             })
-        df = pd.DataFrame(items_data)
+        df = pd.DataFrame(data)
     else:
         df = pd.DataFrame(columns=["id", "#", "Code", "Description", "DRG", "Unit", "Qty", "Rate", "Value"])
 
