@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { api, InvoiceListItem } from "@/lib/api";
+import { Plus } from "lucide-react";
 
 export default function InvoicePage() {
+    const router = useRouter();
     const [invoices, setInvoices] = useState<InvoiceListItem[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -30,7 +33,17 @@ export default function InvoicePage() {
     return (
         <div className="p-8">
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-semibold text-gray-900">GST Invoices</h1>
+                <div>
+                    <h1 className="text-2xl font-semibold text-gray-900">GST Invoices</h1>
+                    <p className="text-sm text-gray-500 mt-1">Manage and track all GST invoices</p>
+                </div>
+                <button
+                    onClick={() => router.push('/invoice/create')}
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+                >
+                    <Plus className="w-4 h-4" />
+                    Create Invoice
+                </button>
             </div>
 
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
