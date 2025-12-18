@@ -51,6 +51,16 @@ def init_database():
     
     conn.executescript(schema_sql)
     conn.commit()
+    
+    # --- Auto-Migration for Schema Updates ---
+    try:
+        conn.execute("SELECT drg_no FROM purchase_order_items LIMIT 1")
+    except sqlite3.OperationalError:
+        print("⚡ Performing Migration: Adding drg_no column...")
+        conn.execute("ALTER TABLE purchase_order_items ADD COLUMN drg_no TEXT")
+        conn.commit()
+    # ----------------------------------------
+    
     conn.close()
     
     print(f"✅ Database initialized at: {DB_PATH}")
