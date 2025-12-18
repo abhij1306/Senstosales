@@ -1,0 +1,41 @@
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+import NavRail from "@/components/NavRail";
+import GlobalSearch from "@/components/GlobalSearch";
+import AlertsPanel from "@/components/AlertsPanel";
+
+const inter = Inter({ subsets: ["latin"] });
+
+export const metadata: Metadata = {
+  title: "Sales Manager",
+  description: "PO-DC-Invoice Management System",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body className={inter.className}>
+        <div className="flex h-screen bg-gray-50">
+          <NavRail />
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <header className="bg-white border-b border-gray-200 px-8 py-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Sales Manager</h2>
+              <div className="flex items-center gap-4">
+                <GlobalSearch />
+                <AlertsPanel />
+              </div>
+            </header>
+            <main className="flex-1 overflow-auto">
+              {children}
+            </main>
+          </div>
+        </div>
+      </body>
+    </html>
+  );
+}
