@@ -1,4 +1,3 @@
-```
 import { ReactNode } from "react";
 
 interface KpiCardProps {
@@ -15,7 +14,7 @@ export default function KpiCard({ title, value, icon, iconBg = "bg-gray-100", ic
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-medium text-gray-500">{title}</span>
         {icon && (
-          <div className={`w - 10 h - 10 rounded - lg flex items - center justify - center ${ iconBg } `}>
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${iconBg}`}>
             <div className={iconColor}>{icon}</div>
           </div>
         )}
@@ -24,4 +23,3 @@ export default function KpiCard({ title, value, icon, iconBg = "bg-gray-100", ic
     </div>
   );
 }
-```
