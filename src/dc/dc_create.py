@@ -28,14 +28,31 @@ def render_dc_create():
         ORDER BY po_item_no
     """, (po_number,)).fetchall()
     
-    st.markdown(f"## Create Delivery Challan")
-    st.markdown(f"**Source PO:** PO-{po_number} | **Vendor:** {po['supplier_name']}")
+    # Header with Action Buttons at Top Right
+    col1, col2, col3, col4, col5 = st.columns([3, 1.5, 1.5, 1.5, 1])
     
-    if st.button("← Back to PO"):
-        st.session_state.selected_po = po_number
-        st.session_state.po_action = 'view'
-        del st.session_state.dc_po_context
-        st.rerun()
+    with col1:
+        st.markdown(f"## Create Delivery Challan")
+        st.markdown(f"**Source PO:** PO-{po_number} | **Vendor:** {po['supplier_name']}")
+    
+    with col2:
+        if st.button("📄 Create DC", type="primary", use_container_width=True, key="create_dc_top"):
+            st.session_state.trigger_dc_create = True
+    
+    with col3:
+        # Download button (will be enabled after DC creation in future)
+        st.button("📥 Download DC", use_container_width=True, disabled=True, key="download_dc_top")
+    
+    with col4:
+        # GST Invoice button (will be enabled after DC creation in future)
+        st.button("📋 Create GST Invoice", use_container_width=True, disabled=True, key="gst_inv_top")
+    
+    with col5:
+        if st.button("←", use_container_width=True, help="Back to PO"):
+            st.session_state.selected_po = po_number
+            st.session_state.po_action = 'view'
+            del st.session_state.dc_po_context
+            st.rerun()
     
     st.markdown("---")
     
@@ -52,13 +69,25 @@ def render_dc_create():
     with col1:
         dc_number = st.text_input("DC Number *", key="dc_num")
         dc_date = st.date_input("DC Date *", value=datetime.now().date(), key="dc_date")
+        department_no = st.number_input("Department No", value=int(po['department_no']) if po['department_no'] else 0, key="dc_dept")
     
     with col2:
-        vehicle_no = st.text_input("Vehicle Number", key="dc_vehicle")
-        lr_no = st.text_input("LR Number", key="dc_lr")
+        # Consignee details - can be edited
+        consignee_name = st.text_input("Consignee Name", value="", key="dc_consignee")
+        consignee_gstin = st.text_input("Consignee GSTIN", value="", key="dc_consignee_gstin")
+        consignee_address = st.text_area("Consignee Address", value="", height=60, key="dc_consignee_addr")
     
     with col3:
+        vehicle_no = st.text_input("Vehicle Number", key="dc_vehicle")
+        lr_no = st.text_input("LR Number", key="dc_lr")
         transporter = st.text_input("Transporter Name", key="dc_transporter")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        eway_bill = st.text_input("E-way Bill No", key="dc_eway")
+        mode_of_transport = st.selectbox("Mode of Transport", ["Road", "Rail", "Air", "Ship"], key="dc_mode")
+    with col2:
+        inspection_company = st.text_input("Inspection Company", key="dc_inspection")
         remarks = st.text_area("Remarks", key="dc_remarks", height=60)
     
     st.markdown("---")
@@ -120,68 +149,78 @@ def render_dc_create():
     if total_items_dispatching > 0:
         st.info(f"📦 {total_items_dispatching} item(s) selected for dispatch")
     
-    # Create DC Button
-    col1, col2 = st.columns([3, 1])
-    
-    with col2:
-        if st.button("📄 Generate DC", type="primary", use_container_width=True):
-            if not dc_number or not dc_date:
-                st.error("Please fill DC Number and Date")
-            elif total_items_dispatching == 0:
-                st.error("Please select at least one item to dispatch")
-            else:
-                try:
-                    # Create DC in database
+    # Handle DC Creation (triggered from top button)
+    if st.session_state.get('trigger_dc_create', False):
+        if not dc_number or not dc_date:
+            st.error("Please fill DC Number and Date")
+            st.session_state.trigger_dc_create = False
+        elif total_items_dispatching == 0:
+            st.error("Please select at least one item to dispatch")
+            st.session_state.trigger_dc_create = False
+        else:
+            try:
+                # Create DC in database
+                conn.execute("""
+                    INSERT INTO delivery_challans
+                    (dc_number, dc_date, po_number, department_no, consignee_name, consignee_gstin, 
+                     consignee_address, vehicle_no, lr_no, transporter, eway_bill_no, 
+                     mode_of_transport, inspection_company, remarks)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    dc_number,
+                    dc_date.strftime('%Y-%m-%d'),
+                    po_number,
+                    department_no,
+                    consignee_name,
+                    consignee_gstin,
+                    consignee_address,
+                    vehicle_no,
+                    lr_no,
+                    transporter,
+                    eway_bill,
+                    mode_of_transport,
+                    inspection_company,
+                    remarks
+                ))
+                
+                # Insert DC Items
+                for item_data in st.session_state.dc_items.values():
+                    item_id = str(uuid.uuid4())
                     conn.execute("""
-                        INSERT INTO delivery_challans
-                        (dc_number, dc_date, po_number, vehicle_no, lr_no, transporter, remarks)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO delivery_challan_items
+                        (id, dc_number, po_item_id, dispatch_qty)
+                        VALUES (?, ?, ?, ?)
                     """, (
+                        item_id,
                         dc_number,
-                        dc_date.strftime('%Y-%m-%d'),
-                        po_number,
-                        vehicle_no,
-                        lr_no,
-                        transporter,
-                        remarks
+                        item_data['po_item_id'],
+                        item_data['dispatch_qty']
                     ))
                     
-                    # Insert DC Items
-                    for item_data in st.session_state.dc_items.values():
-                        item_id = str(uuid.uuid4())
-                        conn.execute("""
-                            INSERT INTO delivery_challan_items
-                            (id, dc_number, po_item_id, dispatch_qty)
-                            VALUES (?, ?, ?, ?)
-                        """, (
-                            item_id,
-                            dc_number,
-                            item_data['po_item_id'],
-                            item_data['dispatch_qty']
-                        ))
-                        
-                        # Update delivered qty in PO items
-                        conn.execute("""
-                            UPDATE purchase_order_items
-                            SET delivered_qty = delivered_qty + ?
-                            WHERE id = ?
-                        """, (item_data['dispatch_qty'], item_data['po_item_id']))
-                    
-                    conn.commit()
-                    
-                    st.success(f"✅ Delivery Challan {dc_number} created successfully!")
-                    
-                    # Clear session and redirect
-                    st.session_state.dc_items = {}
-                    if 'dc_po_context' in st.session_state:
-                        del st.session_state.dc_po_context
-                    
-                    st.session_state.dc_action = 'list'
-                    st.session_state.nav = 'Delivery Challans'
-                    st.rerun()
-                    
-                except Exception as e:
-                    conn.rollback()
-                    st.error(f"Error creating Delivery Challan: {str(e)}")
+                    # Update delivered qty in PO items
+                    conn.execute("""
+                        UPDATE purchase_order_items
+                        SET delivered_qty = delivered_qty + ?
+                        WHERE id = ?
+                    """, (item_data['dispatch_qty'], item_data['po_item_id']))
+                
+                conn.commit()
+                
+                st.success(f"✅ Delivery Challan {dc_number} created successfully!")
+                
+                # Clear session and redirect
+                st.session_state.dc_items = {}
+                st.session_state.trigger_dc_create = False
+                if 'dc_po_context' in st.session_state:
+                    del st.session_state.dc_po_context
+                
+                st.session_state.dc_action = 'list'
+                st.session_state.nav = 'Delivery Challans'
+                st.rerun()
+                
+            except Exception as e:
+                conn.rollback()
+                st.error(f"Error creating Delivery Challan: {str(e)}")
+                st.session_state.trigger_dc_create = False
     
     conn.close()

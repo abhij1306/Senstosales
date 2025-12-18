@@ -1,5 +1,6 @@
 import streamlit as st
 from config.database import get_connection
+from config.queries import DC_LIST
 
 def render_dc_list():
     st.markdown("## Delivery Challans")
@@ -14,22 +15,15 @@ def render_dc_list():
     search = st.text_input("🔍 Search DC Number, PO...", label_visibility="collapsed", placeholder="Search challans...")
     st.markdown("---")
     
-    # Fetch DCs
+    # Fetch DCs using centralized query
     conn = get_connection()
+    dcs = conn.execute(DC_LIST).fetchall()
     
-    query = """
-        SELECT dc.*, po.supplier_name, COUNT(dci.id) as item_count
-        FROM delivery_challans dc
-        LEFT JOIN purchase_orders po ON dc.po_number = po.po_number
-        LEFT JOIN delivery_challan_items dci ON dc.dc_number = dci.dc_number
-        GROUP BY dc.dc_number
-        ORDER BY dc.created_at DESC
-    """
-    
+    # Apply search filter
     if search:
-        query = f"SELECT * FROM ({query}) WHERE dc_number LIKE '%{search}%' OR CAST(po_number AS TEXT) LIKE '%{search}%'"
-    
-    dcs = conn.execute(query).fetchall()
+        dcs = [dc for dc in dcs if 
+               search.lower() in str(dc['dc_number']).lower() or 
+               search.lower() in str(dc['po_number']).lower()]
     
     if not dcs:
         st.info("No delivery challans found.")
@@ -51,7 +45,8 @@ def render_dc_list():
             
             if c1.button(f"DC-{dc['dc_number']}", key=f"dc_{dc['dc_number']}"):
                 st.session_state.selected_dc = dc['dc_number']
-                st.info("DC Detail View - Coming Soon")
+                st.session_state.dc_action = 'view'
+                st.rerun()
             
             c2.text(dc['dc_date'])
             c3.text(f"PO-{dc['po_number']} | {dc['supplier_name']}")

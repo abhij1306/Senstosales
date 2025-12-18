@@ -41,7 +41,7 @@ class POIngestionService:
                 'po_number': po_number,
                 'po_date': normalize_date(po_header.get('PO DATE')),
                 'supplier_name': po_header.get('SUPP NAME M/S'),
-                'supplier_gstin': po_header.get('SUPPLIER GSTIN'),
+                'supplier_gstin': None,  # Internal data, not in PO
                 'supplier_code': po_header.get('SUPP CODE'),
                 'supplier_phone': po_header.get('PHONE'),
                 'supplier_fax': po_header.get('FAX'),
@@ -57,10 +57,10 @@ class POIngestionService:
                 'order_type': po_header.get('ORD-TYPE'),
                 'po_status': po_header.get('PO STATUS'),
                 
-                # Fin
-                'tin_no': po_header.get('TIN NO.'),
-                'ecc_no': po_header.get('ECC NO.'),
-                'mpct_no': po_header.get('MPCT NO.'),
+                # Fin - FIXED: removed periods from field names
+                'tin_no': po_header.get('TIN NO'),  # Fixed: was 'TIN NO.'
+                'ecc_no': po_header.get('ECC NO'),  # Fixed: was 'ECC NO.'
+                'mpct_no': po_header.get('MPCT NO'),  # Fixed: was 'MPCT NO.'
                 'po_value': to_float(po_header.get('PO-VALUE')),
                 'fob_value': to_float(po_header.get('FOB VALUE')),
                 'ex_rate': to_float(po_header.get('EX RATE')),
@@ -69,8 +69,8 @@ class POIngestionService:
                 
                 # Amend
                 'amend_no': to_int(po_header.get('AMEND NO')) or 0,
-                'amend_1_date': normalize_date(po_header.get('AMEND 1 DATE')),
-                'amend_2_date': normalize_date(po_header.get('AMEND 2 DATE')),
+                'amend_1_date': None,  # Not in PO
+                'amend_2_date': None,  # Not in PO
                 
                 # Insp & Issuer
                 'inspection_by': po_header.get('INSPECTION BY'),
@@ -135,19 +135,21 @@ class POIngestionService:
                 item_value = to_float(item.get('ITEM VALUE')) or 0
                 rcd_qty = to_float(item.get('RCD QTY')) or 0
                 description = item.get('DESCRIPTION') or ""
+                drg_no = item.get('DRG') or ""
                 
                 # Insert item (PO ITM → ITEM VALUE)
                 conn.execute("""
                     INSERT INTO purchase_order_items
-                    (id, po_number, po_item_no, material_code, material_description, mtrl_cat,
+                    (id, po_number, po_item_no, material_code, material_description, drg_no, mtrl_cat,
                      unit, po_rate, ord_qty, rcd_qty, item_value, hsn_code, delivered_qty, pending_qty)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
                 """, (
                     item_id,
                     po_number,
                     po_item_no,
                     item.get('MATERIAL CODE'),
                     description,  # Now populated from scraper
+                    drg_no,  # Drawing number
                     to_int(item.get('MTRL CAT')),
                     item.get('UNIT'),
                     to_float(item.get('PO RATE')),

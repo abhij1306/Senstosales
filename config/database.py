@@ -38,11 +38,11 @@ def get_connection():
     return conn
 
 def init_database():
-    """Initialize database from schema.sql"""
-    schema_path = Path(__file__).parent.parent / "db" / "schema.sql"
+    """Initialize database from migration file"""
+    schema_path = Path(__file__).parent.parent / "migrations" / "v1_initial.sql"
     
     if not schema_path.exists():
-        raise FileNotFoundError(f"Schema file not found: {schema_path}")
+        raise FileNotFoundError(f"Migration file not found: {schema_path}")
     
     conn = get_connection()
     

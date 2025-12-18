@@ -11,35 +11,54 @@ def render_po_detail():
 
     conn = get_connection()
     
-    # Fetch Header
+    # Fetch data
     po = conn.execute("SELECT * FROM purchase_orders WHERE po_number = ?", (po_number,)).fetchone()
-    
-    # Fetch Items
     items = conn.execute("SELECT * FROM purchase_order_items WHERE po_number = ? ORDER BY po_item_no", (po_number,)).fetchall()
     
-    # Header with Actions
-    col1, col2, col3 = st.columns([4, 2, 2])
+    # Compact Header with Inline Actions
+    col1, col2 = st.columns([4, 2])
     with col1:
-        st.markdown(f"## PO-{po_number}")
-        if po['supplier_name']:
-            st.markdown(f"**Vendor:** {po['supplier_name']}")
+        st.markdown(f"### PO-{po_number} · {po['supplier_name'] or 'Unknown Vendor'}")
+        st.caption(f"📅 {po['po_date']} · ₹{po['po_value']:,.2f}" if po['po_value'] else f"📅 {po['po_date']}")
     
     with col2:
-        if st.button("✏️ Edit PO", use_container_width=True):
-            st.info("Edit mode activated")
+        action_cols = st.columns(3)
+        with action_cols[0]:
+            if st.button("🚚 Create DC", use_container_width=True, type="primary"):
+                st.session_state.dc_po_context = po_number
+                st.session_state.dc_action = 'create'
+                st.session_state.nav = 'Delivery Challans'
+                st.rerun()
+        with action_cols[1]:
+            edit_mode = st.toggle("✏️", value=False, key="edit_toggle", help="Toggle edit mode")
+        with action_cols[2]:
+            if st.button("🗑️", use_container_width=True, help="Delete PO"):
+                st.session_state.show_delete_confirm = True
     
-    with col3:
-        if st.button("🚚 Create Delivery Challan", type="primary", use_container_width=True):
-            st.session_state.dc_po_context = po_number
-            st.session_state.dc_action = 'create'
-            st.session_state.nav = 'Delivery Challans'
-            st.rerun()
+    # Delete Confirmation (Compact)
+    if st.session_state.get('show_delete_confirm', False):
+        st.warning("⚠️ Delete PO and all related data?")
+        col_a, col_b = st.columns(2)
+        with col_a:
+            if st.button("✓ Delete", type="primary", use_container_width=True):
+                conn.execute("DELETE FROM purchase_orders WHERE po_number = ?", (po_number,))
+                conn.commit()
+                st.success("Deleted successfully")
+                st.session_state.po_action = 'list'
+                del st.session_state.show_delete_confirm
+                st.rerun()
+        with col_b:
+            if st.button("✗ Cancel", use_container_width=True):
+                del st.session_state.show_delete_confirm
+                st.rerun()
     
-    if st.button("← Back to List"):
+    if st.button("← Back"):
         st.session_state.po_action = 'list'
+        if 'show_delete_confirm' in st.session_state:
+            del st.session_state.show_delete_confirm
         st.rerun()
     
-    st.markdown("---")
+    st.divider()
     
     # Order Details Section with Smart Edit
     st.markdown("### 📋 Order Details")
@@ -49,7 +68,7 @@ def render_po_detail():
         tab1, tab2, tab3, tab4 = st.tabs(["Key Info", "Financials & Tax", "Logistics & Ref", "Issuer Details"])
         
         with tab1: # Key Info
-            col1, col2, col3, col4 = st.columns(4)
+            col1, col2, col3 = st.columns(3)
             with col1:
                 st.caption("PO Date")
                 po_date_val = datetime.strptime(po['po_date'], '%Y-%m-%d').date() if po['po_date'] else None
@@ -58,9 +77,6 @@ def render_po_detail():
                 st.caption("Supplier Name")
                 new_supp_name = st.text_input("Supplier", value=po['supplier_name'] or "", key="edit_supp_name", label_visibility="collapsed")
             with col3:
-                st.caption("GSTIN")
-                new_supp_gstin = st.text_input("GSTIN", value=po['supplier_gstin'] or "", key="edit_gstin", label_visibility="collapsed")
-            with col4:
                 st.caption("Supplier Code")
                 new_supp_code = st.text_input("Supplier Code", value=po['supplier_code'] or "", key="edit_supp_code", label_visibility="collapsed")
 
@@ -124,9 +140,8 @@ def render_po_detail():
                 new_quot_date = q_b.date_input("Quot Date", value=quot_dt_val, key="edit_quot_date", label_visibility="collapsed")
             
             with col3:
-                st.caption("Inspection")
-                new_insp_by = st.text_input("By", value=po['inspection_by'] or "", key="edit_insp_by", placeholder="Inspection By", label_visibility="collapsed")
-                new_insp_at = st.text_input("At", value=po['inspection_at'] or "", key="edit_insp_at", placeholder="Inspection At", label_visibility="collapsed")
+                st.caption("Inspection By")
+                new_insp_by = st.text_input("Inspection By", value=po['inspection_by'] or "", key="edit_insp_by", label_visibility="collapsed")
 
         with tab4: # Issuer
             col1, col2, col3 = st.columns(3)
@@ -147,17 +162,17 @@ def render_po_detail():
         if st.button("💾 Save Changes", type="primary"):
             conn.execute("""
                 UPDATE purchase_orders 
-                SET po_date=?, supplier_name=?, supplier_gstin=?, supplier_code=?, department_no=?,
+                SET po_date=?, supplier_name=?, supplier_code=?, department_no=?,
                     enquiry_no=?, enquiry_date=?, quotation_ref=?, quotation_date=?, rc_no=?, order_type=?, po_status=?,
                     tin_no=?, ecc_no=?, mpct_no=?, po_value=?, fob_value=?, ex_rate=?, currency=?, net_po_value=?,
-                    inspection_by=?, inspection_at=?, issuer_name=?, issuer_designation=?, issuer_phone=?, remarks=?,
+                    inspection_by=?, issuer_name=?, issuer_designation=?, issuer_phone=?, remarks=?,
                     updated_at=CURRENT_TIMESTAMP
                 WHERE po_number=?
             """, (
-                new_po_date, new_supp_name, new_supp_gstin, new_supp_code, new_dvn,
+                new_po_date, new_supp_name, new_supp_code, new_dvn,
                 new_enq_no, new_enq_date, new_quot, new_quot_date, new_rc_no, new_ord_type, new_po_status,
                 new_tin, new_ecc, new_mpct, new_po_val, new_fob_val, new_ex, new_curr, new_net_val,
-                new_insp_by, new_insp_at, new_iss_name, new_iss_desg, new_iss_ph, new_remarks,
+                new_insp_by, new_iss_name, new_iss_desg, new_iss_ph, new_remarks,
                 po_number
             ))
             conn.commit()
@@ -177,6 +192,7 @@ def render_po_detail():
                 "Item No": item['po_item_no'],
                 "Material Code": item['material_code'] or "",
                 "Description": item['material_description'] or "",
+                "DRG": item['drg_no'] or "",
                 "Unit": item['unit'] or "",
                 "Ordered": float(item['ord_qty'] or 0),
                 "Delivered": float(item['delivered_qty'] or 0),
@@ -216,20 +232,20 @@ def render_po_detail():
                     new_desc = st.text_input("Description", value=item['material_description'] or "", key=f"desc_{item['id']}")
                 
                 with c2:
+                    new_drg = st.text_input("DRG No", value=item['drg_no'] or "", key=f"drg_{item['id']}")
                     new_qty = st.number_input("Ordered Qty", value=float(item['ord_qty'] or 0), key=f"qty_{item['id']}")
-                    new_rate = st.number_input("Rate", value=float(item['po_rate'] or 0), key=f"rate_{item['id']}")
                 
                 with c3:
+                    new_rate = st.number_input("Rate", value=float(item['po_rate'] or 0), key=f"rate_{item['id']}")
                     new_unit = st.text_input("Unit", value=item['unit'] or "", key=f"unit_{item['id']}")
-                    new_hsn = st.text_input("HSN", value=item['hsn_code'] or "", key=f"hsn_{item['id']}")
                 
                 if st.button("💾 Update Item"):
                     conn.execute("""
                         UPDATE purchase_order_items
-                        SET material_code = ?, material_description = ?, ord_qty = ?, po_rate = ?,
-                            unit = ?, hsn_code = ?, item_value = ?, updated_at = CURRENT_TIMESTAMP
+                        SET material_code = ?, material_description = ?, drg_no = ?, ord_qty = ?, po_rate = ?,
+                            unit = ?, item_value = ?, updated_at = CURRENT_TIMESTAMP
                         WHERE id = ?
-                    """, (new_mat_code, new_desc, new_qty, new_rate, new_unit, new_hsn, new_qty * new_rate, item['id']))
+                    """, (new_mat_code, new_desc, new_drg, new_qty, new_rate, new_unit, new_qty * new_rate, item['id']))
                     conn.commit()
                     st.success("✅ Item updated!")
                     st.rerun()

@@ -205,25 +205,51 @@ def extract_items(soup):
     if header_idx is None:
         return []
 
-    items = []
-    current_description = ""
+    # Extract DRG from header (it's a PO-level field)
+    drg_no = ""
+    for table in tables:
+        m = RX_DRG.search(table.get_text(" ", strip=True))
+        if m:
+            drg_no = m.group(1)
+            break
+
+    # Extract description from merged cell at bottom of item/delivery table
+    # Strategy: Find rows with 1-4 cells (merged) that have substantial text (>30 chars)
+    description_text = ""
     
     for row in rows[header_idx + 1:]:
         cols = [clean(td.get_text()) for td in row.find_all("td")]
         
-        # Check if this is a description row (single cell with text, no numbers)
-        if len(cols) == 1 and has_value(cols[0]) and not any(c.isdigit() for c in cols[0][:5]):
-            current_description = cols[0]
+        # Check if this is a merged cell row (1-4 cells with long text)
+        if 1 <= len(cols) <= 4:
+            text = " ".join(cols).strip()
+            # If it has substantial text (>30 chars), it's likely the description
+            if len(text) > 30:
+                description_text = text
+                break
+
+    items = []
+    
+    for row in rows[header_idx + 1:]:
+        cols = [clean(td.get_text()) for td in row.find_all("td")]
+        
+        # Skip merged cell rows (description rows with 1-4 cells)
+        if len(cols) <= 4:
             continue
         
-        # Check if this is a data row
-        if len(cols) < 8 or not any(c.isdigit() for c in cols[0]):
+        # Check if this is a data row (must have at least 8 columns and start with a number)
+        if len(cols) < 8:
             continue
-
+            
+        # First column should be item number
+        if not cols[0] or not any(c.isdigit() for c in cols[0]):
+            continue
+        
         items.append({
             "PO ITM": to_int(cols[0]),
             "MATERIAL CODE": cols[1],
-            "DESCRIPTION": current_description,  # Add description
+            "DESCRIPTION": description_text,
+            "DRG": drg_no,
             "MTRL CAT": to_int(cols[2]) if len(cols) > 2 else None,
             "UNIT": cols[3] if len(cols) > 3 else "",
             "PO RATE": to_float(cols[4]) if len(cols) > 4 else None,

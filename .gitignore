@@ -8,9 +8,6 @@ env/
 venv/
 ENV/
 
-# Streamlit
-.streamlit/
-
 # Database
 *.db
 *.sqlite

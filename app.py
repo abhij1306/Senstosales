@@ -97,19 +97,10 @@ st.markdown("""
         margin-bottom: 2px;
     }
 
-    /* Sidebar - Compact & Non-Collapsible */
+    /* Sidebar - Compact */
     [data-testid="stSidebar"] {
         background-color: #050505;
         border-right: 1px solid #1a1a1a;
-    }
-    
-    /* FORCE HIDE sidebar collapse button */
-    [data-testid="collapsedControl"],
-    button[kind="header"] {
-        display: none !important;
-        visibility: hidden !important;
-        opacity: 0 !important;
-        pointer-events: none !important;
     }
     
     [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
@@ -126,7 +117,7 @@ st.markdown("""
         font-weight: 700 !important;
     }
     
-    /* Navigation Buttons - FORCE Left Aligned */
+    /* Navigation Buttons - Left Aligned */
     [data-testid="stSidebar"] .stButton {
         text-align: left !important;
         display: block !important;
@@ -172,6 +163,30 @@ st.markdown("""
         border-radius: 0 3px 3px 0;
         padding-left: 8px;
         font-weight: 600;
+    }
+
+    /* Ensure collapse/expand button is always visible */
+    [data-testid="collapsedControl"] {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+    }
+    
+    /* When sidebar is collapsed, ensure button is visible */
+    [data-testid="stSidebar"][aria-expanded="false"] {
+        min-width: 3rem !important;
+    }
+    
+    [data-testid="stSidebar"][aria-expanded="false"] [data-testid="collapsedControl"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        position: relative !important;
+        left: 0 !important;
+        width: auto !important;
+        height: auto !important;
     }
 
     /* Buttons - Clean */
@@ -263,8 +278,25 @@ st.markdown("""
     .main .block-container {
         padding-top: 0.5rem !important;
     }
+    
+    /* Collapsed sidebar - ensure expand button is visible and clickable */
+    [data-testid="stSidebar"][aria-expanded="false"] {
+        min-width: 3rem !important;
+    }
+    
+    [data-testid="stSidebar"][aria-expanded="false"] button {
+        display: block !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        position: relative !important;
+        left: 0 !important;
+        width: auto !important;
+        height: auto !important;
+    }
 
 </style>
+
 """, unsafe_allow_html=True)
 
 # Navigation with Selection Box Design
@@ -323,9 +355,22 @@ elif st.session_state.nav == "Delivery Challans":
     elif st.session_state.dc_action == 'create' or 'dc_po_context' in st.session_state:
         from src.dc.dc_create import render_dc_create
         render_dc_create()
+    elif st.session_state.dc_action == 'view':
+        from src.dc.dc_detail import render_dc_detail
+        render_dc_detail()
 elif st.session_state.nav == "GST Invoices":
-    st.title("GST Invoices")
-    st.info("Coming Soon")
+    if 'gst_action' not in st.session_state:
+        st.session_state.gst_action = 'list'
+    
+    if st.session_state.gst_action == 'list':
+        from src.gst.gst_list import render_gst_list
+        render_gst_list()
+    elif st.session_state.gst_action == 'create':
+        from src.gst.gst_create import render_gst_create
+        render_gst_create()
+    elif st.session_state.gst_action == 'view':
+        from src.gst.gst_detail import render_gst_detail
+        render_gst_detail()
 elif st.session_state.nav == "Reports":
-    st.title("Reports")
-    st.info("Coming Soon")
+    from src.reports.reports import render_reports
+    render_reports()
