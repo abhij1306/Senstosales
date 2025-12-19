@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, X } from "lucide-react";
+import { Search, X, FileText, Truck, CreditCard } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { api } from '@/lib/api';
 
 interface SearchResult {
     id: string;
@@ -17,12 +19,13 @@ interface SearchResult {
 export default function GlobalSearch() {
     const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState("");
-    const [results, setResults] = useState<SearchResult[]>([]);
+    const [results, setResults] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
-    const inputRef = useRef<HTMLInputElement>(null);
+    const searchRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null); // Keep inputRef for focusing
     const router = useRouter();
 
-    // Keyboard shortcut: Ctrl+K
+    // Keyboard shortcut: Ctrl+K and Escape
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.ctrlKey || e.metaKey) && e.key === "k") {
@@ -45,26 +48,39 @@ export default function GlobalSearch() {
         }
     }, [isOpen]);
 
+    // Close on click outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     // Search on query change
     useEffect(() => {
-        if (query.length < 2) {
-            setResults([]);
-            return;
-        }
+        const search = async () => {
+            if (query.length < 2) {
+                setResults([]);
+                return;
+            }
 
-        const debounce = setTimeout(async () => {
             setLoading(true);
             try {
-                const res = await fetch(`http://localhost:8000/api/search/?q=${encodeURIComponent(query)}`);
-                const data = await res.json();
-                setResults(data.results || []);
-            } catch (err) {
-                console.error("Search failed:", err);
+                const data = await api.searchGlobal(query);
+                setResults(data);
+            } catch (error) {
+                console.error('Search failed:', error);
+                setResults([]);
             } finally {
                 setLoading(false);
             }
-        }, 300);
+        };
 
+        const debounce = setTimeout(search, 300);
         return () => clearTimeout(debounce);
     }, [query]);
 

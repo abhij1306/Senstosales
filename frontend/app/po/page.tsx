@@ -75,21 +75,7 @@ export default function POPage() {
         setUploadResults(null);
 
         try {
-            const formData = new FormData();
-            selectedFiles.forEach(file => {
-                formData.append('files', file);
-            });
-
-            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/po/upload/batch`, {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!response.ok) {
-                throw new Error('Upload failed');
-            }
-
-            const results: BatchUploadResponse = await response.json();
+            const results: BatchUploadResponse = await api.uploadPOBatch(selectedFiles);
             setUploadResults(results);
 
             if (results.successful > 0) {
@@ -102,9 +88,9 @@ export default function POPage() {
             }
 
             setSelectedFiles([]);
-        } catch (err) {
-            console.error("Upload failed:", err);
-            alert("Failed to upload files");
+        } catch (error) {
+            console.error('Upload failed:', error);
+            // Optionally set error state here if needed
         } finally {
             setUploading(false);
         }
@@ -408,8 +394,8 @@ export default function POPage() {
                                         </td>
                                         <td className="px-6 py-3 text-center">
                                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${po.total_pending_qty > 0
-                                                    ? 'bg-amber-100 text-amber-800'
-                                                    : 'bg-emerald-100 text-emerald-800'
+                                                ? 'bg-amber-100 text-amber-800'
+                                                : 'bg-emerald-100 text-emerald-800'
                                                 }`}>
                                                 {po.total_pending_qty?.toLocaleString() || '0'}
                                             </span>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Edit2, Trash2, FileText } from "lucide-react";
+import { api } from '@/lib/api';
 
 interface PONoteTemplate {
     id: string;
@@ -25,8 +26,7 @@ export default function PONotesPage() {
 
     const loadTemplates = async () => {
         try {
-            const res = await fetch("http://localhost:8000/api/po-notes/");
-            const data = await res.json();
+            const data = await api.getPONotes();
             setTemplates(data);
             setLoading(false);
         } catch (err) {
@@ -39,17 +39,11 @@ export default function PONotesPage() {
         e.preventDefault();
 
         try {
-            const url = editingId
-                ? `http://localhost:8000/api/po-notes/${editingId}`
-                : "http://localhost:8000/api/po-notes/";
-
-            const method = editingId ? "PUT" : "POST";
-
-            await fetch(url, {
-                method,
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData)
-            });
+            if (editingId) {
+                await api.updatePONote(editingId, formData);
+            } else {
+                await api.createPONote(formData);
+            }
 
             setFormData({ title: "", content: "" });
             setEditingId(null);
@@ -70,9 +64,7 @@ export default function PONotesPage() {
         if (!confirm("Are you sure you want to delete this template?")) return;
 
         try {
-            await fetch(`http://localhost:8000/api/po-notes/${id}`, {
-                method: "DELETE"
-            });
+            await api.deletePONote(id);
             loadTemplates();
         } catch (err) {
             console.error("Failed to delete template:", err);

@@ -33,10 +33,10 @@ export default function CreateInvoicePage() {
     useEffect(() => {
         if (!dcId) return;
 
-        // Fetch DC Data to auto-populate
-        fetch(`http://localhost:8000/api/dc/${dcId}`)
-            .then(res => res.json())
-            .then(data => {
+        const loadDC = async () => {
+            try {
+                // Fetch DC Data to auto-populate
+                const data = await api.getDCDetail(dcId);
                 setDcData(data);
                 if (data.header) {
                     setFormData(prev => ({
@@ -56,11 +56,13 @@ export default function CreateInvoicePage() {
                     setFormData(prev => ({ ...prev, taxable_value: totalTaxable }));
                 }
                 setLoading(false);
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error("Failed to fetch DC:", err);
                 setLoading(false);
-            });
+            }
+        };
+
+        loadDC();
     }, [dcId]);
 
     // Format helpers

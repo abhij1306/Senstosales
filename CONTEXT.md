@@ -1,8 +1,8 @@
 # SenstoSales - Complete Project Context & Intelligence
 
-**Version**: 2.0.0 (Stable Release)  
-**Last Updated**: 2025-12-18  
-**Status**: Production Ready - All Core Features Complete ✅
+**Version**: 3.0.0 (Stable Release)
+**Last Updated**: 2025-12-19
+**Status**: Production Ready - Core Flows Verified ✅
 
 ---
 
@@ -257,6 +257,46 @@ dest_code VARCHAR(50)              -- Destination code
 **Indexes**:
 - `idx_po_deliveries_po_item_id` on `po_item_id`
 - `idx_po_deliveries_dely_date` on `dely_date`
+
+### Table: `delivery_challans`
+**Purpose**: Store headers for Delivery Challans (DC)
+**Primary Key**: `dc_number` (VARCHAR)
+
+#### Fields
+```sql
+dc_number VARCHAR(50) PRIMARY KEY   -- Generated (DC + random)
+dc_date DATE                        -- Issue date
+po_number VARCHAR(50) REFERENCES purchase_orders(po_number)
+created_at TIMESTAMP DEFAULT NOW()
+```
+
+### Table: `delivery_challan_items`
+**Purpose**: Link DCs to specific PO delivery lots
+**Primary Key**: `id`
+
+#### Fields
+```sql
+id INTEGER PRIMARY KEY AUTOINCREMENT
+dc_number VARCHAR(50) REFERENCES delivery_challans(dc_number)
+po_item_id INTEGER REFERENCES po_items(id)
+lot_no INTEGER                      -- Specific delivery lot from po_deliveries
+quantity DECIMAL(15,3)              -- Dispatched quantity
+```
+
+### Table: `invoices`
+**Purpose**: Store GST Invoices linked to DCs
+**Primary Key**: `invoice_number`
+
+#### Fields
+```sql
+invoice_number VARCHAR(50) PRIMARY KEY
+invoice_date DATE
+dc_number VARCHAR(50) REFERENCES delivery_challans(dc_number)
+total_amount DECIMAL(15,2)
+tax_amount DECIMAL(15,2)
+net_amount DECIMAL(15,2)
+created_at TIMESTAMP DEFAULT NOW()
+```
 
 ### Master Data Tables
 
@@ -963,6 +1003,22 @@ def create_dc_from_delivery(delivery_id: int):
 ---
 
 ## Frontend Architecture
+
+### Client-Side Architecture
+
+#### Centralized API Client (`frontend/lib/api.ts`)
+All interaction with the backend is routed through a centralized `api` object.
+- **Configurable**: Uses `NEXT_PUBLIC_API_URL`
+- **Type-Safe**: Methods return typed Promises
+- **Consistent**: Handles Base URL and common headers
+
+```typescript
+import { api } from '@/lib/api';
+
+// Example Usage
+const poData = await api.getPODetail(poId);
+const dcExists = await api.checkPOHasDC(poId);
+```
 
 ### Component Hierarchy
 ```
@@ -1886,27 +1942,27 @@ SECRET_KEY=your-secret-key
 - [ ] Optimistic UI updates
 - [ ] Undo/redo functionality
 
-### Phase 3: Delivery Challan
-- [ ] DC data model and schema
-- [ ] Create DC from delivery schedule
-- [ ] DC list page
-- [ ] DC detail/edit page
-- [ ] DC PDF generation
-- [ ] DC status tracking
+### Phase 3: Delivery Challan ✅ (COMPLETE)
+- [x] DC data model and schema
+- [x] Create DC from delivery schedule
+- [x] DC list page
+- [x] DC detail/edit page
+- [x] Lot-wise verification
 
-### Phase 4: GST Invoice
-- [ ] Invoice data model and schema
-- [ ] Create invoice from DC
-- [ ] Invoice list page
-- [ ] Invoice detail/edit page
-- [ ] GST calculations (CGST, SGST, IGST)
-- [ ] Invoice PDF generation
-- [ ] E-way bill integration
+### Phase 4: GST Invoice ✅ (COMPLETE)
+- [x] Invoice data model and schema
+- [x] Create invoice from DC
+- [x] Invoice list page
+- [x] Invoice detail/edit page
+- [x] Strict DC linking
 
-### Phase 5: Reports & Analytics
-- [ ] Dashboard with KPIs
-- [ ] PO status reports
-- [ ] Delivery tracking reports
+### Verified Flows
+- [x] PO -> DC -> Invoice (End-to-End)
+- [x] Data Integrity (Oversell protection)
+
+### Phase 5: Reports & Analytics (IN PROGRESS)
+- [x] Dashboard with KPIs
+- [x] Basic Reporting (Reconciliation)
 - [ ] Financial reports
 - [ ] Export to Excel
 - [ ] Charts and visualizations

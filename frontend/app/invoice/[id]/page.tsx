@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Edit2, Save, X, Printer, Truck, FileText } from "lucide-react";
+import { api } from "@/lib/api";
 
 export default function InvoiceDetailPage() {
     const router = useRouter();
     const params = useParams();
-    const invoiceId = params?.id as string; // This is actually invoice_number in our router logic
+    const invoiceId = params?.id as string; // This is actually invoice_number in our router logic // Actually Next.js params usually decode it, but we should be careful.
 
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -16,19 +17,20 @@ export default function InvoiceDetailPage() {
     useEffect(() => {
         if (!invoiceId) return;
 
-        // Load Invoice data
-        // Note: The API router expects invoice_number, so we need to make sure we encode it if it has slashes
-        // But Next.js params usually decode it. Let's try direct.
-        fetch(`http://localhost:8000/api/invoice/${encodeURIComponent(invoiceId)}`)
-            .then(res => res.json())
-            .then(data => {
-                setData(data);
+        const loadData = async () => {
+            try {
+                // Decode URI component just in case, though Next usually handles it.
+                // Our API client handles the base URL.
+                const invoiceData = await api.getInvoiceDetail(decodeURIComponent(invoiceId));
+                setData(invoiceData);
                 setLoading(false);
-            })
-            .catch(err => {
+            } catch (err) {
                 console.error("Failed to load Invoice:", err);
                 setLoading(false);
-            });
+            }
+        };
+
+        loadData();
     }, [invoiceId]);
 
     if (loading) {

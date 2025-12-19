@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
 
 export default function ReportsPage() {
     const [activeReport, setActiveReport] = useState("reconciliation");
@@ -17,16 +18,13 @@ export default function ReportsPage() {
         setLoading(true);
         try {
             if (activeReport === "reconciliation") {
-                const res = await fetch("http://localhost:8000/api/reports/po-dc-invoice-reconciliation");
-                const data = await res.json();
+                const data = await api.getReport("po-dc-invoice-reconciliation");
                 setReconciliationData(data);
             } else if (activeReport === "dc-without-invoice") {
-                const res = await fetch("http://localhost:8000/api/reports/dc-without-invoice");
-                const data = await res.json();
+                const data = await api.getReport("dc-without-invoice");
                 setDcWithoutInvoice(data);
             } else if (activeReport === "supplier-summary") {
-                const res = await fetch("http://localhost:8000/api/reports/supplier-summary");
-                const data = await res.json();
+                const data = await api.getReport("supplier-summary");
                 setSupplierSummary(data);
             }
         } catch (err) {

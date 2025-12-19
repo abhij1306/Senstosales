@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Edit2, Save, X, ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { api } from '@/lib/api';
 
 export default function PODetailPage() {
     const router = useRouter();
@@ -19,35 +20,36 @@ export default function PODetailPage() {
     useEffect(() => {
         if (!poId) return;
 
-        // Load PO data
-        fetch(`http://localhost:8000/api/po/${poId}`)
-            .then(res => res.json())
-            .then(data => {
-                setData(data);
+        const loadData = async () => {
+            try {
+                // Load PO data
+                const poData = await api.getPODetail(parseInt(poId));
+                setData(poData);
+
                 // Expand all items by default
-                if (data.items && data.items.length > 0) {
-                    const allItemNos = new Set<number>(data.items.map((item: any) => item.po_item_no as number));
+                if (poData.items && poData.items.length > 0) {
+                    const allItemNos = new Set<number>(poData.items.map((item: any) => item.po_item_no as number));
                     setExpandedItems(allItemNos);
                 }
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error("Failed to load PO:", err);
-                setLoading(false);
-            });
 
-        // Check if PO has DC
-        fetch(`http://localhost:8000/api/po/${poId}/dc`)
-            .then(res => res.json())
-            .then(dcData => {
-                if (dcData && dcData.dc_id) {
-                    setHasDC(true);
-                    setDCId(dcData.dc_id);
+                // Check if PO has DC
+                try {
+                    const dcCheck = await api.checkPOHasDC(parseInt(poId));
+                    if (dcCheck && dcCheck.has_dc) {
+                        setHasDC(true);
+                        setDCId(dcCheck.dc_id || null);
+                    }
+                } catch {
+                    // Ignore error if check fails (e.g. 404)
                 }
-            })
-            .catch(err => {
-                // No DC found for this PO is not an error, just means no DC exists
-            });
+            } catch (err) {
+                console.error("Failed to load PO:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        loadData();
     }, [poId]);
 
     const toggleItem = (itemNo: number) => {

@@ -1,5 +1,5 @@
 // API client for backend communication
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 console.log('[API Client] API_BASE_URL:', API_BASE_URL);
 
 // ============================================================
@@ -161,7 +161,8 @@ async function apiFetch<T>(
 
     const defaultOptions: RequestInit = {
         headers: {
-            'Content-Type': 'application/json',
+            // Only set Content-Type to JSON if body is not FormData
+            ...(options?.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
             ...options?.headers,
         },
         ...options,
@@ -170,7 +171,7 @@ async function apiFetch<T>(
     try {
         console.log(`[API] ${options?.method || 'GET'} ${path}`);
 
-        if (options?.body) {
+        if (options?.body && !(options.body instanceof FormData)) {
             console.log(`[API] Request body:`, JSON.parse(options.body as string));
         }
 
@@ -232,6 +233,53 @@ async function apiFetch<T>(
 // ============================================================
 
 export const api = {
+    // Search & Alerts
+    async searchGlobal(query: string): Promise<any[]> {
+        return apiFetch<any[]>(`/api/search/?q=${encodeURIComponent(query)}`);
+    },
+
+    async getAlerts(acknowledged = false): Promise<any[]> {
+        return apiFetch<any[]>(`/api/alerts/?acknowledged=${acknowledged}`);
+    },
+
+    async acknowledgeAlert(alertId: string): Promise<any> {
+        return apiFetch<any>(`/api/alerts/${alertId}/acknowledge`, { method: 'POST' });
+    },
+
+    // Reports
+    async getReport(reportType: string): Promise<any> {
+        return apiFetch<any>(`/api/reports/${reportType}`);
+    },
+
+    // PO Notes
+    async getPONotes(): Promise<any[]> {
+        return apiFetch<any[]>('/api/po-notes/');
+    },
+
+    async getPONote(id: number): Promise<any> {
+        return apiFetch<any>(`/api/po-notes/${id}`);
+    },
+
+    async createPONote(data: any): Promise<any> {
+        return apiFetch<any>('/api/po-notes/', {
+            method: 'POST',
+            body: JSON.stringify(data),
+        });
+    },
+
+    async updatePONote(id: string, data: any): Promise<any> {
+        return apiFetch<any>(`/api/po-notes/${id}`, {
+            method: 'PUT',
+            body: JSON.stringify(data),
+        });
+    },
+
+    async deletePONote(id: string): Promise<any> {
+        return apiFetch<any>(`/api/po-notes/${id}`, {
+            method: 'DELETE',
+        });
+    },
+
     // Dashboard
     async getDashboardSummary(): Promise<DashboardSummary> {
         return apiFetch<DashboardSummary>('/api/dashboard/summary');
@@ -254,15 +302,28 @@ export const api = {
         return apiFetch<PODetail>(`/api/po/${poNumber}`);
     },
 
+    async checkPOHasDC(poNumber: number): Promise<{ has_dc: boolean, dc_id?: string, dc_number?: string }> {
+        return apiFetch<any>(`/api/po/${poNumber}/dc`);
+    },
+
     async uploadPOHTML(file: File): Promise<any> {
         const formData = new FormData();
         formData.append('file', file);
-
-        // Note: FormData sets its own Content-Type with boundary
         return apiFetch<any>('/api/po/upload', {
             method: 'POST',
             body: formData,
-            headers: {}, // Let browser set Content-Type for FormData
+        });
+    },
+
+    async uploadPOBatch(files: FileList | File[]): Promise<any> {
+        const formData = new FormData();
+        Array.from(files).forEach((file) => {
+            formData.append('files', file);
+        });
+
+        return apiFetch<any>('/api/po/upload/batch', {
+            method: 'POST',
+            body: formData,
         });
     },
 

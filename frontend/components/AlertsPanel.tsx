@@ -15,41 +15,38 @@ interface Alert {
 }
 
 export default function AlertsPanel() {
+    const [isOpen, setIsOpen] = useState(false);
     const [alerts, setAlerts] = useState<Alert[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [showPanel, setShowPanel] = useState(false);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const [loading, setLoading] = useState(true); // Keep loading state for initial fetch
+    const panelRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
-        loadAlerts();
-        // Auto-refresh every 30 seconds
-        const interval = setInterval(loadAlerts, 30000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const loadAlerts = async () => {
+    const fetchAlerts = async () => {
         try {
-            const res = await fetch("http://localhost:8000/api/alerts/?acknowledged=false");
-            if (!res.ok) {
-                throw new Error(`HTTP ${res.status}`);
-            }
-            const data = await res.json();
-            setAlerts(Array.isArray(data) ? data : []);
-            setLoading(false);
-        } catch (err) {
-            console.error("Failed to load alerts:", err);
-            setAlerts([]); // Set empty array on error
-            setLoading(false);
+            setLoading(true); // Set loading true before fetch
+            const data = await api.getAlerts(false); // Assuming getAlerts fetches unacknowledged
+            setAlerts(data);
+            setUnreadCount(data.length);
+        } catch (error) {
+            console.error('Failed to fetch alerts:', error);
+            setAlerts([]); // Clear alerts on error
+        } finally {
+            setLoading(false); // Set loading false after fetch
         }
     };
 
-    const acknowledgeAlert = async (alertId: string) => {
+    useEffect(() => {
+        fetchAlerts();
+        const interval = setInterval(fetchAlerts, 60000); // Poll every minute
+        return () => clearInterval(interval);
+    }, []);
+
+    const handleAcknowledge = async (alertId: string) => {
         try {
-            await fetch(`http://localhost:8000/api/alerts/${alertId}/acknowledge`, {
-                method: "POST"
-            });
-            setAlerts(alerts.filter(a => a.id !== alertId));
-        } catch (err) {
-            console.error("Failed to acknowledge alert:", err);
+            await api.acknowledgeAlert(alertId);
+            fetchAlerts(); // Refresh list after acknowledging
+        } catch (error) {
+            console.error('Failed to acknowledge alert:', error);
         }
     };
 

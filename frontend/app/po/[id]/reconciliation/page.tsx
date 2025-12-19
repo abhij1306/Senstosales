@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, TrendingUp } from "lucide-react";
+import { api } from '@/lib/api';
 
 interface ReconciliationItem {
     id: string;
@@ -33,8 +34,7 @@ export default function POReconciliationPage() {
 
     useEffect(() => {
         if (poNumber) {
-            fetch(`http://localhost:8000/api/reconciliation/po/${poNumber}`)
-                .then(res => res.json())
+            api.getReconciliation(poNumber)
                 .then(data => {
                     setData(data);
                     setLoading(false);
@@ -177,7 +177,7 @@ export default function POReconciliationPage() {
                                         <div className="w-24 bg-gray-200 rounded-full h-2">
                                             <div
                                                 className={`h-2 rounded-full ${progress === 100 ? 'bg-green-600' :
-                                                        progress > 0 ? 'bg-orange-600' : 'bg-gray-400'
+                                                    progress > 0 ? 'bg-orange-600' : 'bg-gray-400'
                                                     }`}
                                                 style={{ width: `${Math.min(progress, 100)}%` }}
                                             />
