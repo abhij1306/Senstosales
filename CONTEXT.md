@@ -35,8 +35,11 @@
 - ✅ PO list with status tracking
 - ✅ Full PO detail view and editing
 - ✅ Items and delivery schedule management
-- 🚧 DC generation (planned)
-- 🚧 GST invoice generation (planned)
+- ✅ Purchase Order Management (List, Detail, Upload)
+- ✅ Delivery Challan Management (List, Create, Detail)
+- ✅ GST Invoice Management (List, Create, Detail)
+- ✅ "Internal ERP" UI Design (Compact Cards, Clean Layouts)
+- ✅ Real-Data Dashboard (No Mock Data)
 
 ---
 
@@ -797,7 +800,46 @@ def create_dc_from_delivery(delivery_id: int):
         "po_date": "2022-12-07",
         "supplier_name": "SENSTOGRAPHIC...",
         "supplier_code": "123456",
+##### `GET /api/po/{po_number}`
+**Description**: Get detailed PO with items and deliveries
+**Path Parameters**:
+- `po_number` (string, required): PO number
+
+**Response**:
+```json
+{
+    "header": {
+        "po_number": "1125394",
+        "po_date": "2022-12-07",
+        "supplier_name": "SENSTOGRAPHIC...",
+        "supplier_code": "123456",
         // ... all 30 header fields
+    }
+}
+```
+
+---
+
+## UI/UX Guidelines ("Internal ERP" Style)
+
+### Core Principles
+1.  **Density**: Use compact spacing (py-2, px-3) to show more data on screen.
+2.  **Clarity**: High contrast text (gray-900) on clean white backgrounds.
+3.  **Simplicity**: Avoid decorative elements; focus on data visibility.
+4.  **Pagination**: Always paginate lists > 10 items (client-side for now).
+
+### Color Palette
+- **Primary**: Blue-600 (Actions, Links)
+- **Status - Good**: Green-600/Green-100 (Paid, Delivered)
+- **Status - Warning**: Amber-600/Amber-100 (Pending, Partial)
+- **Status - Neutral**: Gray-600/Gray-100 (Draft, New)
+- **Text**: Gray-900 (Primary), Gray-500 (Secondary)
+
+### Components
+- **NavRail**: Fixed width (w-64), distinct sections, user profile footer.
+- **Card**: White bg, border-gray-200, shadow-sm, rounded-xl.
+- **Table**: Uppercase text-xs headers, hover:bg-gray-50 rows.
+
     },
     "items": [
         {

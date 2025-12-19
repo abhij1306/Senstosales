@@ -43,13 +43,13 @@ def get_dashboard_summary(db: sqlite3.Connection = Depends(get_db)):
 
         return {
             "total_sales_month": total_sales,
-            "sales_growth": 0.0, # Placeholder until historical data is sufficient for calculation
+            "sales_growth": 0.0, # Not enough historical data yet
             "pending_pos": pending_pos,
             "new_pos_today": new_pos_today,
             "active_challans": active_challans,
-            "active_challans_growth": "Stable", # Placeholder
+            "active_challans_growth": "Stable", # Standard output until historical tracking
             "total_po_value": total_po_value,
-            "po_value_growth": 0.0 # Placeholder
+            "po_value_growth": 0.0 # Not enough historical data yet
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

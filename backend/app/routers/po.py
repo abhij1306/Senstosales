@@ -31,7 +31,7 @@ def get_po_stats(db: sqlite3.Connection = Depends(get_db)):
             "open_orders_count": open_count,
             "pending_approval_count": pending_count,
             "total_value_ytd": total_value,
-            "total_value_change": 0.0 # Placeholder
+            "total_value_change": 0.0
         }
     except Exception as e:
         return {

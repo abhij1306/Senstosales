@@ -30,16 +30,17 @@ def get_invoice_stats(db: sqlite3.Connection = Depends(get_db)):
         gst_row = db.execute("SELECT SUM(cgst + sgst + igst) FROM gst_invoices").fetchone()
         gst_collected = gst_row[0] if gst_row and gst_row[0] else 0.0
 
-        # Mock data for pending payments (would need a payments table/status for real data)
-        pending_payments = total_invoiced * 0.25  # Mock: 25% pending
-        pending_payments_count = 15 # Mock
+        # Real logic: Pending Payment calculation (Assuming simple 'Remaining Amount' check if we had payment tracking, but for now 0 is safer than fake data)
+        # Since we don't have a payments table yet, we return 0 to be accurate to the system's current knowledge.
+        pending_payments = 0.0
+        pending_payments_count = 0
         
         return {
             "total_invoiced": total_invoiced,
             "pending_payments": pending_payments,
             "gst_collected": gst_collected,
-            "total_invoiced_change": 12.0,  # Mock
-            "gst_collected_change": 5.0,    # Mock
+            "total_invoiced_change": 0.0,
+            "gst_collected_change": 0.0,
             "pending_payments_count": pending_payments_count
         }
     except Exception as e:

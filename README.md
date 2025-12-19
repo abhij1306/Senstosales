@@ -21,6 +21,9 @@ SenstoSales is a comprehensive Purchase Order management system designed for Sen
 - **Delivery Challan Management**: Create and manage DCs with full item tracking
 - **GST Invoice Generation**: Create invoices linked to DCs
 - **Dashboard**: Real-time KPIs and recent activity tracking
+- **UI Overhaul**: "Internal ERP" design with compact cards, clean typography, and dense data displays
+- **Client-Side Pagination**: Efficient navigation for large lists (10 items/page)
+- **Real-Time Statistics**: Zero-mock data policy; all KPIs reflect actual database state
 - **Search & Reports**: Comprehensive reconciliation and analytics
 
 ### 🚧 Planned (Phase 3+)

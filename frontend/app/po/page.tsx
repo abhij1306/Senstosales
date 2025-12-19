@@ -4,7 +4,12 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, POListItem, POStats } from "@/lib/api";
-import { Upload, X, CheckCircle, XCircle, Loader2, Plus, Search, Filter, Download, ListFilter, TrendingUp, AlertCircle, FileText, ClipboardList, Clock, DollarSign } from "lucide-react";
+import {
+    Upload, X, CheckCircle, XCircle, Loader2, Plus, Search, Filter,
+    Download, ListFilter, TrendingUp, AlertCircle, FileText, ClipboardList,
+    Clock, DollarSign, Calendar as CalendarIcon
+} from "lucide-react";
+import Pagination from "@/components/Pagination";
 
 interface UploadResult {
     filename: string;
@@ -30,6 +35,10 @@ export default function POPage() {
     const [uploadResults, setUploadResults] = useState<BatchUploadResponse | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("All Statuses");
+
+    // Pagination State
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 10;
 
     useEffect(() => {
         const fetchData = async () => {
@@ -101,16 +110,6 @@ export default function POPage() {
         }
     };
 
-    // Helper to determine status color
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'Active': return 'bg-green-100 text-green-700';
-            case 'Closed': return 'bg-gray-100 text-gray-700';
-            case 'New': return 'bg-blue-100 text-blue-700';
-            default: return 'bg-gray-100 text-gray-700';
-        }
-    };
-
     // Filter logic
     const filteredPOs = pos.filter(po => {
         const matchesSearch =
@@ -124,31 +123,37 @@ export default function POPage() {
         return matchesSearch && matchesStatus;
     });
 
+    // Pagination Logic
+    const paginatedPOs = filteredPOs.slice(
+        (currentPage - 1) * pageSize,
+        currentPage * pageSize
+    );
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full">
-                <div className="text-gray-500">Loading...</div>
+                <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             </div>
         );
     }
 
     return (
-        <div className="p-8 max-w-7xl mx-auto space-y-8">
+        <div className="p-8 max-w-7xl mx-auto space-y-8 font-sans">
             {/* Page Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Purchase Orders</h1>
+                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Purchase Orders</h1>
                     <p className="text-sm text-gray-500 mt-1">Manage procurement requests, track status, and view history.</p>
                 </div>
                 <div className="flex gap-3">
                     <button
                         onClick={() => router.push('/po/create')}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium"
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 font-medium shadow-sm transition-colors"
                     >
                         <Plus className="w-4 h-4" />
                         Create New PO
                     </button>
-                    <label className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer flex items-center gap-2">
+                    <label className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer flex items-center gap-2 shadow-sm transition-colors">
                         <Upload className="w-4 h-4" />
                         Upload PO Files
                         <input
@@ -169,10 +174,13 @@ export default function POPage() {
                     {/* Open Orders */}
                     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-start justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-500">Open Orders</p>
+                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Open Orders</p>
                             <h3 className="text-2xl font-bold text-gray-900 mt-2">
                                 {stats.open_orders_count}
                             </h3>
+                            <span className="inline-flex mt-2 items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                Active
+                            </span>
                         </div>
                         <div className="p-3 bg-blue-50 rounded-lg">
                             <ClipboardList className="w-6 h-6 text-blue-600" />
@@ -182,20 +190,23 @@ export default function POPage() {
                     {/* Pending Approval */}
                     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-start justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-500">Pending Approval</p>
+                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Pending Approval</p>
                             <h3 className="text-2xl font-bold text-gray-900 mt-2">
                                 {stats.pending_approval_count}
                             </h3>
+                            <span className="inline-flex mt-2 items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                                Requires Attention
+                            </span>
                         </div>
-                        <div className="p-3 bg-yellow-50 rounded-lg">
-                            <Clock className="w-6 h-6 text-yellow-600" />
+                        <div className="p-3 bg-amber-50 rounded-lg">
+                            <Clock className="w-6 h-6 text-amber-600" />
                         </div>
                     </div>
 
                     {/* Total Value (YTD) */}
                     <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-start justify-between">
                         <div>
-                            <p className="text-sm font-medium text-gray-500">Total Value (YTD)</p>
+                            <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">Total Value (YTD)</p>
                             <h3 className="text-2xl font-bold text-gray-900 mt-2">
                                 ₹{stats.total_value_ytd.toLocaleString('en-IN')}
                             </h3>
@@ -204,8 +215,8 @@ export default function POPage() {
                                 <span>{stats.total_value_change}% from last month</span>
                             </div>
                         </div>
-                        <div className="p-3 bg-green-50 rounded-lg">
-                            <DollarSign className="w-6 h-6 text-green-600" />
+                        <div className="p-3 bg-emerald-50 rounded-lg">
+                            <DollarSign className="w-6 h-6 text-emerald-600" />
                         </div>
                     </div>
                 </div>
@@ -213,7 +224,7 @@ export default function POPage() {
 
             {/* Upload Area (Conditional) */}
             {(selectedFiles.length > 0 || uploadResults) && (
-                <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-6">
+                <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6 shadow-sm">
                     {/* Selected Files List */}
                     {selectedFiles.length > 0 && (
                         <div>
@@ -241,7 +252,7 @@ export default function POPage() {
                             </div>
                             <div className="space-y-2">
                                 {selectedFiles.map((file, idx) => (
-                                    <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200">
+                                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
                                         <span className="text-sm text-gray-700">{file.name}</span>
                                         <button
                                             onClick={() => removeFile(idx)}
@@ -278,9 +289,9 @@ export default function POPage() {
                                 {uploadResults.results.map((result, idx) => (
                                     <div
                                         key={idx}
-                                        className={`p-3 rounded border ${result.success
+                                        className={`p-3 rounded-lg border ${result.success
                                             ? 'bg-green-50 border-green-200'
-                                            : 'bg-red-50 border-red-200'
+                                            : 'bg-red-50 border-red-100'
                                             }`}
                                     >
                                         <div className="flex items-start gap-2">
@@ -306,141 +317,134 @@ export default function POPage() {
                 </div>
             )}
 
-            {/* Filters & Actions */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white p-4 rounded-lg border border-gray-200">
-                <div className="flex items-center gap-4 w-full sm:w-auto">
-                    <div className="relative flex-1 sm:w-80">
-                        <Search className="w-4 h-4 absolute left-3 top-3 text-gray-400" />
+            {/* Main Content Card */}
+            <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                {/* Filters */}
+                <div className="p-4 border-b border-gray-200 bg-gray-50/50 flex flex-col sm:flex-row gap-4 justify-between items-center">
+                    <div className="relative w-full sm:w-96">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                         <input
                             type="text"
-                            placeholder="Search by PO Number..."
+                            placeholder="Search by PO number or supplier..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                         />
                     </div>
-                    <div className="relative">
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                            className="appearance-none pl-4 pr-10 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
-                        >
-                            <option>All Statuses</option>
-                            <option>Active</option>
-                            <option>New</option>
-                            <option>Closed</option>
-                        </select>
-                        <Filter className="w-4 h-4 absolute right-3 top-3 text-gray-400 pointer-events-none" />
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <div className="relative flex-1 sm:flex-none">
+                            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="w-full sm:w-40 pl-10 pr-8 py-2 bg-white border border-gray-300 rounded-lg text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
+                            >
+                                <option>All Statuses</option>
+                                <option>Active</option>
+                                <option>New</option>
+                                <option>Closed</option>
+                            </select>
+                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none border-l border-gray-300 h-4" />
+                        </div>
                     </div>
                 </div>
-                <div className="flex gap-2">
-                    <button className="p-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                        <Download className="w-4 h-4" />
-                    </button>
-                    <button className="p-2 text-gray-600 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
-                        <ListFilter className="w-4 h-4" />
-                    </button>
-                </div>
-            </div>
 
-            {/* Data Table */}
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                {/* Table */}
                 <div className="overflow-x-auto">
-                    <table className="w-full whitespace-nowrap">
-                        <thead className="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-gray-50/80 text-gray-500 border-b border-gray-200 text-xs uppercase tracking-wider font-semibold">
+                                <th className="px-6 py-4 w-12 text-center">
                                     <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                                 </th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">PO Number</th>
-                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date Created</th>
-
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    PO Value
-                                </th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Ordered
-                                </th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Dispatched
-                                </th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Pending
-                                </th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                    Linked Challans
-                                </th>
-                                <th className="px-6 py-4 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                                <th className="px-6 py-4">PO Number</th>
+                                <th className="px-6 py-4">Date</th>
+                                <th className="px-6 py-4">Value</th>
+                                <th className="px-6 py-4 text-center">Ordered</th>
+                                <th className="px-6 py-4 text-center">Dispatched</th>
+                                <th className="px-6 py-4 text-center">Pending</th>
+                                <th className="px-6 py-4">Linked Challans</th>
+                                <th className="px-6 py-4 w-16"></th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-200">
-                            {filteredPOs.map((po) => {
-                                return (
-                                    <tr key={po.po_number} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4">
+                        <tbody className="divide-y divide-gray-200 bg-white">
+                            {filteredPOs.length === 0 ? (
+                                <tr>
+                                    <td colSpan={9} className="px-6 py-12 text-center">
+                                        <div className="flex flex-col items-center justify-center">
+                                            <FileText className="w-12 h-12 text-gray-300 mb-3" />
+                                            <h3 className="text-lg font-medium text-gray-900">No purchase orders found</h3>
+                                            <p className="text-gray-500 text-sm mt-1 max-w-sm">
+                                                Try adjusting your search or filters, or upload a new PO to get started.
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ) : (
+                                paginatedPOs.map((po) => (
+                                    <tr key={po.po_number} className="hover:bg-gray-50/80 transition-colors group">
+                                        <td className="px-6 py-3 text-center">
                                             <input type="checkbox" className="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td className="px-6 py-3">
                                             <Link
                                                 href={`/po/${po.po_number}`}
-                                                className="text-blue-600 font-medium hover:text-blue-800 hover:underline"
+                                                className="text-blue-600 font-semibold hover:text-blue-800 hover:underline"
                                             >
                                                 PO-{po.po_number}
                                             </Link>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-600">
+                                        <td className="px-6 py-3 text-sm text-gray-600 font-medium">
                                             {po.po_date || 'N/A'}
                                         </td>
-
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <td className="px-6 py-3 text-sm text-gray-900 font-semibold">
                                             ₹{po.po_value?.toLocaleString('en-IN') || '0'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center font-medium">
+                                        <td className="px-6 py-3 text-sm text-gray-700 text-center font-medium">
                                             {po.total_ordered_qty?.toLocaleString() || '0'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 text-center font-medium">
+                                        <td className="px-6 py-3 text-sm text-blue-600 text-center font-medium">
                                             {po.total_dispatched_qty?.toLocaleString() || '0'}
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${po.total_pending_qty > 0 ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'
+                                        <td className="px-6 py-3 text-center">
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${po.total_pending_qty > 0
+                                                    ? 'bg-amber-100 text-amber-800'
+                                                    : 'bg-emerald-100 text-emerald-800'
                                                 }`}>
                                                 {po.total_pending_qty?.toLocaleString() || '0'}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <td className="px-6 py-3 text-sm">
                                             {po.linked_dc_numbers ? (
-                                                <div className="flex flex-wrap gap-2">
+                                                <div className="flex flex-wrap gap-1.5">
                                                     {(() => {
                                                         const dcs = po.linked_dc_numbers.split(',').map(d => d.trim()).filter(Boolean);
 
-                                                        // If 2 or fewer, show them all
                                                         if (dcs.length <= 2) {
                                                             return dcs.map((dc, i) => (
                                                                 <Link
                                                                     key={i}
                                                                     href={`/dc/${dc}`}
-                                                                    className="px-2 py-1 bg-purple-50 text-purple-700 text-xs rounded border border-purple-100 font-medium hover:bg-purple-100 hover:text-purple-900 transition-colors"
+                                                                    className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs rounded border border-indigo-100 font-medium hover:bg-indigo-100 transition-colors"
                                                                 >
                                                                     {dc}
                                                                 </Link>
                                                             ));
                                                         }
 
-                                                        // If more than 2, show summary with hover dropdown
                                                         return (
                                                             <div className="relative group">
-                                                                <button className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded border border-purple-200 font-bold hover:bg-purple-200 transition-colors">
+                                                                <button className="px-2 py-0.5 bg-indigo-100 text-indigo-800 text-xs rounded border border-indigo-200 font-bold hover:bg-indigo-200 transition-colors">
                                                                     {dcs.length} Challans
                                                                 </button>
-                                                                {/* Hover Dropdown */}
-                                                                <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-48 bg-white border border-gray-200 shadow-lg rounded-lg p-2 z-10">
-                                                                    <div className="text-xs text-gray-400 mb-2 px-1">Linked Challans</div>
+                                                                <div className="absolute left-0 top-full mt-1 hidden group-hover:block w-48 bg-white border border-gray-200 shadow-xl rounded-lg p-2 z-20">
+                                                                    <div className="text-[10px] uppercase font-bold text-gray-400 mb-2 px-1 tracking-wider">Linked Challans</div>
                                                                     <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
                                                                         {dcs.map((dc, i) => (
                                                                             <Link
                                                                                 key={i}
                                                                                 href={`/dc/${dc}`}
-                                                                                className="block px-2 py-1 text-xs text-purple-700 hover:bg-purple-50 rounded"
+                                                                                className="block px-2 py-1.5 text-xs font-medium text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 rounded transition-colors"
                                                                             >
                                                                                 {dc}
                                                                             </Link>
@@ -452,43 +456,33 @@ export default function POPage() {
                                                     })()}
                                                 </div>
                                             ) : (
-                                                <span className="text-gray-400 text-xs italic">No DCs linked</span>
+                                                <span className="text-gray-400 text-xs italic">--</span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <button className="text-gray-400 hover:text-gray-600">
-                                                <div className="w-1 h-1 bg-current rounded-full mb-1 mx-auto" />
-                                                <div className="w-1 h-1 bg-current rounded-full mb-1 mx-auto" />
-                                                <div className="w-1 h-1 bg-current rounded-full mx-auto" />
+                                        <td className="px-6 py-3 text-center">
+                                            <button className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100">
+                                                <div className="flex space-x-[3px]">
+                                                    <div className="w-1 h-1 bg-current rounded-full" />
+                                                    <div className="w-1 h-1 bg-current rounded-full" />
+                                                    <div className="w-1 h-1 bg-current rounded-full" />
+                                                </div>
                                             </button>
                                         </td>
                                     </tr>
-                                );
-                            })}
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
 
-                {filteredPOs.length === 0 && (
-                    <div className="text-center py-12">
-                        <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                        <h3 className="text-lg font-medium text-gray-900">No purchase orders found</h3>
-                        <p className="text-gray-500 text-sm mt-1">Try uploading POs or adjusting your search</p>
-                    </div>
-                )}
-
-                {/* Pagination (Mock) */}
-                <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-                    <span className="text-sm text-gray-500">
-                        Showing <span className="font-medium">1</span> to <span className="font-medium">{filteredPOs.length}</span> of <span className="font-medium">{filteredPOs.length}</span> entries
-                    </span>
-                    <div className="flex gap-2">
-                        <button disabled className="px-3 py-1 border border-gray-300 rounded bg-white text-gray-400 text-sm disabled:opacity-50">Previous</button>
-                        <button className="px-3 py-1 border border-blue-500 rounded bg-blue-600 text-white text-sm">1</button>
-                        <button disabled className="px-3 py-1 border border-gray-300 rounded bg-white text-gray-400 text-sm disabled:opacity-50">Next</button>
-                    </div>
-                </div>
+                {/* Pagination */}
+                <Pagination
+                    currentPage={currentPage}
+                    totalItems={filteredPOs.length}
+                    pageSize={pageSize}
+                    onPageChange={setCurrentPage}
+                />
             </div>
-        </div >
+        </div>
     );
 }
