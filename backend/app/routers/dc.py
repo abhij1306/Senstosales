@@ -38,20 +38,27 @@ def get_dc_stats(db: sqlite3.Connection = Depends(get_db)):
             "completed_change": 0.0
         }
     except Exception as e:
-         return {
-            "total_challans": 0, "total_challans_change": 0.0,
-            "pending_delivery": 0, "completed_delivery": 0, "completed_change": 0.0
-        }
+        logger.error(f"Failed to fetch DC stats: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to fetch DC statistics: {str(e)}")
 
 
 @router.get("/", response_model=List[DCListItem])
 def list_dcs(po: Optional[int] = None, db: sqlite3.Connection = Depends(get_db)):
     """List all Delivery Challans, optionally filtered by PO"""
     
+    # Optimized query with JOIN to eliminate N+1 problem
     query = """
-        SELECT dc.dc_number, dc.dc_date, dc.po_number, dc.consignee_name, dc.created_at,
-               (SELECT COUNT(*) FROM gst_invoice_dc_links WHERE dc_number = dc.dc_number) as is_linked
+        SELECT 
+            dc.dc_number, 
+            dc.dc_date, 
+            dc.po_number, 
+            dc.consignee_name, 
+            dc.created_at,
+            (SELECT COUNT(*) FROM gst_invoice_dc_links WHERE dc_number = dc.dc_number) as is_linked,
+            COALESCE(SUM(dci.dispatch_qty * poi.po_rate), 0) as total_value
         FROM delivery_challans dc
+        LEFT JOIN delivery_challan_items dci ON dc.dc_number = dci.dc_number
+        LEFT JOIN purchase_order_items poi ON dci.po_item_id = poi.id
     """
     params = []
     
@@ -59,24 +66,13 @@ def list_dcs(po: Optional[int] = None, db: sqlite3.Connection = Depends(get_db))
         query += " WHERE dc.po_number = ?"
         params.append(po)
         
+    query += " GROUP BY dc.dc_number, dc.dc_date, dc.po_number, dc.consignee_name, dc.created_at"
     query += " ORDER BY dc.created_at DESC"
     
     rows = db.execute(query, params).fetchall()
     
     results = []
     for row in rows:
-        dc_num = row["dc_number"]
-        
-        # Calculate Value based on items * po_rate
-        value_row = db.execute("""
-            SELECT SUM(dci.dispatch_qty * poi.po_rate) as total_val
-            FROM delivery_challan_items dci
-            JOIN purchase_order_items poi ON dci.po_item_id = poi.id
-            WHERE dci.dc_number = ?
-        """, (dc_num,)).fetchone()
-        
-        total_value = value_row["total_val"] if value_row and value_row["total_val"] else 0.0
-        
         # Determine Status
         status = "Delivered" if row["is_linked"] > 0 else "Pending"
         
@@ -86,7 +82,7 @@ def list_dcs(po: Optional[int] = None, db: sqlite3.Connection = Depends(get_db))
             po_number=row["po_number"],
             consignee_name=row["consignee_name"],
             status=status,
-            total_value=total_value,
+            total_value=row["total_value"],
             created_at=row["created_at"]
         ))
     
@@ -177,81 +173,20 @@ def create_dc(dc: DCCreate, items: List[dict], db: sqlite3.Connection = Depends(
     if not dc.dc_date or dc.dc_date.strip() == "":
         raise bad_request("DC date is required")
     
-    # 2. Validate items array
-    if not items or len(items) == 0:
-        raise bad_request("At least one item is required")
-    
     logger.debug(f"Creating DC {dc.dc_number} with {len(items)} items")
     
-    # 3. Validate each item
-    for idx, item in enumerate(items):
-        if "po_item_id" not in item or not item["po_item_id"]:
-            raise bad_request(f"Item {idx + 1}: po_item_id is required")
-        
-        if "dispatch_qty" not in item or item["dispatch_qty"] is None:
-            raise bad_request(f"Item {idx + 1}: dispatch_qty is required")
-        
-        if item["dispatch_qty"] <= 0:
-            raise bad_request(f"Item {idx + 1}: dispatch_qty must be greater than 0")
-        
-        # 4. Check remaining quantity (prevent over-dispatch)
-        po_item_id = item["po_item_id"]
-        lot_no = item.get("lot_no")
-        dispatch_qty = item["dispatch_qty"]
-        
-        # Get ordered quantity
-        if lot_no:
-            # Lot-wise check
-            lot_row = db.execute("""
-                SELECT dely_qty 
-                FROM purchase_order_deliveries 
-                WHERE po_item_id = ? AND lot_no = ?
-            """, (po_item_id, lot_no)).fetchone()
-            
-            if not lot_row:
-                raise bad_request(f"Item {idx + 1}: Lot {lot_no} not found for this PO item")
-            
-            ordered_qty = lot_row["dely_qty"]
-            
-            # Get already dispatched for this lot
-            already_dispatched = db.execute("""
-                SELECT COALESCE(SUM(dci.dispatch_qty), 0) as total
-                FROM delivery_challan_items dci
-                WHERE dci.po_item_id = ? AND dci.lot_no = ?
-            """, (po_item_id, lot_no)).fetchone()["total"]
-        else:
-            # Item-level check (no lot)
-            item_row = db.execute("""
-                SELECT ord_qty 
-                FROM purchase_order_items 
-                WHERE id = ?
-            """, (po_item_id,)).fetchone()
-            
-            if not item_row:
-                raise bad_request(f"Item {idx + 1}: PO item not found")
-            
-            ordered_qty = item_row["ord_qty"]
-            
-            # Get already dispatched for this item
-            already_dispatched = db.execute("""
-                SELECT COALESCE(SUM(dci.dispatch_qty), 0) as total
-                FROM delivery_challan_items dci
-                WHERE dci.po_item_id = ?
-            """, (po_item_id,)).fetchone()["total"]
-        
-        remaining_qty = ordered_qty - already_dispatched
-        
-        logger.debug(f"Item {idx + 1}: Ordered={ordered_qty}, Dispatched={already_dispatched}, Remaining={remaining_qty}, Requested={dispatch_qty}")
-        
-        if dispatch_qty > remaining_qty:
-            raise bad_request(
-                f"Item {idx + 1}: Dispatch quantity ({dispatch_qty}) exceeds remaining quantity ({remaining_qty})"
-            )
-    
-    # ========== INSERT ==========
+    # ========== INSERT WITH CONCURRENCY PROTECTION ==========
     
     try:
-        with db_transaction(db):
+        # CRITICAL: Use BEGIN IMMEDIATE for SQLite concurrency protection
+        # This prevents race conditions by acquiring write lock immediately
+        db.execute("BEGIN IMMEDIATE")
+        
+        try:
+            # 2. Validate items (inside transaction to ensure consistent reads)
+            from app.utils.validation_helpers import validate_dc_items
+            validate_dc_items(items, db, exclude_dc=None)
+            
             # Insert DC header
             db.execute("""
                 INSERT INTO delivery_challans
@@ -282,8 +217,13 @@ def create_dc(dc: DCCreate, items: List[dict], db: sqlite3.Connection = Depends(
                     item.get("hsn_rate")
                 ))
             
+            db.commit()
             logger.info(f"Successfully created DC {dc.dc_number} with {len(items)} items")
             return {"success": True, "dc_number": dc.dc_number}
+            
+        except Exception as e:
+            db.rollback()
+            raise
             
     except sqlite3.IntegrityError as e:
         logger.error(f"DC creation failed due to integrity error: {e}")
@@ -328,72 +268,36 @@ def update_dc(dc_number: str, dc: DCCreate, items: List[dict], db: sqlite3.Conne
     if dc.dc_number != dc_number:
         raise bad_request("DC number in body must match URL")
 
-    # Validate items
-    if not items or len(items) == 0:
-        raise bad_request("At least one item is required")
+    logger.debug(f"Updating DC {dc_number} with {len(items)} items")
 
-    for idx, item in enumerate(items):
-        if "po_item_id" not in item or not item["po_item_id"]:
-             raise bad_request(f"Item {idx + 1}: po_item_id is required")
-        
-        if "dispatch_qty" not in item or item["dispatch_qty"] is None:
-             raise bad_request(f"Item {idx + 1}: dispatch_qty is required")
-             
-        if item["dispatch_qty"] <= 0:
-             raise bad_request(f"Item {idx + 1}: dispatch_qty must be greater than 0")
-
-        # Check remaining quantity (excluding current DC's dispatch)
-        po_item_id = item["po_item_id"]
-        lot_no = item.get("lot_no")
-        dispatch_qty = item["dispatch_qty"]
-        
-        if lot_no:
-             # Lot-wise check
-             lot_row = db.execute("SELECT dely_qty FROM purchase_order_deliveries WHERE po_item_id = ? AND lot_no = ?", (po_item_id, lot_no)).fetchone()
-             if not lot_row: raise bad_request(f"Item {idx+1}: Lot not found")
-             ordered_qty = lot_row["dely_qty"]
-             
-             already_dispatched = db.execute("""
-                SELECT COALESCE(SUM(dispatch_qty), 0) FROM delivery_challan_items 
-                WHERE po_item_id = ? AND lot_no = ? AND dc_number != ?
-             """, (po_item_id, lot_no, dc_number)).fetchone()[0]
-        else:
-             # Item-level check
-             item_row = db.execute("SELECT ord_qty FROM purchase_order_items WHERE id = ?", (po_item_id,)).fetchone()
-             if not item_row: raise bad_request(f"Item {idx+1}: Item not found")
-             ordered_qty = item_row["ord_qty"]
-             
-             already_dispatched = db.execute("""
-                SELECT COALESCE(SUM(dispatch_qty), 0) FROM delivery_challan_items 
-                WHERE po_item_id = ? AND dc_number != ?
-             """, (po_item_id, dc_number)).fetchone()[0]
-             
-        remaining = ordered_qty - already_dispatched
-        
-        if dispatch_qty > remaining:
-             raise bad_request(f"Item {idx+1}: Dispatch qty {dispatch_qty} exceeds remaining {remaining}")
-
-    # Access DB for update
+    # Access DB for update with concurrency protection
     try:
-        with db_transaction(db):
+        # CRITICAL: Use BEGIN IMMEDIATE for SQLite concurrency protection
+        db.execute("BEGIN IMMEDIATE")
+        
+        try:
+            # Validate items (inside transaction, excluding current DC from dispatch calculations)
+            from app.utils.validation_helpers import validate_dc_items
+            validate_dc_items(items, db, exclude_dc=dc_number)
+            
             # Update Header
-             db.execute("""
+            db.execute("""
                 UPDATE delivery_challans SET
                 dc_date = ?, po_number = ?, department_no = ?, consignee_name = ?, consignee_gstin = ?,
                 consignee_address = ?, inspection_company = ?, eway_bill_no = ?, vehicle_no = ?, lr_no = ?,
                 transporter = ?, mode_of_transport = ?, remarks = ?
                 WHERE dc_number = ?
-             """, (
+            """, (
                 dc.dc_date, dc.po_number, dc.department_no, dc.consignee_name,
                 dc.consignee_gstin, dc.consignee_address, dc.inspection_company, dc.eway_bill_no,
                 dc.vehicle_no, dc.lr_no, dc.transporter, dc.mode_of_transport, dc.remarks, dc_number
-             ))
-             
-             # Delete old items
-             db.execute("DELETE FROM delivery_challan_items WHERE dc_number = ?", (dc_number,))
-             
-             # Insert new items
-             for item in items:
+            ))
+            
+            # Delete old items
+            db.execute("DELETE FROM delivery_challan_items WHERE dc_number = ?", (dc_number,))
+            
+            # Insert new items
+            for item in items:
                 item_id = str(uuid.uuid4())
                 db.execute("""
                     INSERT INTO delivery_challan_items
@@ -404,8 +308,14 @@ def update_dc(dc_number: str, dc: DCCreate, items: List[dict], db: sqlite3.Conne
                     item["dispatch_qty"], item.get("hsn_code"), item.get("hsn_rate")
                 ))
         
-        logger.info(f"Successfully updated DC {dc_number}")
-        return {"success": True, "dc_number": dc_number}
+            db.commit()
+            logger.info(f"Successfully updated DC {dc_number}")
+            return {"success": True, "dc_number": dc_number}
+            
+        except Exception as e:
+            db.rollback()
+            raise
+            
     except Exception as e:
         logger.error(f"Update failed: {e}")
         raise bad_request(f"Update failed: {e}")

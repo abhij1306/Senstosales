@@ -2,22 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { Plus, Edit2, Trash2, FileText, X, CheckSquare } from "lucide-react";
-import { api } from '@/lib/api';
-
-interface PONoteTemplate {
-    id: string;
-    title: string;
-    content: string;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string;
-}
+import { api, PONote } from '@/lib/api';
 
 export default function PONotesPage() {
-    const [templates, setTemplates] = useState<PONoteTemplate[]>([]);
+    const [templates, setTemplates] = useState<PONote[]>([]);
     const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
-    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editingId, setEditingId] = useState<number | null>(null);
     const [formData, setFormData] = useState({ title: "", content: "" });
 
     useEffect(() => {
@@ -40,7 +31,7 @@ export default function PONotesPage() {
 
         try {
             if (editingId) {
-                await api.updatePONote(editingId, formData);
+                await api.updatePONote(editingId.toString(), formData);
             } else {
                 await api.createPONote(formData);
             }
@@ -54,17 +45,17 @@ export default function PONotesPage() {
         }
     };
 
-    const handleEdit = (template: PONoteTemplate) => {
+    const handleEdit = (template: PONote) => {
         setFormData({ title: template.title, content: template.content });
         setEditingId(template.id);
         setShowForm(true);
     };
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = async (id: number) => {
         if (!confirm("Are you sure you want to delete this template?")) return;
 
         try {
-            await api.deletePONote(id);
+            await api.deletePONote(id.toString());
             loadTemplates();
         } catch (err) {
             console.error("Failed to delete template:", err);

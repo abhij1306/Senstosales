@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { api } from '@/lib/api';
+import { api, ReconciliationItem, DCWithoutInvoice, SupplierSummary } from '@/lib/api';
 import {
     FileBarChart,
     TrendingUp,
@@ -9,15 +9,14 @@ import {
     FileText,
     Truck,
     Download,
-    Calendar,
-    ArrowUpRight
+    Calendar
 } from "lucide-react";
 
 export default function ReportsPage() {
     const [activeReport, setActiveReport] = useState("reconciliation");
-    const [reconciliationData, setReconciliationData] = useState<any[]>([]);
-    const [dcWithoutInvoice, setDcWithoutInvoice] = useState<any[]>([]);
-    const [supplierSummary, setSupplierSummary] = useState<any[]>([]);
+    const [reconciliationData, setReconciliationData] = useState<ReconciliationItem[]>([]);
+    const [dcWithoutInvoice, setDcWithoutInvoice] = useState<DCWithoutInvoice[]>([]);
+    const [supplierSummary, setSupplierSummary] = useState<SupplierSummary[]>([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {

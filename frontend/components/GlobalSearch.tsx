@@ -1,28 +1,17 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, X, FileText, Truck, CreditCard } from "lucide-react";
-import Link from "next/link";
+import { Search, X, FileText, Truck, Receipt } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { api } from '@/lib/api';
-
-interface SearchResult {
-    id: string;
-    type: string;
-    number: string;
-    date: string;
-    party: string;
-    value: number | null;
-    type_label: string;
-}
+import { api, SearchResult } from "@/lib/api";
 
 export default function GlobalSearch() {
     const [isOpen, setIsOpen] = useState(false);
     const [query, setQuery] = useState("");
-    const [results, setResults] = useState<any[]>([]);
+    const [results, setResults] = useState<SearchResult[]>([]);
     const [loading, setLoading] = useState(false);
     const searchRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null); // Keep inputRef for focusing
+    const inputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
 
     // Keyboard shortcut: Ctrl+K and Escape
@@ -91,9 +80,9 @@ export default function GlobalSearch() {
         if (result.type === "PO") {
             router.push(`/po/${result.number}`);
         } else if (result.type === "DC") {
-            router.push(`/dc`);
-        } else if (result.type === "INVOICE") {
-            router.push(`/invoice`);
+            router.push(`/dc/${result.number}`);
+        } else if (result.type === "Invoice") {
+            router.push(`/invoice/${result.number}`);
         }
     };
 
@@ -164,7 +153,7 @@ export default function GlobalSearch() {
                                     className="w-full px-4 py-3 hover:bg-gray-50 flex items-center justify-between text-left transition-colors"
                                 >
                                     <div className="flex items-center gap-3">
-                                        <span className={`px-2 py-1 text-xs font-medium rounded ${getTypeBadgeColor(result.type)}`}>
+                                        <span className={`px - 2 py - 1 text - xs font - medium rounded ${getTypeBadgeColor(result.type)} `}>
                                             {result.type}
                                         </span>
                                         <div>
@@ -173,8 +162,8 @@ export default function GlobalSearch() {
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        {result.value && (
-                                            <div className="font-medium text-gray-900">₹{result.value.toLocaleString()}</div>
+                                        {result.amount && (
+                                            <div className="font-medium text-gray-900">₹{result.amount.toLocaleString()}</div>
                                         )}
                                         <div className="text-sm text-gray-500">{result.date}</div>
                                     </div>

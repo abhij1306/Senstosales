@@ -130,6 +130,70 @@ export interface InvoiceStats {
     gst_collected_change: number;
 }
 
+// Search & Alerts Types
+export interface SearchResult {
+    type: 'PO' | 'DC' | 'Invoice';
+    number: string;
+    date: string;
+    party: string;
+    amount: number | null;
+    status: string;
+    created_at: string;
+}
+
+export interface Alert {
+    id: string;
+    alert_type: string;
+    entity_type: string;
+    entity_id: string;
+    message: string;
+    severity: 'error' | 'warning' | 'info';
+    is_acknowledged: boolean;
+    created_at: string;
+}
+
+// PO Notes Types
+export interface PONote {
+    id: number;
+    title: string;
+    content: string;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface PONoteCreate {
+    title: string;
+    content: string;
+}
+
+// Report Types
+export interface ReconciliationItem {
+    po_number: number;
+    po_date: string;
+    supplier_name: string;
+    po_item_no: number;
+    material_code: string;
+    material_description: string;
+    ord_qty: number;
+    dispatched_qty: number;
+    pending_qty: number;
+}
+
+export interface DCWithoutInvoice {
+    dc_number: string;
+    dc_date: string;
+    po_number: number;
+    consignee_name: string;
+    created_at: string;
+}
+
+export interface SupplierSummary {
+    supplier_name: string;
+    po_count: number;
+    total_po_value: number;
+    last_po_date: string;
+}
 export interface InvoiceCreate {
     invoice_number: string;
     invoice_date: string;
@@ -238,41 +302,41 @@ async function apiFetch<T>(
 
 export const api = {
     // Search & Alerts
-    async searchGlobal(query: string): Promise<any[]> {
-        return apiFetch<any[]>(`/api/search/?q=${encodeURIComponent(query)}`);
+    async searchGlobal(query: string): Promise<SearchResult[]> {
+        return apiFetch<SearchResult[]>(`/api/search/?q=${encodeURIComponent(query)}`);
     },
 
-    async getAlerts(acknowledged = false): Promise<any[]> {
-        return apiFetch<any[]>(`/api/alerts/?acknowledged=${acknowledged}`);
+    async getAlerts(acknowledged = false): Promise<Alert[]> {
+        return apiFetch<Alert[]>(`/api/alerts/?acknowledged=${acknowledged}`);
     },
 
-    async acknowledgeAlert(alertId: string): Promise<any> {
-        return apiFetch<any>(`/api/alerts/${alertId}/acknowledge`, { method: 'POST' });
+    async acknowledgeAlert(alertId: string): Promise<{ success: boolean }> {
+        return apiFetch<{ success: boolean }>(`/api/alerts/${alertId}/acknowledge`, { method: 'POST' });
     },
 
     // Reports
-    async getReport(reportType: string): Promise<any> {
+    async getReport(reportType: string): Promise<ReconciliationItem[] | DCWithoutInvoice[] | SupplierSummary[] | any> {
         return apiFetch<any>(`/api/reports/${reportType}`);
     },
 
     // PO Notes
-    async getPONotes(): Promise<any[]> {
-        return apiFetch<any[]>('/api/po-notes/');
+    async getPONotes(): Promise<PONote[]> {
+        return apiFetch<PONote[]>('/api/po-notes/');
     },
 
-    async getPONote(id: number): Promise<any> {
-        return apiFetch<any>(`/api/po-notes/${id}`);
+    async getPONote(id: number): Promise<PONote> {
+        return apiFetch<PONote>(`/api/po-notes/${id}`);
     },
 
-    async createPONote(data: any): Promise<any> {
-        return apiFetch<any>('/api/po-notes/', {
+    async createPONote(data: PONoteCreate): Promise<PONote> {
+        return apiFetch<PONote>('/api/po-notes/', {
             method: 'POST',
             body: JSON.stringify(data),
         });
     },
 
-    async updatePONote(id: string, data: any): Promise<any> {
-        return apiFetch<any>(`/api/po-notes/${id}`, {
+    async updatePONote(id: string, data: PONoteCreate): Promise<PONote> {
+        return apiFetch<PONote>(`/api/po-notes/${id}`, {
             method: 'PUT',
             body: JSON.stringify(data),
         });
