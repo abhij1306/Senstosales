@@ -7,8 +7,8 @@ import sqlite3
 import uuid
 import logging
 from typing import List, Dict, Optional
-from app.core import (
-    ServiceResult,
+from app.core.result import ServiceResult
+from app.core.exceptions import (
     ErrorCode,
     ValidationError,
     ResourceNotFoundError,

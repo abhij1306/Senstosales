@@ -44,35 +44,20 @@ class LLMClient:
     """Unified LLM client for Groq, OpenRouter, Ollama, and Google Gemini"""
     
     def __init__(self):
-        # Fallback: Check if env is loaded, if not, force load it
-        if not os.getenv("GROQ_API_KEY"):
-            logger.warning("Environment variables not found, forcing load_env()")
-            try:
-                from app.core.config import load_env
-                load_env()
-            except ImportError:
-                 # Try manual load if module import fails (e.g. strict dependency cycle)
-                 from pathlib import Path
-                 env_path = Path(__file__).resolve().parents[3] / ".env"
-                 if env_path.exists():
-                     with open(env_path, encoding="utf-8") as f:
-                         for line in f:
-                             if "=" in line and not line.strip().startswith("#"):
-                                 k, v = line.strip().split("=", 1)
-                                 os.environ[k] = v.strip().strip("'").strip('"')
-
-        # Read API keys from environment (after .env has been loaded)
-        self.groq_api_key = os.getenv("GROQ_API_KEY")
+        # Use centralized settings
+        from app.core.config import settings
+        
+        self.groq_api_key = settings.GROQ_API_KEY.get_secret_value() if settings.GROQ_API_KEY else None
         self.groq_model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
 
-        self.openrouter_api_key = os.getenv("OPENROUTER_API_KEY")
+        self.openrouter_api_key = settings.OPENROUTER_API_KEY.get_secret_value() if settings.OPENROUTER_API_KEY else None
         self.openrouter_model = os.getenv("OPENROUTER_MODEL", "nvidia/nemotron-nano-12b-v2-vl:free")
 
         self.ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434/api")
         self.ollama_model = os.getenv("OLLAMA_MODEL", "llama3")
 
-        self.google_api_key = os.getenv("GOOGLE_API_KEY")
-        self.google_model = os.getenv("GOOGLE_MODEL", "gemini-1.5-flash")
+        self.google_api_key = os.getenv("GOOGLE_API_KEY") # Add to settings later if needed
+        self.google_model = os.getenv("GOOGLE_MODEL", "gemini-2.0-flash-exp")
 
         self.groq_base_url = "https://api.groq.com/openai/v1"
         self.openrouter_base_url = "https://openrouter.ai/api/v1"
@@ -81,8 +66,7 @@ class LLMClient:
         logger.info(
             f"LLMClient initialized | "
             f"GROQ={'✅' if self.groq_api_key else '❌'} | "
-            f"OPENROUTER={'✅' if self.openrouter_api_key else '❌'} | "
-            f"GOOGLE={'✅' if self.google_api_key else '❌'}"
+            f"OPENROUTER={'✅' if self.openrouter_api_key else '❌'}"
         )
 
     async def speech_to_text(self, audio_file: bytes, filename: str = "audio.webm") -> Dict[str, Any]:

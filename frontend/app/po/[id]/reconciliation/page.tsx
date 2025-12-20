@@ -6,18 +6,9 @@ import Link from "next/link";
 import { ArrowLeft, TrendingUp } from "lucide-react";
 import { api } from '@/lib/api';
 
-interface ReconciliationItem {
-    id: string;
-    po_item_no: number;
-    material_code: string;
-    material_description: string;
-    ord_qty: number;
-    dispatched_qty: number;
-    pending_qty: number;
-    status: string;
-}
+import { ReconciliationItem } from "@/lib/api";
 
-interface ReconciliationData {
+interface LocalReconciliationData {
     po_number: number;
     fulfillment_rate: number;
     total_ordered: number;
@@ -29,14 +20,29 @@ interface ReconciliationData {
 export default function POReconciliationPage() {
     const params = useParams();
     const poNumber = parseInt(params.id as string);
-    const [data, setData] = useState<ReconciliationData | null>(null);
+    const [data, setData] = useState<LocalReconciliationData | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         if (poNumber) {
             api.getReconciliation(poNumber)
-                .then(data => {
-                    setData(data);
+                .then((items: ReconciliationItem[]) => {
+                    // Calculate stats
+                    const total_ordered = items.reduce((sum, item) => sum + (item.ordered_quantity || 0), 0);
+                    const total_dispatched = items.reduce((sum, item) => sum + (item.dispatched_quantity || 0), 0);
+                    const total_pending = items.reduce((sum, item) => sum + (item.pending_quantity || 0), 0);
+                    const fulfillment_rate = total_ordered > 0
+                        ? parseFloat(((total_dispatched / total_ordered) * 100).toFixed(1))
+                        : 0;
+
+                    setData({
+                        po_number: poNumber,
+                        fulfillment_rate,
+                        total_ordered,
+                        total_dispatched,
+                        total_pending,
+                        items
+                    });
                     setLoading(false);
                 })
                 .catch(err => {
@@ -156,27 +162,35 @@ export default function POReconciliationPage() {
                     </thead>
                     <tbody className="divide-y divide-gray-200">
                         {data.items.map((item) => {
-                            const progress = item.ord_qty > 0 ? (item.dispatched_qty / item.ord_qty * 100) : 0;
+                            const progress = (item.ordered_quantity || 0) > 0 ? ((item.dispatched_quantity || 0) / (item.ordered_quantity || 0) * 100) : 0;
+                            // Mocking status since it's not in new type? Or check if API returns it. 
+                            // Type defines: po_number, po_date... but NOT status?
+                            // Wait, ReconciliationItem in types/index.ts does NOT have status.
+                            // I need to derive status or add it to type if backend sends it.
+                            // For now, derive status.
+                            let status = 'not_started';
+                            if (progress >= 100) status = 'complete';
+                            else if (progress > 0) status = 'partial';
 
                             return (
-                                <tr key={item.id} className="hover:bg-gray-50">
+                                <tr key={`${item.po_number}-${item.po_item_no}`} className="hover:bg-gray-50">
                                     <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.po_item_no}</td>
                                     <td className="px-6 py-4 text-sm text-gray-900">
                                         <div className="font-medium">{item.material_code}</div>
                                         <div className="text-gray-500 text-xs">{item.material_description}</div>
                                     </td>
-                                    <td className="px-6 py-4 text-sm text-gray-900">{item.ord_qty}</td>
-                                    <td className="px-6 py-4 text-sm font-medium text-green-600">{item.dispatched_qty}</td>
-                                    <td className="px-6 py-4 text-sm font-medium text-orange-600">{item.pending_qty}</td>
+                                    <td className="px-6 py-4 text-sm text-gray-900">{item.ordered_quantity}</td>
+                                    <td className="px-6 py-4 text-sm font-medium text-green-600">{item.dispatched_quantity}</td>
+                                    <td className="px-6 py-4 text-sm font-medium text-orange-600">{item.pending_quantity}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`px-2 py-1 text-xs font-medium rounded ${getStatusColor(item.status)}`}>
-                                            {getStatusLabel(item.status)}
+                                        <span className={`px-2 py-1 text-xs font-medium rounded ${getStatusColor(status)}`}>
+                                            {getStatusLabel(status)}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="w-24 bg-gray-200 rounded-full h-2">
                                             <div
-                                                className={`h-2 rounded-full ${progress === 100 ? 'bg-green-600' :
+                                                className={`h-2 rounded-full ${progress >= 100 ? 'bg-green-600' :
                                                     progress > 0 ? 'bg-orange-600' : 'bg-gray-400'
                                                     }`}
                                                 style={{ width: `${Math.min(progress, 100)}%` }}

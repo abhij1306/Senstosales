@@ -71,7 +71,7 @@ export default function PODetailPage() {
             material_code: '',
             material_description: '',
             unit: '',
-            ord_qty: 0,
+            ordered_quantity: 0,
             po_rate: 0,
             item_value: 0,
             deliveries: []
@@ -95,10 +95,10 @@ export default function PODetailPage() {
             if (item.po_item_no === itemNo) {
                 const newDelivery = {
                     lot_no: (item.deliveries?.length || 0) + 1,
-                    dely_qty: 0,
+                    delivered_quantity: 0,
                     dely_date: '',
                     entry_allow_date: '',
-                    dest_code: ''
+                    dest_code: undefined
                 };
                 return {
                     ...item,
@@ -169,7 +169,7 @@ export default function PODetailPage() {
                         className="w-full px-2 py-1.5 text-sm border border-border rounded focus:ring-1 focus:ring-primary focus:border-primary text-text-primary bg-white transition-all"
                     />
                 ) : (
-                    <div className="text-[14px] font-medium text-text-primary truncate min-h-[20px]" title={value}>{value || '-'}</div>
+                    <div className="text-[14px] font-medium text-text-primary truncate min-h-[20px]" title={value?.toString()}>{value || '-'}</div>
                 )}
             </div>
         );
@@ -432,19 +432,19 @@ export default function PODetailPage() {
                                                 {editMode ? (
                                                     <input
                                                         type="number"
-                                                        value={item.ord_qty || ''}
+                                                        value={item.ordered_quantity || ''}
                                                         onChange={(e) => {
                                                             const newItems = [...items];
                                                             const idx = newItems.findIndex(i => i.po_item_no === item.po_item_no);
                                                             if (idx !== -1) {
-                                                                newItems[idx] = { ...newItems[idx], ord_qty: parseFloat(e.target.value) };
+                                                                newItems[idx] = { ...newItems[idx], ordered_quantity: parseFloat(e.target.value) };
                                                                 setData({ ...data, items: newItems });
                                                             }
                                                         }}
                                                         className="w-full px-2 py-1 text-xs border border-border rounded text-right"
                                                     />
                                                 ) : (
-                                                    <div className="text-text-primary font-bold">{item.ord_qty}</div>
+                                                    <div className="text-text-primary font-bold">{item.ordered_quantity}</div>
                                                 )}
                                             </div>
                                             <div className="col-span-1 text-right">
@@ -530,7 +530,7 @@ export default function PODetailPage() {
                                                 {item.deliveries.map((delivery: PODelivery, idx: number) => (
                                                     <tr key={idx} className="hover:bg-gray-50/30 transition-colors">
                                                         <td className="px-3 py-2 text-text-primary font-medium">{delivery.lot_no}</td>
-                                                        <td className="px-3 py-2 text-text-primary text-right font-medium">{delivery.dely_qty}</td>
+                                                        <td className="px-3 py-2 text-text-primary text-right font-medium">{delivery.delivered_quantity}</td>
                                                         <td className="px-3 py-2 text-text-secondary text-[13px]">{delivery.dely_date}</td>
                                                         <td className="px-3 py-2 text-text-secondary text-[13px]">{delivery.entry_allow_date}</td>
                                                         <td className="px-3 py-2 text-text-secondary text-[13px]">{delivery.dest_code}</td>

@@ -36,7 +36,15 @@ export default function NavRail() {
             title: "INVENTORY",
             items: [
                 // { href: "/stock", icon: Archive, label: "Stock Levels" },
-                { href: "/reports", icon: BarChart3, label: "Reports" },
+                {
+                    href: "/reports",
+                    icon: BarChart3,
+                    label: "Reports",
+                    onClick: (e: React.MouseEvent) => {
+                        // Dispatch custom event to reset report state
+                        window.dispatchEvent(new CustomEvent('reset-reports'));
+                    }
+                },
                 { href: "/po-notes", icon: StickyNote, label: "PO Notes Templates" },
             ]
         }
@@ -67,7 +75,7 @@ export default function NavRail() {
                             </h3>
                         )}
                         <ul className="space-y-1">
-                            {section.items.map((item) => {
+                            {section.items.map((item: any) => {
                                 const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
                                 const Icon = item.icon;
 
@@ -75,6 +83,7 @@ export default function NavRail() {
                                     <li key={item.href}>
                                         <Link
                                             href={item.href}
+                                            onClick={item.onClick}
                                             className={`flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 text-sm font-medium ${isActive
                                                 ? "bg-blue-50 text-primary"
                                                 : "text-text-secondary hover:bg-gray-50 hover:text-text-primary"

@@ -20,6 +20,7 @@ SenstoSales is a comprehensive Purchase Order management system designed for Sen
   - Inline editing with proper validation
 - **Delivery Challan Management**: Create and manage DCs with full item tracking
 - **GST Invoice Generation**: Create invoices linked to DCs
+- **Hands-Free Voice Mode**: Continuous conversation loop with VAD (Voice Activity Detection), interruptibility, and auto-silence detection.
 - **Dashboard**: Real-time KPIs and recent activity tracking
 - **Internal ERP Design**: Compact cards, clean typography, and dense data displays with a consistent "Clean Edit Style".
 - **Client-Side Pagination**: Efficient navigation for large lists (10 items/page) across PO, DC, Invoice, and Reports pages.
@@ -125,6 +126,17 @@ See [CONTEXT.md](./CONTEXT.md) for complete schema details.
 3. Click "Edit" to enable editing
 4. Modify fields, add/remove items/deliveries
 5. Click "Save" (coming soon)
+
+### Hands-Free Voice Mode
+> **Note**: Requires Microphone Access.
+
+- **Safari/Mobile**: Requires a manual tap to start (User Gesture) to initialize Audio Context.
+- **Chrome**: May suspend Audio Context if the tab is backgrounded.
+- **Controls**:
+  - Tap Mic to Start.
+  - Speak naturally (VAD detects silence).
+  - Tap "Stop" anytime to force end the session.
+
 
 ## Development
 

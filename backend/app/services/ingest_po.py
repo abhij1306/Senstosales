@@ -3,23 +3,29 @@ PO Ingestion Service - Writes scraper output to database
 Normalizes data into items and deliveries tables
 """
 import uuid
+import sqlite3
 from typing import Dict, List, Tuple
-from app.db import get_connection
 from app.utils.date_utils import normalize_date
 from app.utils.number_utils import to_int, to_float
 
 class POIngestionService:
     """Handles PO data ingestion from scraper to database"""
     
-    def ingest_po(self, po_header: Dict, po_items: List[Dict]) -> Tuple[bool, List[str]]:
+    def ingest_po(self, db: sqlite3.Connection, po_header: Dict, po_items: List[Dict]) -> Tuple[bool, List[str]]:
         """
         Ingest PO from scraper output
         Normalizes data: unique items + delivery schedules
         
+        Args:
+            db: Active database connection (must be in a transaction if needed)
+            po_header: Dictionary containing PO header details
+            po_items: List of dictionaries containing PO item details
+            
         Returns: (success, warnings)
+        
+        Note: This service assumes an active connection. It must never create or manage DB connections.
         """
         warnings = []
-        conn = get_connection()
         
         try:
             # Extract PO number
@@ -28,7 +34,8 @@ class POIngestionService:
                 raise ValueError("PO number is required")
             
             # Check if PO exists
-            existing = conn.execute(
+            # Security Note: Using DB transaction from caller guarantees consistency
+            existing = db.execute(
                 "SELECT po_number, amend_no FROM purchase_orders WHERE po_number = ?",
                 (po_number,)
             ).fetchone()
@@ -57,10 +64,10 @@ class POIngestionService:
                 'order_type': po_header.get('ORD-TYPE'),
                 'po_status': po_header.get('PO STATUS'),
                 
-                # Fin - FIXED: removed periods from field names
-                'tin_no': po_header.get('TIN NO'),  # Fixed: was 'TIN NO.'
-                'ecc_no': po_header.get('ECC NO'),  # Fixed: was 'ECC NO.'
-                'mpct_no': po_header.get('MPCT NO'),  # Fixed: was 'MPCT NO.'
+                # Fin
+                'tin_no': po_header.get('TIN NO'),
+                'ecc_no': po_header.get('ECC NO'),
+                'mpct_no': po_header.get('MPCT NO'),
                 'po_value': to_float(po_header.get('PO-VALUE')),
                 'fob_value': to_float(po_header.get('FOB VALUE')),
                 'ex_rate': to_float(po_header.get('EX RATE')),
@@ -83,7 +90,7 @@ class POIngestionService:
             }
             
             # Upsert PO header
-            conn.execute("""
+            db.execute("""
                 INSERT INTO purchase_orders 
                 (po_number, po_date, supplier_name, supplier_gstin, supplier_code, supplier_phone, supplier_fax, supplier_email, department_no,
                  enquiry_no, enquiry_date, quotation_ref, quotation_date, rc_no, order_type, po_status,
@@ -105,23 +112,23 @@ class POIngestionService:
             """, tuple(header_data.values()))
             
             # Delete existing items and deliveries if updating
+            # This is safe because we are in a transaction
             if existing:
-                conn.execute("DELETE FROM purchase_order_items WHERE po_number = ?", (po_number,))
+                db.execute("DELETE FROM purchase_order_items WHERE po_number = ?", (po_number,))
+                # Cascade delete handles deliveries if configured, but let's be explicit if needed. 
+                # Assuming FK constraints are ON and ON DELETE CASCADE is set (checked db.py, PRAGMA foreign_keys = ON is set)
             
             # Group items by PO_ITM to eliminate repetition
-            # Items with same PO_ITM have same item details but different delivery schedules
             items_grouped = {}
             for item in po_items:
                 po_item_no = to_int(item.get('PO ITM'))
                 
                 if po_item_no not in items_grouped:
-                    # First occurrence - store item details
                     items_grouped[po_item_no] = {
                         'item': item,
                         'deliveries': []
                     }
                 
-                # Add delivery schedule
                 items_grouped[po_item_no]['deliveries'].append(item)
             
             # Insert unique items and their deliveries
@@ -129,16 +136,16 @@ class POIngestionService:
                 item = data['item']
                 item_id = str(uuid.uuid4())
                 
-                # These fields are the SAME in all delivery rows (item-level data)
-                # Take from first occurrence, don't sum
-                ord_qty = to_float(item.get('ORD QTY')) or 0
+                # Standardized variable names
+                ordered_quantity = to_float(item.get('ORD QTY')) or 0
                 item_value = to_float(item.get('ITEM VALUE')) or 0
-                rcd_qty = to_float(item.get('RCD QTY')) or 0
+                received_quantity = to_float(item.get('RCD QTY')) or 0 # Keeping rcd_qty in DB, mapped to received_quantity var
                 description = item.get('DESCRIPTION') or ""
                 drg_no = item.get('DRG') or ""
                 
-                # Insert item (PO ITM → ITEM VALUE)
-                conn.execute("""
+                # Insert item
+                # Note: DB columns (ord_qty, rcd_qty) remain unchanged as per backward compatibility rules
+                db.execute("""
                     INSERT INTO purchase_order_items
                     (id, po_number, po_item_no, material_code, material_description, drg_no, mtrl_cat,
                      unit, po_rate, ord_qty, rcd_qty, item_value, hsn_code, delivered_qty, pending_qty)
@@ -148,22 +155,25 @@ class POIngestionService:
                     po_number,
                     po_item_no,
                     item.get('MATERIAL CODE'),
-                    description,  # Now populated from scraper
-                    drg_no,  # Drawing number
+                    description,
+                    drg_no,
                     to_int(item.get('MTRL CAT')),
                     item.get('UNIT'),
                     to_float(item.get('PO RATE')),
-                    ord_qty,
-                    rcd_qty,
+                    ordered_quantity,
+                    received_quantity,
                     item_value,
                     None,  # HSN not in scraper
-                    ord_qty  # pending_qty = ord_qty initially
+                    ordered_quantity  # pending_qty = ordered_quantity initially
                 ))
                 
-                # Insert deliveries (LOT NO → DEST CODE)
+                # Insert deliveries
                 for delivery in data['deliveries']:
                     delivery_id = str(uuid.uuid4())
-                    conn.execute("""
+                    
+                    delivered_quantity = to_float(delivery.get('DELY QTY'))
+                    
+                    db.execute("""
                         INSERT INTO purchase_order_deliveries
                         (id, po_item_id, lot_no, dely_qty, dely_date, entry_allow_date, dest_code)
                         VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -171,21 +181,19 @@ class POIngestionService:
                         delivery_id,
                         item_id,
                         to_int(delivery.get('LOT NO')),
-                        to_float(delivery.get('DELY QTY')),
+                        delivered_quantity,
                         normalize_date(delivery.get('DELY DATE')),
                         normalize_date(delivery.get('ENTRY ALLOW DATE')),
                         to_int(delivery.get('DEST CODE'))
                     ))
             
-            conn.commit()
+            # Remove commit/rollback, controlled by caller
             warnings.insert(0, f"✅ Successfully ingested PO {po_number} with {len(items_grouped)} unique items and {len(po_items)} delivery schedules")
             return True, warnings
             
         except Exception as e:
-            conn.rollback()
+            # Let caller handle rollback
             raise ValueError(f"Error ingesting PO: {str(e)}")
-        finally:
-            conn.close()
 
 # Singleton instance
 po_ingestion_service = POIngestionService()

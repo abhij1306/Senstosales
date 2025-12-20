@@ -57,12 +57,12 @@ export default function DCDetailPage() {
                     setFormData({
                         dc_number: data.header.dc_number || "",
                         dc_date: data.header.dc_date || "",
-                        po_number: data.header.po_number || "",
+                        po_number: data.header.po_number?.toString() || "",
                         supplier_phone: data.header.supplier_phone || "0755 – 4247748",
                         supplier_gstin: data.header.supplier_gstin || "23AACFS6810L1Z7",
                         consignee_name: data.header.consignee_name || "The Sr. Manager (CRX)",
                         consignee_address: data.header.consignee_address || "M/S Bharat Heavy Eletrical Ltd. Bhopal",
-                        department_no: data.header.department_no || "",
+                        department_no: data.header.department_no?.toString() || "",
                         mode_of_transport: data.header.mode_of_transport || "",
                         vehicle_number: data.header.vehicle_no || "",
                         transporter_name: data.header.transporter || "",
@@ -71,18 +71,19 @@ export default function DCDetailPage() {
                     });
 
                     if (data.items && data.items.length > 0) {
-                        const mappedItems: DCItemRowType[] = data.items.map((item: DCItemRowType, idx: number) => ({
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const mappedItems: DCItemRowType[] = (data.items as any[]).map((item: any, idx: number) => ({
                             id: `item-${idx}`,
                             lot_no: item.lot_no?.toString() || (idx + 1).toString(),
                             description: item.material_description || item.description || "",
-                            ordered_qty: item.lot_ordered_qty || item.ordered_qty || 0,
+                            ordered_quantity: item.lot_ordered_qty || item.ordered_qty || 0,
                             remaining_post_dc: item.remaining_post_dc || 0,
                             dispatch_quantity: item.dispatch_qty || item.dispatch_quantity || 0,
                             po_item_id: item.po_item_id
                         }));
                         setItems(mappedItems);
                     } else if (data.header.po_number) {
-                        await fetchPOItems(data.header.po_number);
+                        await fetchPOItems(data.header.po_number.toString());
                     }
 
                     if (data.header.remarks) {
@@ -93,7 +94,7 @@ export default function DCDetailPage() {
                 const invoiceData = await api.checkDCHasInvoice(dcId);
                 if (invoiceData && invoiceData.has_invoice) {
                     setHasInvoice(true);
-                    setInvoiceNumber(invoiceData.invoice_number);
+                    setInvoiceNumber(invoiceData.invoice_number || null);
                 }
 
                 setLoading(false);
@@ -110,13 +111,14 @@ export default function DCDetailPage() {
     const fetchPOItems = async (poNumber: string) => {
         try {
             const data = await api.getReconciliation(parseInt(poNumber));
-            if (data.items) {
-                const mappedItems: DCItemRowType[] = data.items.map((item: any, idx: number) => ({
+            if (data) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const mappedItems: DCItemRowType[] = (data as any[]).map((item: any, idx: number) => ({
                     id: `item-${idx}`,
                     lot_no: item.lot_no?.toString() || (idx + 1).toString(),
                     description: item.material_description || "",
-                    ordered_qty: item.ordered_qty || 0,
-                    remaining_post_dc: item.remaining_qty || 0,
+                    ordered_quantity: item.ordered_quantity || item.ordered_qty || 0,
+                    remaining_post_dc: item.remaining_quantity || item.remaining_qty || 0,
                     dispatch_quantity: 0,
                     po_item_id: item.po_item_id
                 }));
@@ -180,7 +182,7 @@ export default function DCDetailPage() {
 
             const itemsPayload = items.map(item => ({
                 po_item_id: item.po_item_id,
-                lot_no: item.lot_no ? parseInt(item.lot_no) : undefined,
+                lot_no: item.lot_no ? parseInt(item.lot_no.toString()) : undefined,
                 dispatch_qty: item.dispatch_quantity
             }));
 
@@ -454,7 +456,7 @@ export default function DCDetailPage() {
                                         )}
                                     </td>
                                     <td className="px-4 py-2 text-right text-[13px] text-text-secondary font-medium">
-                                        {item.ordered_qty}
+                                        {item.ordered_quantity}
                                     </td>
                                     <td className="px-4 py-2 text-right text-[13px] text-text-primary font-bold">
                                         {item.remaining_post_dc}

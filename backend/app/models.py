@@ -51,7 +51,7 @@ class PODelivery(BaseModel):
     """Purchase Order Delivery Schedule"""
     id: Optional[str] = None
     lot_no: Optional[int] = None
-    dely_qty: Optional[float] = None
+    delivered_quantity: Optional[float] = None
     dely_date: Optional[str] = None
     entry_allow_date: Optional[str] = None
     dest_code: Optional[int] = None
@@ -66,12 +66,12 @@ class POItem(BaseModel):
     mtrl_cat: Optional[int] = None
     unit: Optional[str] = None
     po_rate: Optional[float] = None
-    ord_qty: Optional[float] = None
-    rcd_qty: Optional[float] = 0
+    ordered_quantity: Optional[float] = None
+    received_quantity: Optional[float] = 0
     item_value: Optional[float] = None
     hsn_code: Optional[str] = None
-    delivered_qty: Optional[float] = 0
-    pending_qty: Optional[float] = None
+    delivered_quantity: Optional[float] = 0
+    pending_quantity: Optional[float] = None
     deliveries: List['PODelivery'] = []
 
 class POListItem(BaseModel):
@@ -83,9 +83,9 @@ class POListItem(BaseModel):
     amend_no: Optional[int] = 0
     po_status: Optional[str] = None
     linked_dc_numbers: Optional[str] = None
-    total_ordered_qty: float = 0.0
-    total_dispatched_qty: float = 0.0
-    total_pending_qty: float = 0.0
+    total_ordered_quantity: float = 0.0
+    total_dispatched_quantity: float = 0.0
+    total_pending_quantity: float = 0.0
     created_at: Optional[str] = None
 
 class POStats(BaseModel):

@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Plus, Trash2, Calendar, Truck, FileText, Check, AlertCircle, Save } from 'lucide-react';
 import { api } from "@/lib/api";
-import { DCItemRow, PODetail, TableInputProps } from "@/types";
+import { DCItemRow, POHeader, TableInputProps } from "@/types";
 import type { ChangeEvent } from "react";
 
 // Mock PO Notes Templates (Replace with API fetch if needed)
@@ -38,7 +38,7 @@ function CreateDCPageContent() {
     const [items, setItems] = useState<DCItemRow[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [poData, setPOData] = useState<PODetail | null>(null);
+    const [poData, setPOData] = useState<POHeader | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [notes, setNotes] = useState<string[]>([]);
     const [selectedTemplate, setSelectedTemplate] = useState("");
@@ -66,8 +66,10 @@ function CreateDCPageContent() {
                 setPOData(data.header);
                 setFormData(prev => ({
                     ...prev,
-                    consignee_name: data.header?.consignee_name || '',
-                    consignee_address: data.header?.consignee_address || '',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    consignee_name: (data.header as any)?.consignee_name || '',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    consignee_address: (data.header as any)?.consignee_address || '',
                     supplier_phone: data.header?.supplier_phone || '',
                     supplier_gstin: data.header?.supplier_gstin || '23AACFS6810L1Z7' // Preserve default if not in PO
                 }));
@@ -83,13 +85,13 @@ function CreateDCPageContent() {
         setError(null);
         try {
             const data = await api.getReconciliationLots(parseInt(po));
-            const mappedItems: DCItemRow[] = data.lots.map((lot: { po_item_id: string; lot_no?: number; material_description?: string; ordered_qty?: number; already_dispatched?: number; remaining_qty?: number }) => ({
+            const mappedItems: DCItemRow[] = (data as any[]).map((lot: { po_item_id: string; lot_no?: number; material_description?: string; ordered_qty?: number; already_dispatched?: number; remaining_qty?: number }) => ({
                 id: `${lot.po_item_id}-${lot.lot_no}`,
                 lot_no: lot.lot_no?.toString() || "",
                 description: lot.material_description || "",
-                ordered_qty: lot.ordered_qty || 0,
-                already_dispatched: lot.already_dispatched || 0,
-                remaining_qty: lot.remaining_qty || 0,
+                ordered_quantity: lot.ordered_qty || 0,
+                // already_dispatched is not in DCItemRow, skipping
+                remaining_post_dc: lot.remaining_qty || 0,
                 dispatch_quantity: 0,
                 po_item_id: lot.po_item_id
             }));
@@ -140,9 +142,8 @@ function CreateDCPageContent() {
             id: `new-${Date.now()}`,
             lot_no: "",
             description: "",
-            ordered_qty: 0,
-            already_dispatched: 0,
-            remaining_qty: 0,
+            ordered_quantity: 0,
+            remaining_post_dc: 0,
             dispatch_quantity: 0,
             po_item_id: ""
         };
@@ -187,7 +188,7 @@ function CreateDCPageContent() {
 
             const itemsPayload = itemsToDispatch.map(item => ({
                 po_item_id: item.po_item_id,
-                lot_no: item.lot_no ? parseInt(item.lot_no) : undefined,
+                lot_no: item.lot_no ? parseInt(item.lot_no.toString()) : undefined,
                 dispatch_qty: item.dispatch_quantity,
                 hsn_code: null,
                 hsn_rate: null
@@ -393,16 +394,16 @@ function CreateDCPageContent() {
                                             disabled
                                         />
                                     </td>
-                                    <td className="px-4 py-2 text-right text-[13px] text-text-secondary font-medium">{item.ordered_qty}</td>
-                                    <td className="px-4 py-2 text-right text-[13px] text-text-secondary font-medium">{item.already_dispatched}</td>
-                                    <td className="px-4 py-2 text-right text-[13px] text-text-primary font-bold">{item.remaining_qty}</td>
+                                    <td className="px-4 py-2 text-right text-[13px] text-text-secondary font-medium">{item.ordered_quantity}</td>
+                                    <td className="px-4 py-2 text-right text-[13px] text-text-secondary font-medium">-</td>
+                                    <td className="px-4 py-2 text-right text-[13px] text-text-primary font-bold">{item.remaining_post_dc}</td>
                                     <td className="px-4 py-2">
                                         <TableInput
                                             type="number"
                                             value={item.dispatch_quantity || 0}
                                             onChange={(v) => handleItemChange(item.id, 'dispatch_quantity', v)}
                                             placeholder="0"
-                                            max={item.remaining_qty}
+                                            max={item.remaining_post_dc}
                                             className="text-right font-bold text-primary border-primary/30 focus:border-primary"
                                         />
                                     </td>

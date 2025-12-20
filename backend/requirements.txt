@@ -6,3 +6,5 @@ beautifulsoup4
 lxml
 httpx
 python-dotenv
+openpyxl
+pydantic-settings>=2.0.0

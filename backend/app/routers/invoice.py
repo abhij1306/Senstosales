@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.db import get_db
 from app.models import InvoiceListItem, InvoiceCreate, InvoiceStats
 from app.errors import not_found, internal_error
-from app.core import (
+from app.core.exceptions import (
     DomainError,
     map_error_code_to_http_status
 )

@@ -74,7 +74,22 @@ export default function POPage() {
         setUploadResults(null);
 
         try {
-            const results: BatchUploadResponse = await api.uploadPOBatch(selectedFiles);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const response: { success: boolean, results: any[] } = await api.uploadPOBatch(selectedFiles);
+
+            // Transform response to BatchUploadResponse format
+            const results: BatchUploadResponse = {
+                total: response.results.length,
+                successful: response.results.filter((r: any) => r.success).length,
+                failed: response.results.filter((r: any) => !r.success).length,
+                results: response.results.map((r: any) => ({
+                    filename: r.filename || 'Unknown',
+                    success: r.success || false,
+                    po_number: r.po_number || null,
+                    message: r.message || (r.success ? 'Uploaded successfully' : 'Upload failed')
+                }))
+            };
+
             setUploadResults(results);
 
             if (results.successful > 0) {
@@ -385,17 +400,17 @@ export default function POPage() {
                                             ₹{po.po_value?.toLocaleString('en-IN') || '0'}
                                         </td>
                                         <td className="px-6 py-3 text-[13px] text-text-secondary text-right font-medium">
-                                            {po.total_ordered_qty?.toLocaleString() || '0'}
+                                            {po.total_ordered_quantity?.toLocaleString() || '0'}
                                         </td>
                                         <td className="px-6 py-3 text-[13px] text-primary text-right font-medium">
-                                            {po.total_dispatched_qty?.toLocaleString() || '0'}
+                                            {po.total_dispatched_quantity?.toLocaleString() || '0'}
                                         </td>
                                         <td className="px-6 py-3 text-center">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${po.total_pending_qty > 0
+                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${po.total_pending_quantity > 0
                                                 ? 'bg-warning/10 text-warning border-warning/20'
                                                 : 'bg-success/10 text-success border-success/20'
                                                 }`}>
-                                                {po.total_pending_qty?.toLocaleString() || '0'}
+                                                {po.total_pending_quantity?.toLocaleString() || '0'}
                                             </span>
                                         </td>
                                         <td className="px-6 py-3 text-[13px]">

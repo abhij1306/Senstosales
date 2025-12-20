@@ -6,7 +6,7 @@
 class TTSManager {
     private synthesis: SpeechSynthesis;
     private voice: SpeechSynthesisVoice | null = null;
-    private queue: string[] = [];
+    private queue: { text: string; onEnd?: () => void }[] = [];
     private isSpeaking = false;
     private enabled = true;
 
@@ -33,15 +33,18 @@ class TTSManager {
             voices[0] || null;
     }
 
-    public speak(text: string, priority: 'normal' | 'high' = 'normal') {
-        if (!this.enabled || !text) return;
+    public speak(text: string, priority: 'normal' | 'high' = 'normal', onEnd?: () => void) {
+        if (!this.enabled || !text) {
+            if (onEnd) onEnd();
+            return;
+        }
 
         if (priority === 'high') {
             this.stop();
-            this.queue = [text];
+            this.queue = [{ text, onEnd }];
             this.processQueue();
         } else {
-            this.queue.push(text);
+            this.queue.push({ text, onEnd });
             if (!this.isSpeaking) {
                 this.processQueue();
             }
@@ -55,8 +58,8 @@ class TTSManager {
         }
 
         this.isSpeaking = true;
-        const text = this.queue.shift()!;
-        const utterance = new SpeechSynthesisUtterance(text);
+        const item = this.queue.shift()!;
+        const utterance = new SpeechSynthesisUtterance(item.text);
 
         if (this.voice) utterance.voice = this.voice;
 
@@ -65,12 +68,14 @@ class TTSManager {
         utterance.pitch = 1.0;
 
         utterance.onend = () => {
+            if (item.onEnd) item.onEnd();
             this.processQueue();
         };
 
         utterance.onerror = (e) => {
             console.error('TTS Error:', e);
             this.isSpeaking = false;
+            if (item.onEnd) item.onEnd();
         };
 
         this.synthesis.speak(utterance);

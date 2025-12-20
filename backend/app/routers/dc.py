@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.db import get_db
 from app.models import DCListItem, DCCreate, DCStats
 from app.errors import not_found, internal_error
-from app.core import (
+from app.core.exceptions import (
     DomainError,
     map_error_code_to_http_status
 )
@@ -112,7 +112,7 @@ def get_dc_detail(dc_number: str, db: sqlite3.Connection = Depends(get_db)):
     items = db.execute("""
         SELECT 
             dci.id,
-            dci.dispatch_qty,
+            dci.dispatch_qty as dispatched_quantity,
             dci.hsn_code,
             dci.hsn_rate,
             dci.lot_no,

@@ -48,7 +48,7 @@ out/
 .cache/
 
 # Test files
-tests/
+# tests/
 *.html
 *.xls
 *.xlsx
