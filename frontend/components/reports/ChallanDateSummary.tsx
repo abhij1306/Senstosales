@@ -4,6 +4,9 @@
 
 "use client";
 
+import { useState } from "react";
+import PaginationControls from "@/components/ui/PaginationControls";
+
 interface ChallanRow {
     dc_number: string;
     dc_date: string;
@@ -25,6 +28,9 @@ interface ChallanDateSummaryProps {
 }
 
 export default function ChallanDateSummary({ data }: ChallanDateSummaryProps) {
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
+
     if (!data || !data.rows || data.rows.length === 0) {
         return (
             <div className="glass-card p-8 text-center">
@@ -32,6 +38,12 @@ export default function ChallanDateSummary({ data }: ChallanDateSummaryProps) {
             </div>
         );
     }
+
+    const totalPages = Math.ceil(data.rows.length / ITEMS_PER_PAGE);
+    const paginatedRows = data.rows.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
 
     return (
         <div className="glass-card p-6">
@@ -68,7 +80,7 @@ export default function ChallanDateSummary({ data }: ChallanDateSummaryProps) {
                         </tr>
                     </thead>
                     <tbody>
-                        {data.rows.map((row, idx) => (
+                        {paginatedRows.map((row, idx) => (
                             <tr key={idx} className="border-b border-border/50 hover:bg-gray-50">
                                 <td className="py-3 px-4 font-medium text-text-primary">{row.dc_number}</td>
                                 <td className="py-3 px-4 text-text-secondary">{row.dc_date}</td>
@@ -85,6 +97,13 @@ export default function ChallanDateSummary({ data }: ChallanDateSummaryProps) {
                     </tbody>
                 </table>
             </div>
+
+            <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                itemName="DC's"
+            />
         </div>
     );
 }

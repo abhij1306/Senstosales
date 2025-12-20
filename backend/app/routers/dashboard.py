@@ -34,8 +34,13 @@ def get_dashboard_summary(db: sqlite3.Connection = Depends(get_db)):
             WHERE date(created_at) = ?
         """, (current_date,)).fetchone()[0]
 
-        # 4. Active Challans
-        active_challans = db.execute("SELECT COUNT(*) FROM delivery_challans").fetchone()[0]
+        # 4. Active Challans (Uninvoiced)
+        active_challans = db.execute("""
+            SELECT COUNT(DISTINCT dc.dc_number)
+            FROM delivery_challans dc
+            LEFT JOIN gst_invoices i ON dc.dc_number = i.linked_dc_numbers
+            WHERE i.invoice_number IS NULL
+        """).fetchone()[0]
 
         # 5. Total PO Value (All Time)
         value_row = db.execute("SELECT SUM(po_value) FROM purchase_orders").fetchone()

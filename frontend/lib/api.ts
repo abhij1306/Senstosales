@@ -215,6 +215,10 @@ export const api = {
     },
 
     // Dashboard
+    async getDashboardInsights(): Promise<{ type: 'success' | 'warning' | 'error'; text: string; action: string }[]> {
+        return apiFetch<{ type: 'success' | 'warning' | 'error'; text: string; action: string }[]>('/api/smart-reports/insight-strip');
+    },
+
     async getDashboardSummary(): Promise<DashboardSummary> {
         return apiFetch<DashboardSummary>('/api/dashboard/summary');
     },
@@ -283,7 +287,7 @@ export const api = {
     },
 
     async getDCDetail(dcNumber: string): Promise<DCDetail> {
-        return apiFetch<DCDetail>(`/api/dc/${dcNumber}`);
+        return apiFetch<DCDetail>(`/api/dc/${encodeURIComponent(dcNumber)}`);
     },
 
     async createDC(dc: DCCreate, items: Record<string, unknown>[]): Promise<CreateResponse> {

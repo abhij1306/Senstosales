@@ -3,10 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, DashboardSummary, ActivityItem } from "@/lib/api";
-import { FileText, Truck, Receipt, TrendingUp, Plus, MoveUpRight, Clock, ChevronRight } from "lucide-react";
+import { FileText, Truck, Receipt, TrendingUp, Plus, MoveUpRight, Clock, Sparkles } from "lucide-react";
+import { Card, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
 
 export default function DashboardPage() {
   const router = useRouter();
+  /* eslint-disable @typescript-eslint/no-explicit-any */
+  const [insights, setInsights] = useState<{ type: 'success' | 'warning' | 'error'; text: string; action: string }[]>([]);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -15,11 +19,13 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const [summaryData, activityData] = await Promise.all([
+        const [insightsData, summaryData, activityData] = await Promise.all([
+          api.getDashboardInsights(),
           api.getDashboardSummary(),
           api.getRecentActivity(10)
         ]);
 
+        setInsights(insightsData);
         setSummary(summaryData);
         setActivity(activityData);
         setLoading(false);
@@ -33,231 +39,221 @@ export default function DashboardPage() {
     loadDashboard();
   }, []);
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'paid': return 'bg-success/10 text-success border border-success/20';
-      case 'pending': return 'bg-warning/10 text-warning border border-warning/20';
-      case 'dispatched': return 'bg-primary/10 text-primary border border-primary/20';
-      case 'active': return 'bg-success/10 text-success border border-success/20';
-      case 'new': return 'bg-primary/10 text-primary border border-primary/20';
-      default: return 'bg-gray-100 text-text-secondary border border-gray-200';
-    }
+  const getStatusBadgeVariant = (status: string) => {
+    const s = status.toLowerCase();
+    if (['paid', 'active', 'completed'].includes(s)) return 'success';
+    if (['pending', 'draft', 'open'].includes(s)) return 'warning';
+    if (['overdue', 'cancelled', 'rejected'].includes(s)) return 'danger';
+    return 'secondary';
   };
 
-  const getTypeStyle = (type: string) => {
-    switch (type) {
-      case 'PO': return 'bg-blue-50 text-blue-700';
-      case 'Invoice': return 'bg-green-50 text-green-700';
-      case 'DC': return 'bg-purple-50 text-purple-700';
-      default: return 'bg-gray-50 text-gray-700';
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-text-secondary animate-pulse">Loading dashboard...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-8">
-        <div className="bg-danger/10 border border-danger/20 rounded-lg p-4">
-          <p className="text-sm text-danger font-medium">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!summary) {
-    return null;
-  }
+  if (loading) return <div className="text-text-muted animate-pulse p-8">Loading insights...</div>;
+  if (error) return <div className="p-8 text-danger">{error}</div>;
+  if (!summary) return null;
 
   return (
     <div className="space-y-8">
-      <div className="flex justify-between items-end">
+      {/* Header & Morning Briefing */}
+      {/* Header & Compact Morning Briefing */}
+      <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
-          <h1 className="text-[20px] font-semibold text-text-primary">Dashboard</h1>
-          <p className="text-[13px] text-text-secondary mt-1">Welcome back, Admin. Here is your daily overview.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-text-primary">Dashboard</h1>
+          <p className="text-text-muted text-sm mt-1">Overview for {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
         </div>
-        <div className="px-4 py-2 glass-card text-sm text-text-secondary font-medium">
-          Today: {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-        </div>
+
+        {/* Compact Morning Briefing */}
+        {insights.length > 0 && (
+          <div className="flex-1 max-w-2xl">
+            <Card variant="glass" padding="sm" className="bg-gradient-to-r from-blue-50/50 to-purple-50/50 border-blue-100 flex items-center gap-3">
+              <div className="p-1.5 bg-white/60 rounded-lg shrink-0">
+                <Sparkles className="w-4 h-4 text-primary" />
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <div className="flex flex-col">
+                  {/* Show only the top insight in a very compact way, or maybe a ticker if multiple? 
+                                 For now, let's show the most important one and a "+X more" badge if needed, 
+                                 or just a clean list without big headers.
+                             */}
+                  {insights.slice(0, 2).map((insight, idx) => (
+                    <div key={idx} className="flex items-center gap-2 text-xs truncate">
+                      <span className="shrink-0">{insight.type === 'error' ? '🔴' : insight.type === 'warning' ? '🟠' : '🟢'}</span>
+                      <span className="text-text-primary font-medium truncate">{insight.text}</span>
+                      <button
+                        onClick={() => {
+                          if (insight.action === 'view_pending') router.push('/reports?tab=pending');
+                          else if (insight.action === 'view_uninvoiced') router.push('/reports?tab=uninvoiced');
+                          else router.push('/reports');
+                        }}
+                        className="text-primary hover:underline font-semibold shrink-0"
+                      >
+                        View
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Total Sales */}
-        <div className="glass-card p-5 flex flex-col justify-between h-[140px]">
-          <div className="flex justify-between items-start">
-            <p className="text-[12px] font-semibold text-text-secondary uppercase tracking-wider">Total Sales (Month)</p>
-            <div className="p-2 bg-blue-50 rounded-lg text-primary">
-              <FileText className="w-5 h-5" />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-[24px] font-bold text-text-primary">
-              ₹{summary.total_sales_month.toLocaleString('en-IN')}
-            </h3>
-            <div className="flex items-center mt-1 text-success text-[12px] font-medium">
-              <MoveUpRight className="w-3 h-3 mr-1" />
-              <span>+{summary.sales_growth}% vs last month</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Pending POs */}
-        <div className="glass-card p-5 flex flex-col justify-between h-[140px]">
-          <div className="flex justify-between items-start">
-            <p className="text-[12px] font-semibold text-text-secondary uppercase tracking-wider">Pending POs</p>
-            <div className="p-2 bg-orange-50 rounded-lg text-warning">
-              <Clock className="w-5 h-5" />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-[24px] font-bold text-text-primary">
-              {summary.pending_pos} <span className="text-sm font-normal text-text-secondary">Orders</span>
-            </h3>
-            <div className="flex items-center mt-1 text-warning text-[12px] font-medium">
-              <Plus className="w-3 h-3 mr-1" />
-              <span>{summary.new_pos_today} new today</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Active Challans */}
-        <div className="glass-card p-5 flex flex-col justify-between h-[140px]">
-          <div className="flex justify-between items-start">
-            <p className="text-[12px] font-semibold text-text-secondary uppercase tracking-wider">Active Challans</p>
-            <div className="p-2 bg-purple-50 rounded-lg text-purple-600">
-              <Truck className="w-5 h-5" />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-[24px] font-bold text-text-primary">
-              {summary.active_challans} <span className="text-sm font-normal text-text-secondary">Active</span>
-            </h3>
-            <div className="flex items-center mt-1 text-text-secondary text-[12px] font-medium">
-              <span>{summary.active_challans_growth} from last week</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Total PO Value */}
-        <div className="glass-card p-5 flex flex-col justify-between h-[140px]">
-          <div className="flex justify-between items-start">
-            <p className="text-[12px] font-semibold text-text-secondary uppercase tracking-wider">Total PO Value</p>
-            <div className="p-2 bg-green-50 rounded-lg text-success">
-              <Receipt className="w-5 h-5" />
-            </div>
-          </div>
-          <div>
-            <h3 className="text-[24px] font-bold text-text-primary">
-              ₹{summary.total_po_value.toLocaleString('en-IN')}
-            </h3>
-            <div className="flex items-center mt-1 text-success text-[12px] font-medium">
-              <TrendingUp className="w-3 h-3 mr-1" />
-              <span>+{summary.po_value_growth}% growth</span>
-            </div>
-          </div>
-        </div>
+        <KpiCard
+          title="Total Sales (Month)"
+          value={`₹${summary.total_sales_month.toLocaleString('en-IN')}`}
+          trend={`+${summary.sales_growth}%`}
+          icon={FileText}
+          variant="primary"
+        />
+        <KpiCard
+          title="Pending POs"
+          value={summary.pending_pos.toString()}
+          trend={`${summary.new_pos_today} new`}
+          icon={Clock}
+          variant="warning"
+        />
+        <KpiCard
+          title="Active Challans"
+          value={summary.active_challans.toString()}
+          trend="Active"
+          icon={Truck}
+          variant="purple"
+        />
+        <KpiCard
+          title="Total PO Value"
+          value={`₹${summary.total_po_value.toLocaleString('en-IN')}`}
+          trend={`+${summary.po_value_growth}%`}
+          icon={Receipt}
+          variant="success"
+        />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Transactions Table */}
-        <div className="lg:col-span-2 glass-card overflow-hidden">
-          <div className="px-6 py-4 border-b border-border flex items-center justify-between">
-            <h2 className="text-[16px] font-semibold text-text-primary">Recent Transactions</h2>
-            <button
-              onClick={() => router.push("/reports")}
-              className="text-[13px] text-primary hover:text-blue-700 font-medium flex items-center gap-1 transition-colors"
-            >
-              View All <ChevronRight className="w-3 h-3" />
-            </button>
+      {/* Main Content Split */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Recent Transactions (Dense Table) */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold text-text-primary">Recent Transactions</h3>
+            <button onClick={() => router.push("/reports")} className="text-xs font-medium text-primary hover:underline">View All</button>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full whitespace-nowrap">
-              <thead className="bg-gray-50/50 border-b border-border">
+
+          <Card padding="none" className="overflow-hidden">
+            <table className="w-full text-sm text-left">
+              <thead className="bg-surface-2/50 text-text-muted border-b border-border">
                 <tr>
-                  <th className="px-6 py-3 text-left text-[11px] font-bold text-text-secondary uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-[11px] font-bold text-text-secondary uppercase tracking-wider">Type</th>
-                  <th className="px-6 py-3 text-right text-[11px] font-bold text-text-secondary uppercase tracking-wider">Amount</th>
-                  <th className="px-6 py-3 text-right text-[11px] font-bold text-text-secondary uppercase tracking-wider">Status</th>
+                  <th className="px-4 py-3 font-medium text-xs uppercase tracking-wider pl-6">ID</th>
+                  <th className="px-4 py-3 font-medium text-xs uppercase tracking-wider">Date</th>
+                  <th className="px-4 py-3 font-medium text-xs uppercase tracking-wider text-right">Amount</th>
+                  <th className="px-4 py-3 font-medium text-xs uppercase tracking-wider text-right pr-6">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border/50">
-                {activity.map((item, idx) => (
-                  <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4 text-[13px] text-text-secondary font-medium">{item.date}</td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 py-1 rounded text-[11px] font-bold ${getTypeStyle(item.type)}`}>
+              <tbody className="divide-y divide-border/40">
+                {activity.map((item, i) => (
+                  <tr key={i} className="hover:bg-surface-2/30 transition-colors group cursor-pointer">
+                    <td className="px-4 py-2.5 pl-6 font-medium text-text-primary">
+                      <div className="flex items-center gap-2">
+                        <span className={item.type === 'Invoice' ? 'text-blue-600' : 'text-purple-600'}>
+                          {item.type === 'Invoice' ? <FileText className="w-3.5 h-3.5" /> : <Truck className="w-3.5 h-3.5" />}
+                        </span>
                         {item.type}-{item.number}
-                      </span>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 text-[13px] text-text-secondary text-right font-medium">
+                    <td className="px-4 py-2.5 text-text-muted">{item.date}</td>
+                    <td className="px-4 py-2.5 text-right font-medium text-text-primary">
                       {item.amount ? `₹${item.amount.toLocaleString()}` : '-'}
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${getStatusColor(item.status)}`}>
+                    <td className="px-4 py-2.5 text-right pr-6">
+                      <Badge variant={getStatusBadgeVariant(item.status)} size="sm">
                         {item.status}
-                      </span>
+                      </Badge>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
+          </Card>
         </div>
 
         {/* Quick Actions */}
         <div className="space-y-4">
-          <div className="glass-card p-6">
-            <h2 className="text-[16px] font-semibold text-text-primary mb-4">Quick Actions</h2>
-            <div className="space-y-3">
-              <button
-                onClick={() => router.push("/po/create")}
-                className="w-full flex items-center gap-4 p-4 border border-border bg-white hover:bg-gray-50 rounded-xl transition-all shadow-sm hover:shadow-md group text-left"
-              >
-                <div className="w-10 h-10 bg-blue-50 text-primary rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <FileText className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="font-semibold text-text-primary text-[14px]">New Purchase Order</div>
-                  <div className="text-[12px] text-text-secondary">Draft a new PO for suppliers</div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => router.push("/dc/create")}
-                className="w-full flex items-center gap-4 p-4 border border-border bg-white hover:bg-gray-50 rounded-xl transition-all shadow-sm hover:shadow-md group text-left"
-              >
-                <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Truck className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="font-semibold text-text-primary text-[14px]">New Delivery Challan</div>
-                  <div className="text-[12px] text-text-secondary">Generate DC for dispatch</div>
-                </div>
-              </button>
-
-              <button
-                onClick={() => router.push("/invoice/create")}
-                className="w-full flex items-center gap-4 p-4 border border-border bg-white hover:bg-gray-50 rounded-xl transition-all shadow-sm hover:shadow-md group text-left"
-              >
-                <div className="w-10 h-10 bg-green-50 text-success rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
-                  <Receipt className="w-5 h-5" />
-                </div>
-                <div>
-                  <div className="font-semibold text-text-primary text-[14px]">Create Invoice</div>
-                  <div className="text-[12px] text-text-secondary">Create GST invoice for sales</div>
-                </div>
-              </button>
-            </div>
+          <h3 className="font-semibold text-text-primary">Quick Actions</h3>
+          <div className="grid gap-3">
+            <ActionCard
+              icon={FileText}
+              title="New Purchase Order"
+              desc="Draft a new PO for suppliers"
+              onClick={() => router.push("/po/create")}
+              color="blue"
+            />
+            <ActionCard
+              icon={Truck}
+              title="New Delivery Challan"
+              desc="Generate DC for dispatch"
+              onClick={() => router.push("/dc/create")}
+              color="purple"
+            />
+            <ActionCard
+              icon={Receipt}
+              title="Create Invoice"
+              desc="Create GST invoice for sales"
+              onClick={() => router.push("/invoice/create")}
+              color="green"
+            />
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+// Sub-components for cleaner file
+function KpiCard({ title, value, trend, icon: Icon, variant }: any) {
+  const colors: any = {
+    primary: "text-blue-600 bg-blue-50",
+    warning: "text-amber-600 bg-amber-50",
+    purple: "text-purple-600 bg-purple-50",
+    success: "text-emerald-600 bg-emerald-50",
+  };
+
+  return (
+    <Card className="flex flex-col justify-between h-[130px]">
+      <div className="flex justify-between items-start">
+        <p className="label-muted">{title}</p>
+        <div className={`p-2 rounded-lg ${colors[variant] || colors.primary}`}>
+          <Icon className="w-4 h-4" />
+        </div>
+      </div>
+      <div>
+        <h3 className="text-2xl font-bold text-text-primary tracking-tight">{value}</h3>
+        <div className="flex items-center mt-1 text-xs font-medium text-text-secondary">
+          {variant !== 'purple' && <MoveUpRight className="w-3 h-3 mr-1 text-success" />}
+          <span>{trend}</span>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function ActionCard({ icon: Icon, title, desc, onClick, color }: any) {
+  const colors: any = {
+    blue: "bg-blue-50 text-blue-600 group-hover:bg-blue-100",
+    purple: "bg-purple-50 text-purple-600 group-hover:bg-purple-100",
+    green: "bg-emerald-50 text-emerald-600 group-hover:bg-emerald-100",
+  };
+
+  return (
+    <button
+      onClick={onClick}
+      className="w-full flex items-center gap-4 p-3 border border-border bg-white hover:border-primary/20 hover:shadow-sm rounded-xl transition-all group text-left"
+    >
+      <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${colors[color]}`}>
+        <Icon className="w-5 h-5" />
+      </div>
+      <div>
+        <div className="font-semibold text-text-primary text-sm">{title}</div>
+        <div className="text-xs text-text-muted">{desc}</div>
+      </div>
+    </button>
   );
 }

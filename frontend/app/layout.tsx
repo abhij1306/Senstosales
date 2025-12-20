@@ -5,6 +5,7 @@ import "./globals.css";
 import NavRail from "@/components/NavRail";
 import GlobalSearch from "@/components/GlobalSearch";
 import { VoiceAgent } from "@/components/VoiceAgent";
+import { CommandBar } from "@/components/CommandBar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -40,6 +41,7 @@ export default function RootLayout({
             // Handle voice actions here
           }}
         />
+        <CommandBar />
       </body>
     </html>
   );

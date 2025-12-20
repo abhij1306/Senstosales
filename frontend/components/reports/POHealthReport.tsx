@@ -31,10 +31,9 @@ interface POHealthData {
 interface POHealthReportProps {
     data: POHealthData;
     aiSummary: string;
-    onGeneratePDF: () => void;
 }
 
-export default function POHealthReport({ data, aiSummary, onGeneratePDF }: POHealthReportProps) {
+export default function POHealthReport({ data, aiSummary }: POHealthReportProps) {
     const getStatusColor = (status: string) => {
         switch (status) {
             case 'FULLY_DISPATCHED': return 'text-success bg-success/10';
@@ -132,15 +131,7 @@ export default function POHealthReport({ data, aiSummary, onGeneratePDF }: POHea
 
             {/* Actions */}
             <div className="flex gap-3">
-                <button
-                    onClick={onGeneratePDF}
-                    className="px-4 py-2 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-blue-700 transition-colors"
-                >
-                    Generate PDF
-                </button>
-                <button className="px-4 py-2 bg-white border border-border text-text-primary rounded-lg text-[13px] font-medium hover:bg-gray-50 transition-colors">
-                    Export Excel
-                </button>
+                {/* PDF generation disabled (Phase 2) */}
             </div>
         </div>
     );

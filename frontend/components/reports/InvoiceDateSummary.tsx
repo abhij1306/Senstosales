@@ -4,6 +4,9 @@
 
 "use client";
 
+import { useState } from "react";
+import PaginationControls from "@/components/ui/PaginationControls";
+
 interface InvoiceRow {
     invoice_number: string;
     invoice_date: string;
@@ -24,6 +27,9 @@ interface InvoiceDateSummaryProps {
 }
 
 export default function InvoiceDateSummary({ data }: InvoiceDateSummaryProps) {
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
+
     if (!data || !data.rows || data.rows.length === 0) {
         return (
             <div className="glass-card p-8 text-center">
@@ -31,6 +37,12 @@ export default function InvoiceDateSummary({ data }: InvoiceDateSummaryProps) {
             </div>
         );
     }
+
+    const totalPages = Math.ceil(data.rows.length / ITEMS_PER_PAGE);
+    const paginatedRows = data.rows.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
 
     return (
         <div className="glass-card p-6">
@@ -66,7 +78,7 @@ export default function InvoiceDateSummary({ data }: InvoiceDateSummaryProps) {
                         </tr>
                     </thead>
                     <tbody>
-                        {data.rows.map((row, idx) => (
+                        {paginatedRows.map((row, idx) => (
                             <tr key={idx} className="border-b border-border/50 hover:bg-gray-50">
                                 <td className="py-3 px-4 font-medium text-text-primary">{row.invoice_number}</td>
                                 <td className="py-3 px-4 text-text-secondary">{row.invoice_date}</td>
@@ -77,6 +89,13 @@ export default function InvoiceDateSummary({ data }: InvoiceDateSummaryProps) {
                     </tbody>
                 </table>
             </div>
+
+            <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                itemName="Invoices"
+            />
         </div>
     );
 }

@@ -28,13 +28,7 @@ interface POAgingData {
     total_pending_qty: number;
 }
 
-interface POAgingReportProps {
-    data: POAgingData;
-    aiSummary: string;
-    onGeneratePDF: () => void;
-}
-
-export default function POAgingReport({ data, aiSummary, onGeneratePDF }: POAgingReportProps) {
+export default function POAgingReport({ data, aiSummary }: POAgingReportProps) {
     const buckets = [
         { key: "0_7_days", label: "0-7 Days", color: "bg-success", data: data.age_buckets["0_7_days"] },
         { key: "8_30_days", label: "8-30 Days", color: "bg-warning", data: data.age_buckets["8_30_days"] },
@@ -118,18 +112,7 @@ export default function POAgingReport({ data, aiSummary, onGeneratePDF }: POAgin
                 </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex gap-3">
-                <button
-                    onClick={onGeneratePDF}
-                    className="px-4 py-2 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-blue-700 transition-colors"
-                >
-                    Generate PDF
-                </button>
-                <button className="px-4 py-2 bg-white border border-border text-text-primary rounded-lg text-[13px] font-medium hover:bg-gray-50 transition-colors">
-                    Export Excel
-                </button>
-            </div>
+            {/* Actions: None enabled (Phase 2) */}
         </div>
     );
 }

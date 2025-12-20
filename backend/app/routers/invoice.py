@@ -67,6 +67,9 @@ class EnhancedInvoiceCreate(BaseModel):
     srv_no: Optional[str] = None
     srv_date: Optional[str] = None
     remarks: Optional[str] = None
+    
+    # Items with overrides
+    items: Optional[List[InvoiceItemCreate]] = None
 
 
 # ============================================================================

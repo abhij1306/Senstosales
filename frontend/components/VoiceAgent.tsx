@@ -22,7 +22,7 @@ interface Message {
     role: 'user' | 'assistant';
     content: string;
     timestamp: Date;
-    type?: 'text' | 'confirm' | 'error';
+    type?: 'text' | 'confirm' | 'error' | 'widget';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data?: any;
     isStreaming?: boolean;
@@ -224,7 +224,21 @@ export function VoiceAgent({ sessionId, onAction }: VoiceAgentProps) {
             formData.append('audio', audioBlob, 'recording.webm');
 
             const sttRes = await fetch('http://localhost:8000/api/voice/stt', { method: 'POST', body: formData });
-            if (!sttRes.ok) throw new Error('STT failed');
+
+            if (!sttRes.ok) {
+                const errorData = await sttRes.json().catch(() => ({ detail: 'Unknown error' }));
+                console.error('STT failed:', errorData);
+
+                // Provide user-friendly error message
+                if (sttRes.status === 500 && errorData.detail?.includes('GROQ_API_KEY')) {
+                    addMessage('assistant', "Voice recognition is not configured. Please set up the GROQ_API_KEY in your environment.", 'error');
+                } else {
+                    addMessage('assistant', `Voice recognition failed: ${errorData.detail || 'Please try again'}`, 'error');
+                }
+                setState('IDLE');
+                return;
+            }
+
             const { text } = await sttRes.json();
 
             if (!text || text.trim().length === 0) {
@@ -241,7 +255,7 @@ export function VoiceAgent({ sessionId, onAction }: VoiceAgentProps) {
 
         } catch (error) {
             console.error("Processing error", error);
-            addMessage('assistant', "Sorry, I had trouble verifying that.", 'error');
+            addMessage('assistant', "Sorry, I had trouble processing your voice. Please check your internet connection or try typing instead.", 'error');
             setState('IDLE'); // Stop loop on error
         }
     };
@@ -281,7 +295,7 @@ export function VoiceAgent({ sessionId, onAction }: VoiceAgentProps) {
             ));
 
             // Execute actions
-            if (result.type !== 'confirm' && result.type !== 'message' && result.type !== 'error') {
+            if (result.type !== 'confirm' && result.type !== 'message' && result.type !== 'error' && result.type !== 'widget') {
                 if (onAction) onAction(result as VoiceAction);
             }
 
@@ -353,8 +367,7 @@ export function VoiceAgent({ sessionId, onAction }: VoiceAgentProps) {
         }
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const addMessage = (role: 'user' | 'assistant', content: string, type: 'text' | 'confirm' | 'error' = 'text', data?: any) => {
+    const addMessage = (role: 'user' | 'assistant', content: string, type: 'text' | 'confirm' | 'error' | 'widget' = 'text', data?: any) => {
         setMessages(prev => [...prev, {
             id: Date.now().toString(), role, content, timestamp: new Date(), type, data
         }]);
@@ -431,6 +444,50 @@ export function VoiceAgent({ sessionId, onAction }: VoiceAgentProps) {
                             }`}>
                             <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.content}</p>
 
+                            {/* Widget Cards */}
+                            {msg.type === 'widget' && msg.data && (
+                                <div className="mt-3 w-full bg-white rounded-lg border border-gray-200 overflow-hidden shadow-sm">
+                                    {/* Widget Header */}
+                                    {msg.data.title && (
+                                        <div className="px-3 py-2 bg-gray-50 border-b border-gray-100 font-medium text-xs text-gray-700">
+                                            {msg.data.title}
+                                        </div>
+                                    )}
+
+                                    {/* KPI Widget */}
+                                    {msg.data.widget_type === 'kpi' && (
+                                        <div className="p-4 text-center">
+                                            <div className="text-2xl font-bold text-primary">{msg.data.data.value}</div>
+                                            <div className="text-xs text-gray-500 mt-1">{msg.data.data.label}</div>
+                                        </div>
+                                    )}
+
+                                    {/* Table Widget */}
+                                    {msg.data.widget_type === 'table' && Array.isArray(msg.data.data) && (
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-xs text-left">
+                                                <thead className="bg-gray-50 font-medium text-gray-600">
+                                                    <tr>
+                                                        {Object.keys(msg.data.data[0] || {}).map(key => (
+                                                            <th key={key} className="px-3 py-2 capitalize">{key.replace(/_/g, ' ')}</th>
+                                                        ))}
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-100">
+                                                    {msg.data.data.map((row: any, i: number) => (
+                                                        <tr key={i} className="hover:bg-gray-50/50">
+                                                            {Object.values(row).map((val: any, j) => (
+                                                                <td key={j} className="px-3 py-2 text-gray-700">{String(val)}</td>
+                                                            ))}
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
                             {/* Confirmation Card */}
                             {msg.type === 'confirm' && msg.data?.confirm && (
                                 <div className="mt-3 pt-3 border-t border-gray-100">
@@ -461,23 +518,59 @@ export function VoiceAgent({ sessionId, onAction }: VoiceAgentProps) {
             </div>
 
             {/* Footer / Controls */}
-            <div className="p-4 bg-white border-t border-gray-100 flex items-center justify-center">
-                {/* Main Control Button */}
-                <button
-                    onClick={() => {
-                        if (state === 'IDLE') startSession();
-                        else endSession(); // Force stop on any other state
+            <div className="p-4 bg-white border-t border-gray-100">
+                {/* Text Input Area */}
+                <form
+                    onSubmit={(e) => {
+                        e.preventDefault();
+                        if (state !== 'IDLE' && state !== 'LISTENING') return;
+                        const form = e.target as HTMLFormElement;
+                        const input = form.elements.namedItem('textInput') as HTMLInputElement;
+                        const text = input.value.trim();
+                        if (!text) return;
+
+                        // Stop listening if active
+                        if (state === 'LISTENING') stopEverything();
+
+                        addMessage('user', text);
+                        input.value = '';
+                        streamChat(text);
                     }}
-                    className={`p-4 rounded-full shadow-lg transition-all transform duration-200 hover:scale-105 active:scale-95 ${state === 'IDLE' ? 'bg-blue-600 text-white hover:bg-blue-700' :
-                        state === 'LISTENING' ? 'bg-red-500 text-white hover:bg-red-600 ring-4 ring-red-100 animate-pulse' :
-                            'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                        }`}
+                    className="flex items-center gap-2 mb-2"
                 >
-                    {state === 'IDLE' ? <Mic className="w-6 h-6" /> :
-                        state === 'LISTENING' ? <div className="w-6 h-6 flex items-center justify-center"><div className="w-3 h-3 bg-white rounded-sm" /></div> :
-                            <X className="w-6 h-6" />
-                    }
-                </button>
+                    <input
+                        name="textInput"
+                        type="text"
+                        placeholder="Type a message..."
+                        disabled={state === 'PROCESSING' || state === 'SPEAKING'}
+                        className="flex-1 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:opacity-50"
+                    />
+                    <button
+                        type="submit"
+                        disabled={state === 'PROCESSING' || state === 'SPEAKING'}
+                        className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                    >
+                        <Send className="w-4 h-4" />
+                    </button>
+                </form>
+
+                <div className="flex items-center justify-center pt-2 border-t border-gray-50">
+                    <button
+                        onClick={() => {
+                            if (state === 'IDLE') startSession();
+                            else endSession();
+                        }}
+                        className={`p-3 rounded-full shadow-lg transition-all transform duration-200 hover:scale-105 active:scale-95 ${state === 'IDLE' ? 'bg-blue-600 text-white hover:bg-blue-700' :
+                            state === 'LISTENING' ? 'bg-red-500 text-white hover:bg-red-600 ring-4 ring-red-100 animate-pulse' :
+                                'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                            }`}
+                    >
+                        {state === 'IDLE' ? <Mic className="w-5 h-5" /> :
+                            state === 'LISTENING' ? <div className="w-5 h-5 flex items-center justify-center"><div className="w-2.5 h-2.5 bg-white rounded-sm" /></div> :
+                                <X className="w-5 h-5" />
+                        }
+                    </button>
+                </div>
             </div>
         </div>
     );

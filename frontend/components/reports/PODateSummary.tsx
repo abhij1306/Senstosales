@@ -5,6 +5,9 @@
 
 "use client";
 
+import { useState } from "react";
+import PaginationControls from "@/components/ui/PaginationControls";
+
 interface PORow {
     po_number: string;
     po_date: string;
@@ -28,6 +31,9 @@ interface PODateSummaryProps {
 }
 
 export default function PODateSummary({ data }: PODateSummaryProps) {
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
+
     if (!data || !data.rows || data.rows.length === 0) {
         return (
             <div className="glass-card p-8 text-center">
@@ -35,6 +41,12 @@ export default function PODateSummary({ data }: PODateSummaryProps) {
             </div>
         );
     }
+
+    const totalPages = Math.ceil(data.rows.length / ITEMS_PER_PAGE);
+    const paginatedRows = data.rows.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
 
     return (
         <div className="glass-card p-6">
@@ -76,7 +88,7 @@ export default function PODateSummary({ data }: PODateSummaryProps) {
                         </tr>
                     </thead>
                     <tbody>
-                        {data.rows.map((row, idx) => (
+                        {paginatedRows.map((row, idx) => (
                             <tr key={idx} className="border-b border-border/50 hover:bg-gray-50">
                                 <td className="py-3 px-4 font-medium text-text-primary">{row.po_number}</td>
                                 <td className="py-3 px-4 text-text-secondary">{row.po_date}</td>
@@ -85,8 +97,8 @@ export default function PODateSummary({ data }: PODateSummaryProps) {
                                 <td className="py-3 px-4 text-right text-text-primary">{row.pending_qty.toLocaleString()}</td>
                                 <td className="py-3 px-4">
                                     <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${row.status === 'Completed' ? 'bg-emerald-100 text-emerald-700' :
-                                            row.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
-                                                'bg-gray-100 text-gray-700'
+                                        row.status === 'In Progress' ? 'bg-blue-100 text-blue-700' :
+                                            'bg-gray-100 text-gray-700'
                                         }`}>
                                         {row.status}
                                     </span>
@@ -96,6 +108,13 @@ export default function PODateSummary({ data }: PODateSummaryProps) {
                     </tbody>
                 </table>
             </div>
+
+            <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+                itemName="POs"
+            />
         </div>
     );
 }

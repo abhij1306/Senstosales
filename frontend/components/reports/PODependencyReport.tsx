@@ -22,13 +22,7 @@ interface PODependencyData {
     total_pos: number;
 }
 
-interface PODependencyReportProps {
-    data: PODependencyData;
-    aiSummary: string;
-    onGeneratePDF: () => void;
-}
-
-export default function PODependencyReport({ data, aiSummary, onGeneratePDF }: PODependencyReportProps) {
+export default function PODependencyReport({ data, aiSummary }: PODependencyReportProps) {
     const categories = [
         {
             key: 'no_dc',
@@ -145,18 +139,7 @@ export default function PODependencyReport({ data, aiSummary, onGeneratePDF }: P
                 ))}
             </div>
 
-            {/* Actions */}
-            <div className="flex gap-3">
-                <button
-                    onClick={onGeneratePDF}
-                    className="px-4 py-2 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-blue-700 transition-colors"
-                >
-                    Generate PDF
-                </button>
-                <button className="px-4 py-2 bg-white border border-border text-text-primary rounded-lg text-[13px] font-medium hover:bg-gray-50 transition-colors">
-                    Export Excel
-                </button>
-            </div>
+            {/* Actions: None enabled (Phase 2) */}
         </div>
     );
 }

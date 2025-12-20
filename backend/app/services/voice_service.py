@@ -122,6 +122,10 @@ class VoiceService:
             # SAFETY LAYER: Intercept confirmation requests
             if action.get("type") == "confirm" and action.get("confirm", {}).get("action") == "create_dc":
                 return await self._verify_create_dc(action, resolved_message)
+
+            # NEW: Handle Query Intents (Ask Data)
+            if action.get("type") == "query":
+                return await self._handle_query_intent(action, session_id)
                 
             return action
             
@@ -130,6 +134,90 @@ class VoiceService:
             return {
                 "type": "message",
                 "message": response_text,
+                "session_id": session_id
+            }
+
+    async def _handle_query_intent(self, action: Dict[str, Any], session_id: str) -> Dict[str, Any]:
+        """
+        Execute safe read-only queries against smart reports.
+        """
+        from app.services.reports_service import reports_service
+        from app.db import get_db
+        
+        query_type = action.get("query_type") # kpi, pending, summary
+        params = action.get("params", {})
+        
+        try:
+            # DB connection for this request
+            # Logic: We open a new connection or need to inject dependency.
+            # Ideally this service should not manage DB connections directly if using FastAPI Depends.
+            # But for async internal calls, we often need to manage it.
+            # Using a context manager pattern for safety.
+            
+            with sqlite3.connect(settings.DATABASE_URL.replace("sqlite:///", "")) as db:
+                db.row_factory = sqlite3.Row
+                
+                if query_type == "kpi":
+                    # We reuse reports_service logic but need to adapt it since reports_service expects a text range?
+                    # No, let's call the specific methods.
+                    # Actually smart_reports logic was in the router. reports_service has diff methods.
+                    # We'll implement specific safe queries here or call reports_service if suitable.
+                    
+                    if params.get("metric") == "pending_items":
+                        data = reports_service.get_pending_dcs(db) # Reuse pending DCs? Or pending PO items?
+                        # Let's use the robust pending logic from reports_service.get_dashboard_insights
+                        # Actually simpler: let's expose specific data.
+                        
+                        # Re-implementing a safe retrieval here for flexibility or calling reports_service
+                        pass 
+
+                    # Using pre-defined safe queries based on Implementation Plan
+                    if query_type == "get_pending":
+                        # Maps to "Show me pending items"
+                        # Use logic similar to get_pending in smart_reports router
+                         query = """
+                            SELECT po.po_number, poi.material_description, (poi.ord_qty - COALESCE(SUM(dci.dispatch_qty), 0)) as pending
+                            FROM purchase_orders po
+                            JOIN purchase_order_items poi ON po.po_number = poi.po_number
+                            LEFT JOIN delivery_challan_items dci ON poi.id = dci.po_item_id
+                            GROUP BY poi.id
+                            HAVING pending > 0
+                            ORDER BY pending DESC LIMIT 5
+                        """
+                         rows = db.execute(query).fetchall()
+                         data = [dict(row) for row in rows]
+                         
+                         return {
+                             "type": "widget",
+                             "widget_type": "table",
+                             "title": "Pending Items",
+                             "data": data,
+                             "message": f"Here are the top {len(data)} pending items.",
+                             "session_id": session_id
+                         }
+
+                    elif query_type == "get_summary":
+                        # Maps to "How are sales?"
+                        sales = db.execute("SELECT SUM(total_invoice_value) FROM gst_invoices WHERE strftime('%Y-%m', invoice_date) = strftime('%Y-%m', 'now')").fetchone()[0] or 0
+                        return {
+                            "type": "widget",
+                            "widget_type": "kpi",
+                            "data": {"label": "Sales This Month", "value": f"₹{sales:,.2f}"},
+                            "message": f"Total sales for this month are ₹{sales:,.2f}.",
+                            "session_id": session_id
+                        }
+                        
+            return {
+                "type": "message",
+                "message": "I understood your query but I don't have a specific report for that yet.",
+                "session_id": session_id
+            }
+            
+        except Exception as e:
+            logger.error(f"Query execution failed: {e}")
+            return {
+                "type": "error",
+                "message": "I couldn't fetch that data right now.",
                 "session_id": session_id
             }
 

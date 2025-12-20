@@ -1,106 +1,99 @@
 @import "tailwindcss";
 
 :root {
-  /* 2.2 Color Palette (STRICT) */
-  --primary: #2563EB;
-  --primary-foreground: #FFFFFF;
+  /* HSL Color Palette for Opacity Support */
+  /* Blue-600 */
+  --primary: 221 83% 53%;
+  --primary-foreground: 0 0% 100%;
 
-  --success: #16A34A;
-  --success-foreground: #FFFFFF;
+  /* Slate-50 - Surface 1 (Sidebar/Bg) */
+  --surface-1: 210 40% 98%;
+  
+  /* Slate-100 - Surface 2 (Table Hover/Card) */
+  --surface-2: 210 40% 96.1%;
 
-  --warning: #F59E0B;
-  --warning-foreground: #FFFFFF;
-
-  --danger: #DC2626;
-  --danger-foreground: #FFFFFF;
-
-  --text-primary: #0F172A;
-  --text-secondary: #475569;
-
-  --border: #E5E7EB;
-  --background: #F8FAFC;
-  --card-bg: rgba(255, 255, 255, 0.85);
-}
-
-@theme inline {
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-danger: var(--danger);
-
-  --color-text-primary: var(--text-primary);
-  --color-text-secondary: var(--text-secondary);
-
-  --color-border: var(--border);
-  --color-background: var(--background);
-  --color-card-bg: var(--card-bg);
-
+  /* Text Colors */
+  /* Slate-900 */
+  --text-primary: 222 47% 11%;
+  /* Slate-500 */
+  --text-muted: 215 16% 47%;
+  
+  /* Semantic Status */
+  /* Emerald-600 */
+  --success: 158 64% 52%;
+  /* Amber-500 */
+  --warning: 45 93% 47%;
+  /* Red-600 */
+  --danger: 0 72% 51%;
+  
+  /* Border: Slate-200 */
+  --border: 214.3 31.8% 91.4%;
+  
   --font-sans: 'Inter', sans-serif;
 }
 
+@theme inline {
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  
+  --color-surface-1: hsl(var(--surface-1));
+  --color-surface-2: hsl(var(--surface-2));
+  
+  --color-text-primary: hsl(var(--text-primary));
+  --color-text-muted: hsl(var(--text-muted));
+  
+  --color-success: hsl(var(--success));
+  --color-warning: hsl(var(--warning));
+  --color-danger: hsl(var(--danger));
+  
+  --color-border: hsl(var(--border));
+  
+  --font-sans: var(--font-sans);
+}
+
+/* Global Reset & Typography */
 body {
-  background: var(--background);
-  color: var(--text-primary);
+  background-color: hsl(var(--surface-1));
+  color: hsl(var(--text-primary));
   font-family: var(--font-sans);
+  font-feature-settings: "rlig" 1, "calt" 1; /* Optimize Inter readability */
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-/* 2.3 Glassmorphism Rules */
-.glass-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  /* Very soft shadow */
-  backdrop-filter: blur(8px);
-  /* Subtle blur, though spec said "No blur filters" on cards specifically, usually glass implies some backdrop. If strict "No blur filters" is required for performance or specific look, remove this. Re-reading: "❌ No blur filters". Okay, removing backdrop-filter.*/
-  backdrop-filter: none;
+/* Utility Classes for Typography */
+.kpi-value {
+  font-weight: 700;
+  letter-spacing: -0.025em; /* Tight tracking for big numbers */
 }
 
-/* Re-reading Strict Rules: "❌ No blur filters" on Cards? 
-   "Cards: Background: rgba(255,255,255,0.85), ... ❌ No blur filters"
-   Okay, I will strictly follow "No blur filters".
-*/
-
-.glass-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
-  /* very soft, no glow */
+.label-muted {
+  color: hsl(var(--text-muted));
+  font-size: 0.75rem; /* 12px */
+  text-transform: uppercase;
+  letter-spacing: 0.05em; /* 0.5px tracking */
+  font-weight: 500;
 }
 
-/* Typography Overrides for consistency */
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
-  color: var(--text-primary);
-  font-weight: 600;
+/* Glass & Depth Primitives */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
-/* Form Standards */
-input,
-select,
-textarea {
-  border-color: var(--border);
-  border-radius: 8px;
-  font-size: 14px;
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
-
-input:focus,
-select:focus,
-textarea:focus {
-  outline: 2px solid var(--primary);
-  outline-offset: -1px;
-  border-color: transparent;
+::-webkit-scrollbar-track {
+  background: transparent;
 }
-
-/* 2.5 Scrollbar Stability */
-.scrollbar-stable {
-  scrollbar-gutter: stable;
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--text-muted) / 0.2);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--text-muted) / 0.4);
 }

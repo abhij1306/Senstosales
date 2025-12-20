@@ -210,9 +210,47 @@ def create_invoice(invoice_data: dict, db: sqlite3.Connection) -> ServiceResult[
         total_sgst = 0.0
         total_amount = 0.0
         
+        # Prepare overrides map for O(1) lookup
+        # key: str(lot_no) -> item dict
+        overrides = {}
+        if invoice_data.get("items"):
+            for item in invoice_data["items"]:
+                # Pydantic model conversion to dict might have happened already if `invoice_data` is dict
+                # If using .dict(), it's a dict.
+                if isinstance(item, dict):
+                    overrides[str(item.get("po_sl_no"))] = item
+                else:
+                    # If it's an object (shouldn't be if request.dict() was called)
+                    overrides[str(item.po_sl_no)] = item
+        
+        # INVARIANT: INV-2 - Calculate totals (backend is source of truth)
+        invoice_items = []
+        total_taxable = 0.0
+        total_cgst = 0.0
+        total_sgst = 0.0
+        total_amount = 0.0
+        
         for dc_item in dc_items:
+            lot_no_str = str(dc_item['lot_no'] or '')
+            
+            # Default values from DC
             qty = dc_item['dispatch_qty']
             rate = dc_item['po_rate']
+            
+            # Apply Override if exists
+            if lot_no_str in overrides:
+                override_item = overrides[lot_no_str]
+                # Allow overriding Quantity and Rate
+                # We trust the user edits here, provided they are within reason (?)
+                # For now, we trust the "Unlock" requirement explicitly.
+                override_qty = override_item.get('quantity')
+                override_rate = override_item.get('rate')
+                
+                if override_qty is not None:
+                    qty = float(override_qty)
+                if override_rate is not None:
+                    rate = float(override_rate)
+            
             taxable_value = round(qty * rate, 2)
             
             tax_calc = calculate_tax(taxable_value)

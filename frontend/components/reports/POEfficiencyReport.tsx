@@ -26,13 +26,7 @@ interface POEfficiencyData {
     };
 }
 
-interface POEfficiencyReportProps {
-    data: POEfficiencyData;
-    aiSummary: string;
-    onGeneratePDF: () => void;
-}
-
-export default function POEfficiencyReport({ data, aiSummary, onGeneratePDF }: POEfficiencyReportProps) {
+export default function POEfficiencyReport({ data, aiSummary }: POEfficiencyReportProps) {
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -107,8 +101,8 @@ export default function POEfficiencyReport({ data, aiSummary, onGeneratePDF }: P
                                     <td className="px-4 py-3 text-[13px] text-text-primary text-right">{po.dispatched.toLocaleString()}</td>
                                     <td className="px-4 py-3 text-right">
                                         <span className={`inline-flex items-center px-2 py-1 rounded text-[12px] font-medium ${po.fulfillment_pct === 0 ? 'bg-danger/10 text-danger' :
-                                                po.fulfillment_pct < 50 ? 'bg-warning/10 text-warning' :
-                                                    'bg-success/10 text-success'
+                                            po.fulfillment_pct < 50 ? 'bg-warning/10 text-warning' :
+                                                'bg-success/10 text-success'
                                             }`}>
                                             {po.fulfillment_pct}%
                                         </span>
@@ -125,18 +119,7 @@ export default function POEfficiencyReport({ data, aiSummary, onGeneratePDF }: P
                 )}
             </div>
 
-            {/* Actions */}
-            <div className="flex gap-3">
-                <button
-                    onClick={onGeneratePDF}
-                    className="px-4 py-2 bg-primary text-white rounded-lg text-[13px] font-medium hover:bg-blue-700 transition-colors"
-                >
-                    Generate PDF
-                </button>
-                <button className="px-4 py-2 bg-white border border-border text-text-primary rounded-lg text-[13px] font-medium hover:bg-gray-50 transition-colors">
-                    Export Excel
-                </button>
-            </div>
+            {/* Actions: None enabled (Phase 2) */}
         </div>
     );
 }
