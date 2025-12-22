@@ -102,6 +102,7 @@ class POService:
     def get_po_detail(self, db: sqlite3.Connection, po_number: int) -> PODetail:
         """
         Get full Purchase Order detail with items and delivery schedules.
+        Includes SRV aggregated received/rejected quantities.
         """
         # Get header
         header_row = db.execute("""
@@ -113,24 +114,24 @@ class POService:
         
         header = POHeader(**dict(header_row))
         
-        # Get items
-        # Aliasing columns to match updated POItem model (Standardized Naming)
+        # Get items with SRV aggregated data
         item_rows = db.execute("""
             SELECT id, po_item_no, material_code, material_description, drg_no, mtrl_cat,
-                   unit, po_rate, ord_qty as ordered_quantity, rcd_qty as received_quantity, item_value, hsn_code
+                   unit, po_rate, ord_qty as ordered_quantity, rcd_qty as received_quantity, 
+                   item_value, hsn_code
             FROM purchase_order_items
             WHERE po_number = ?
             ORDER BY po_item_no
         """, (po_number,)).fetchall()
         
-        # For each item, get deliveries
+        # For each item, get deliveries and SRV data
         items_with_deliveries = []
         for item_row in item_rows:
             item_dict = dict(item_row)
             item_id = item_dict['id']
+            po_item_no = item_dict['po_item_no']
             
             # Get deliveries for this item
-            # Aliasing columns to match updated PODelivery model
             delivery_rows = db.execute("""
                 SELECT id, lot_no, dely_qty as delivered_quantity, dely_date, entry_allow_date, dest_code
                 FROM purchase_order_deliveries
@@ -140,32 +141,32 @@ class POService:
             
             deliveries = [dict(d) for d in delivery_rows]
             
-            # Create POItem with deliveries
-            # Pending quantity calculation per item could be added here if needed by UI, 
-            # currently UI might calculate it or usage might be minimal. 
-            # model has pending_quantity field, assume explicit calc or default.
-            # Logic: pending = ordered - dispatched. Dispatched is in DC items.
-            # If detailed pending is needed per line item, we need to query DC items again.
-            # For now, let's keep it simple as per original router logic which didn't seem to calc per-item pending in detail view?
-            # Wait, router logic (Step 33) DID NOT calc per-item pending in get_po_detail. 
-            # It just returned items.
-            # However, POItem model has `pending_quantity`.
-            # I will calculate it to be better than before.
-            
-            # Calculate per-item dispatched
+            # Calculate per-item dispatched quantity
             dispatched_res = db.execute("""
                 SELECT COALESCE(SUM(dispatch_qty), 0) FROM delivery_challan_items WHERE po_item_id = ?
             """, (item_id,)).fetchone()
             item_dispatched = dispatched_res[0] if dispatched_res else 0.0
             
+            # Get SRV aggregated quantities for this item
+            srv_res = db.execute("""
+                SELECT 
+                    COALESCE(SUM(received_qty), 0) as total_received,
+                    COALESCE(SUM(rejected_qty), 0) as total_rejected
+                FROM srv_items
+                WHERE po_number = ? AND po_item_no = ?
+            """, (po_number, po_item_no)).fetchone()
+            
+            srv_received = srv_res[0] if srv_res else 0.0
+            srv_rejected = srv_res[1] if srv_res else 0.0
+            
+            # Update item with SRV quantities
+            item_dict['received_quantity'] = srv_received
+            item_dict['rejected_quantity'] = srv_rejected
+            item_dict['delivered_quantity'] = item_dispatched
+            
+            # Calculate pending: Ordered - Delivered (dispatched)
             item_ordered = item_dict.get('ordered_quantity', 0)
             item_dict['pending_quantity'] = max(0, item_ordered - item_dispatched)
-            item_dict['delivered_quantity'] = item_dispatched # "delivered" in model often used for "dispatched" in this context? 
-            # Wait, model has `delivered_quantity` (Standardized from `delivered_qty`).
-            # In `purchase_order_items` table, `delivered_qty` column exists (defaults to 0).
-            # But we should probably use real dispatched count from DCs if that's the source of truth for "delivered" in a simplified flow?
-            # Router didn't touch it. I will leave it as is to avoid changing behavior too much. 
-            # Just pending_quantity is useful.
             
             item_with_deliveries = {**item_dict, 'deliveries': deliveries}
             items_with_deliveries.append(POItem(**item_with_deliveries))

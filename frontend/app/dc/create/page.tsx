@@ -73,8 +73,10 @@ function CreateDCPageContent() {
         setError(null);
         try {
             const data = await api.getReconciliationLots(parseInt(po));
+            // API returns {po_number: X, lots: [...]} so extract the lots array
+            const lotsData = Array.isArray(data) ? data : (data as any)?.lots || [];
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const mappedItems: DCItemRow[] = (data as any[]).map((lot: { po_item_id: string; lot_no?: number; material_description?: string; ordered_qty?: number; already_dispatched?: number; remaining_qty?: number }) => ({
+            const mappedItems: DCItemRow[] = lotsData.map((lot: { po_item_id: string; lot_no?: number; material_description?: string; ordered_qty?: number; already_dispatched?: number; remaining_qty?: number }) => ({
                 id: `${lot.po_item_id}-${lot.lot_no}`,
                 lot_no: lot.lot_no?.toString() || "",
                 description: lot.material_description || "",

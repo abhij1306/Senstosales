@@ -67,7 +67,8 @@ class POItem(BaseModel):
     unit: Optional[str] = None
     po_rate: Optional[float] = None
     ordered_quantity: Optional[float] = None
-    received_quantity: Optional[float] = 0
+    received_quantity: Optional[float] = 0  # Sum from SRVs
+    rejected_quantity: Optional[float] = 0  # Sum from SRVs (NEW)
     item_value: Optional[float] = None
     hsn_code: Optional[str] = None
     delivered_quantity: Optional[float] = 0
@@ -200,3 +201,48 @@ class ActivityItem(BaseModel):
     date: str
     description: str
     created_at: str
+
+# ============================================================
+# SRV (STORES RECEIPT VOUCHER) MODELS
+# ============================================================
+
+class SRVHeader(BaseModel):
+    """SRV Header"""
+    srv_number: str
+    srv_date: str
+    po_number: str
+    srv_status: Optional[str] = "Received"
+    created_at: Optional[str] = None
+
+class SRVItem(BaseModel):
+    """SRV Item"""
+    id: Optional[int] = None
+    po_item_no: int
+    lot_no: Optional[int] = None
+    received_qty: float
+    rejected_qty: float
+    challan_no: Optional[str] = None
+    invoice_no: Optional[str] = None
+    remarks: Optional[str] = None
+
+class SRVDetail(BaseModel):
+    """SRV Detail (Full)"""
+    header: SRVHeader
+    items: List[SRVItem]
+
+class SRVListItem(BaseModel):
+    """SRV List Item (Summary)"""
+    srv_number: str
+    srv_date: str
+    po_number: str
+    total_received_qty: float = 0.0
+    total_rejected_qty: float = 0.0
+    created_at: Optional[str] = None
+
+class SRVStats(BaseModel):
+    """SRV Page KPIs"""
+    total_srvs: int
+    total_received_qty: float
+    total_rejected_qty: float
+    rejection_rate: float  # Percentage
+

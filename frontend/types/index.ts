@@ -121,6 +121,7 @@ export interface POItem {
     po_rate?: number;
     ordered_quantity?: number;
     received_quantity?: number;
+    rejected_quantity?: number;
     item_value?: number;
     hsn_code?: string;
     delivered_quantity?: number;

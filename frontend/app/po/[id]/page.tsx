@@ -362,7 +362,7 @@ export default function PODetailPage() {
                                 {/* Item Header */}
                                 <div className="bg-gray-50/50 px-4 py-3 border-b border-border/50">
                                     <div className="flex items-start justify-between">
-                                        <div className="grid grid-cols-12 gap-x-6 gap-y-2 flex-1 text-sm">
+                                        <div className="grid grid-cols-12 gap-x-4 gap-y-2 flex-1 text-sm">
                                             <div className="col-span-1">
                                                 <span className="text-[10px] uppercase font-bold text-text-secondary block mb-1">Item #</span>
                                                 <div className="font-semibold text-text-primary">{item.po_item_no}</div>
@@ -387,7 +387,7 @@ export default function PODetailPage() {
                                                     <div className="text-text-primary font-medium">{item.material_code}</div>
                                                 )}
                                             </div>
-                                            <div className="col-span-4">
+                                            <div className="col-span-2">
                                                 <span className="text-[10px] uppercase font-bold text-text-secondary block mb-1">Description</span>
                                                 {editMode ? (
                                                     <input
@@ -404,31 +404,11 @@ export default function PODetailPage() {
                                                         className="w-full px-2 py-1 text-xs border border-border rounded"
                                                     />
                                                 ) : (
-                                                    <div className="truncate text-text-primary font-medium" title={item.material_description}>{item.material_description}</div>
-                                                )}
-                                            </div>
-                                            <div className="col-span-1">
-                                                <span className="text-[10px] uppercase font-bold text-text-secondary block mb-1">Unit</span>
-                                                {editMode ? (
-                                                    <input
-                                                        type="text"
-                                                        value={item.unit || ''}
-                                                        onChange={(e) => {
-                                                            const newItems = [...items];
-                                                            const idx = newItems.findIndex(i => i.po_item_no === item.po_item_no);
-                                                            if (idx !== -1) {
-                                                                newItems[idx] = { ...newItems[idx], unit: e.target.value };
-                                                                setData({ ...data, items: newItems });
-                                                            }
-                                                        }}
-                                                        className="w-full px-2 py-1 text-xs border border-border rounded"
-                                                    />
-                                                ) : (
-                                                    <div className="text-text-primary">{item.unit}</div>
+                                                    <div className="truncate text-text-primary font-medium text-xs" title={item.material_description}>{item.material_description}</div>
                                                 )}
                                             </div>
                                             <div className="col-span-1 text-right">
-                                                <span className="text-[10px] uppercase font-bold text-text-secondary block mb-1">Qty</span>
+                                                <span className="text-[10px] uppercase font-bold text-text-secondary block mb-1">Ordered</span>
                                                 {editMode ? (
                                                     <input
                                                         type="number"
@@ -444,8 +424,27 @@ export default function PODetailPage() {
                                                         className="w-full px-2 py-1 text-xs border border-border rounded text-right"
                                                     />
                                                 ) : (
-                                                    <div className="text-text-primary font-bold">{item.ordered_quantity}</div>
+                                                    <div className="text-text-primary font-bold">{item.ordered_quantity || 0}</div>
                                                 )}
+                                            </div>
+                                            <div className="col-span-1 text-right">
+                                                <span className="text-[10px] uppercase font-bold text-blue-600 block mb-1">Delivered</span>
+                                                <div className="text-blue-600 font-bold">{item.delivered_quantity || 0}</div>
+                                            </div>
+                                            <div className="col-span-1 text-right">
+                                                <span className="text-[10px] uppercase font-bold text-green-600 block mb-1">Received</span>
+                                                <div className="text-green-600 font-bold">{item.received_quantity || 0}</div>
+                                            </div>
+                                            <div className="col-span-1 text-right">
+                                                <span className="text-[10px] uppercase font-bold text-red-600 block mb-1">Rejected</span>
+                                                <div className="text-red-600 font-bold">
+                                                    {item.rejected_quantity || 0}
+                                                    {item.rejected_quantity > 0 && (
+                                                        <div className="text-[9px] mt-0.5 bg-red-100 px-1 py-0.5 rounded inline-block ml-1">
+                                                            {((item.rejected_quantity / ((item.received_quantity || 0) + (item.rejected_quantity || 0))) * 100).toFixed(1)}%
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="col-span-1 text-right">
                                                 <span className="text-[10px] uppercase font-bold text-text-secondary block mb-1">Rate</span>
@@ -464,12 +463,12 @@ export default function PODetailPage() {
                                                         className="w-full px-2 py-1 text-xs border border-border rounded text-right"
                                                     />
                                                 ) : (
-                                                    <div className="text-text-primary">₹{item.po_rate}</div>
+                                                    <div className="text-text-primary text-xs">₹{item.po_rate}</div>
                                                 )}
                                             </div>
                                             <div className="col-span-2 text-right">
                                                 <span className="text-[10px] uppercase font-bold text-text-secondary block mb-1">Value</span>
-                                                <div className="text-text-primary font-bold">₹{item.item_value?.toLocaleString()}</div>
+                                                <div className="text-text-primary font-bold text-xs">₹{item.item_value?.toLocaleString()}</div>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2 ml-4 mt-1">

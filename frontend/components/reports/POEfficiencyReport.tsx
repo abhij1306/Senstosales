@@ -86,8 +86,7 @@ export default function POEfficiencyReport({ data, aiSummary }: POEfficiencyRepo
                         <thead className="bg-gray-50 border-b border-border">
                             <tr>
                                 <th className="px-4 py-3 text-left text-[11px] font-semibold text-text-secondary uppercase">PO Number</th>
-                                <th className="px-4 py-3 text-left text-[11px] font-semibold text-text-secondary uppercase">Supplier</th>
-                                <th className="px-4 py-3 text-right text-[11px] font-semibold text-text-secondary uppercase">Ordered</th>
+                                <th className="px-4 py-3 text-left text-[11px] font-semibold text-text-secondary uppercase">Lead Time</th>
                                 <th className="px-4 py-3 text-right text-[11px] font-semibold text-text-secondary uppercase">Dispatched</th>
                                 <th className="px-4 py-3 text-right text-[11px] font-semibold text-text-secondary uppercase">Fulfillment %</th>
                             </tr>
@@ -96,7 +95,7 @@ export default function POEfficiencyReport({ data, aiSummary }: POEfficiencyRepo
                             {data.pos.slice(0, 20).map((po) => (
                                 <tr key={po.po_number} className="hover:bg-gray-50">
                                     <td className="px-4 py-3 text-[13px] font-medium text-text-primary">{po.po_number}</td>
-                                    <td className="px-4 py-3 text-[12px] text-text-secondary truncate max-w-[200px]">{po.supplier_name}</td>
+
                                     <td className="px-4 py-3 text-[13px] text-text-primary text-right">{po.ordered.toLocaleString()}</td>
                                     <td className="px-4 py-3 text-[13px] text-text-primary text-right">{po.dispatched.toLocaleString()}</td>
                                     <td className="px-4 py-3 text-right">

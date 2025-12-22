@@ -11,7 +11,8 @@ import {
     StickyNote,
     Package,
     Layers,
-    Archive
+    Archive,
+    FileCheck
 } from "lucide-react";
 
 export default function NavRail() {
@@ -30,6 +31,7 @@ export default function NavRail() {
                 { href: "/po", icon: FileText, label: "Purchase Orders" },
                 { href: "/dc", icon: Truck, label: "Delivery Challans" },
                 { href: "/invoice", icon: Receipt, label: "Sales & Invoices" },
+                { href: "/srv", icon: FileCheck, label: "SRV" },
             ]
         },
         {

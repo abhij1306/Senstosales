@@ -26,12 +26,16 @@ SenstoSales is a comprehensive Purchase Order management system designed for Sen
 #### Delivery & Invoice Management
 - **Delivery Challan Management**: Create and manage DCs with full item tracking
   - Lot-wise item tracking
-  - Auto-fetch from PO with editable random DC numbers
-  - Consignee address and dispatch quantity management
-- **GST Invoice Generation**: Create invoices linked to DCs
-  - Auto-fetch DC details
-  - Multiple DC linking support
-  - Tax calculation and net amount computation
+  - **SRV Management**:
+  - Batch upload buyer-generated SRV HTML files (BHEL/NTPC/etc).
+  - Automated parsing of received and rejected quantities.
+  - Integration with Purchase Orders to track delivery performance (Ordered vs Delivered vs Received vs Rejected).
+  - Calculation of Rejection Rates per PO and global APIs.
+
+- **Delivery Challans & Invoicing**:
+  - Create Delivery Challans (DC) directly from POs with auto-populated items.
+  - Generate GST Invoices linked to DCs with automatic tax calculation (CGST/SGST).
+  - Validation to ensure `Received + Rejected <= Delivered`. and net amount computation
 
 #### Smart Reports & Analytics
 - **AI-Powered Reports**: Generate intelligent summaries using Groq LLM

@@ -2047,6 +2047,29 @@ GROQ_API_KEY=your-groq-api-key
   - Add/delete items and deliveries
   - 4-tab organization for header fields
 
+### 4. SRV (Stores Receipt Voucher) & Reconciliation
+The SRV module bridges the gap between what was sent (DC) and what the buyer accepted.
+- **Source of Truth**: Buyer-generated HTML files are the *only* source for SRV data. Manual creation is disabled to ensure integrity.
+- **Reconciliation Logic**:
+    - `Delivered Qty` (from DC) is the baseline.
+    - `Received Qty` + `Rejected Qty` (from SRV) is compared against Delivered.
+    - Invariant: `Received + Rejected <= Delivered` (per lot).
+- **Status Tracking**:
+    - **Pending Delivery**: `Ordered - Delivered`.
+    - **Pending Acceptance**: `Delivered - (Received + Rejected)`.
+- **Integration**:
+    - SRV data is aggregated onto the PO Detail page, providing a clear view of "Effective Sales" vs "Rejection Losses".
+
+### 5. Delivery Challan (DC) & Invoice
+- **DC Creation**:
+    - Derived strictly from PO pending quantities.
+    - Supports partial dispatches (Lot Management).
+- **Invoice Generation**:
+    - Must be linked to a DC.
+    - Inherits `Challan Date` and `Quantities` from DC (Immutable correspondence).
+    - Auto-calculates Taxable Value, CGST (9%), SGST (9%), and Grand Total.
+  - 4-tab organization for header fields
+
 - **Delivery Challan Management**
   - Create DC from PO
   - Lot-wise item tracking

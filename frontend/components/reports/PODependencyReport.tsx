@@ -22,6 +22,11 @@ interface PODependencyData {
     total_pos: number;
 }
 
+interface PODependencyReportProps {
+    data: PODependencyData;
+    aiSummary?: string;
+}
+
 export default function PODependencyReport({ data, aiSummary }: PODependencyReportProps) {
     const categories = [
         {
@@ -120,7 +125,6 @@ export default function PODependencyReport({ data, aiSummary }: PODependencyRepo
                                     >
                                         <div>
                                             <p className="text-[13px] font-medium text-text-primary">{po.po_number}</p>
-                                            <p className="text-[11px] text-text-secondary truncate max-w-[300px]">{po.supplier}</p>
                                         </div>
                                     </div>
                                 ))}

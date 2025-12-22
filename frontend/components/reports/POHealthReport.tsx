@@ -93,8 +93,7 @@ export default function POHealthReport({ data, aiSummary }: POHealthReportProps)
                         <thead className="bg-gray-50 border-b border-border">
                             <tr>
                                 <th className="px-4 py-3 text-left text-[11px] font-semibold text-text-secondary uppercase">PO Number</th>
-                                <th className="px-4 py-3 text-left text-[11px] font-semibold text-text-secondary uppercase">Supplier</th>
-                                <th className="px-4 py-3 text-right text-[11px] font-semibold text-text-secondary uppercase">Ordered</th>
+                                <th className="px-4 py-3 text-left text-[11px] font-semibold text-text-secondary uppercase">Order Value</th>
                                 <th className="px-4 py-3 text-right text-[11px] font-semibold text-text-secondary uppercase">Dispatched</th>
                                 <th className="px-4 py-3 text-right text-[11px] font-semibold text-text-secondary uppercase">Pending</th>
                                 <th className="px-4 py-3 text-right text-[11px] font-semibold text-text-secondary uppercase">Age (Days)</th>
@@ -106,7 +105,7 @@ export default function POHealthReport({ data, aiSummary }: POHealthReportProps)
                             {data.pos.slice(0, 20).map((po) => (
                                 <tr key={po.po_number} className="hover:bg-gray-50">
                                     <td className="px-4 py-3 text-[13px] font-medium text-text-primary">{po.po_number}</td>
-                                    <td className="px-4 py-3 text-[12px] text-text-secondary truncate max-w-[200px]">{po.supplier_name}</td>
+
                                     <td className="px-4 py-3 text-[13px] text-text-primary text-right">{po.ordered_qty.toLocaleString()}</td>
                                     <td className="px-4 py-3 text-[13px] text-text-primary text-right">{po.dispatched_qty.toLocaleString()}</td>
                                     <td className="px-4 py-3 text-[13px] font-medium text-warning text-right">{po.pending_qty.toLocaleString()}</td>

@@ -130,6 +130,7 @@ function CreateInvoicePageContent() {
             setFormData(prev => ({
                 ...prev,
                 dc_number: data.header.dc_number || '',
+                challan_date: data.header.dc_date || '',
                 buyers_order_no: data.header.po_number?.toString() || '',
                 buyers_order_date: data.header.po_date || ''
             }));
@@ -137,7 +138,8 @@ function CreateInvoicePageContent() {
             if (data.items && data.items.length > 0) {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const items: InvoiceItemUI[] = data.items.map((item: any) => {
-                    const qty = item.dispatch_qty || item.dispatch_quantity || 0;
+                    // Backend returns 'dispatched_quantity' (from alias) or 'dispatch_qty'
+                    const qty = item.dispatched_quantity || item.dispatch_qty || item.dispatch_quantity || 0;
                     const rate = item.po_rate || 0;
                     const taxableValue = qty * rate;
                     const cgstAmount = (taxableValue * TAX_RATES.cgst) / 100;

@@ -6,7 +6,7 @@ from app.core.exceptions import AppException
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import dashboard, po, dc, invoice, reports, search, alerts, reconciliation, po_notes, health, voice, smart_reports, ai_reports
+from app.routers import dashboard, po, dc, invoice, reports, search, alerts, reconciliation, po_notes, health, voice, smart_reports, ai_reports, srv
 from app.middleware import RequestLoggingMiddleware
 from app.core.logging_config import setup_logging
 from app.db import validate_database_path
@@ -52,6 +52,7 @@ app.include_router(search.router, prefix="/api/search", tags=["Search"])
 app.include_router(alerts.router, prefix="/api/alerts", tags=["Alerts"])
 app.include_router(reconciliation.router, prefix="/api/reconciliation", tags=["Reconciliation"])
 app.include_router(po_notes.router, prefix="/api/po-notes", tags=["PO Notes"])
+app.include_router(srv.router, prefix="/api/srv", tags=["SRV"])
 
 @app.exception_handler(AppException)
 async def app_exception_handler(request: Request, exc: AppException):
