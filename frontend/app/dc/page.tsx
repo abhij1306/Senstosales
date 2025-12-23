@@ -218,7 +218,7 @@ export default function DCListPage() {
                 paginatedDCs.map((dc) => (
                   <tr key={dc.dc_number} className="hover:bg-gray-50/50 transition-colors group">
                     <td className="px-6 py-3">
-                      <span className="text-[13px] font-semibold text-primary hover:text-blue-700 cursor-pointer" onClick={() => router.push(`/dc/${dc.dc_number}`)}>
+                      <span className="text-[13px] font-semibold text-primary hover:text-blue-700 cursor-pointer" onClick={() => router.push(`/dc/view?id=${dc.dc_number}`)}>
                         {dc.dc_number}
                       </span>
                     </td>
@@ -232,7 +232,7 @@ export default function DCListPage() {
                       </div>
                     </td>
                     <td className="px-6 py-3">
-                      <LinkWrapper href={`/po/${dc.po_number}`} className="px-2 py-1 bg-gray-50 text-text-secondary text-[11px] rounded border border-border font-medium hover:bg-gray-100 transition-colors inline-block">
+                      <LinkWrapper href={`/po/view?id=${dc.po_number}`} className="px-2 py-1 bg-gray-50 text-text-secondary text-[11px] rounded border border-border font-medium hover:bg-gray-100 transition-colors inline-block">
                         PO-{dc.po_number}
                       </LinkWrapper>
                     </td>
@@ -246,7 +246,7 @@ export default function DCListPage() {
                     </td>
                     <td className="px-6 py-3 text-center">
                       <button
-                        onClick={() => router.push(`/dc/${dc.dc_number}`)}
+                        onClick={() => router.push(`/dc/view?id=${dc.dc_number}`)}
                         className="text-text-secondary hover:text-primary transition-colors p-1 rounded hover:bg-gray-100"
                       >
                         <Eye className="w-4 h-4" />

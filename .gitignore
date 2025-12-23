@@ -62,3 +62,14 @@ temp/
 .coverage
 htmlcov/
 *.cover
+
+# PyInstaller
+*.spec
+backend/static/
+backend/build/
+backend/dist/
+SenstoSales.spec
+
+# Editor config
+.project
+.settings/

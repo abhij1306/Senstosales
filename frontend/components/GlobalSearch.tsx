@@ -78,11 +78,11 @@ export default function GlobalSearch() {
         setQuery("");
 
         if (result.type === "PO") {
-            router.push(`/po/${result.number}`);
+            router.push(`/po/view?id=${result.number}`);
         } else if (result.type === "DC") {
-            router.push(`/dc/${result.number}`);
+            router.push(`/dc/view?id=${result.number}`);
         } else if (result.type === "Invoice") {
-            router.push(`/invoice/${result.number}`);
+            router.push(`/invoice/view?id=${result.number}`);
         }
     };
 

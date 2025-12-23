@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Upload, FileText, CheckCircle2, XCircle, TrendingDown } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 interface SRVListItem {
     srv_number: string;
@@ -36,7 +37,7 @@ export default function SRVPage() {
 
     const loadSRVs = async () => {
         try {
-            const response = await fetch('http://localhost:8000/api/srv');
+            const response = await fetch(`${API_BASE_URL}/api/srv`);
             if (!response.ok) {
                 console.error('Failed to load SRVs:', response.status);
                 setSrvs([]);
@@ -54,7 +55,7 @@ export default function SRVPage() {
 
     const loadStats = async () => {
         try {
-            const response = await fetch('http://localhost:8000/api/srv/stats');
+            const response = await fetch(`${API_BASE_URL}/api/srv/stats`);
             if (!response.ok) {
                 console.error('Failed to load SRV stats:', response.status);
                 return;
@@ -81,7 +82,7 @@ export default function SRVPage() {
         selectedFiles.forEach(file => formData.append('files', file));
 
         try {
-            const response = await fetch('http://localhost:8000/api/srv/upload/batch', {
+            const response = await fetch(`${API_BASE_URL}/api/srv/upload/batch`, {
                 method: 'POST',
                 body: formData,
             });
@@ -260,7 +261,7 @@ export default function SRVPage() {
                                         <tr key={srv.srv_number} className="hover:bg-gray-50">
                                             <td className="px-6 py-4">
                                                 <a
-                                                    href={`/srv/${srv.srv_number}`}
+                                                    href={`/srv/view?id=${srv.srv_number}`}
                                                     className="text-blue-600 hover:text-blue-800 font-medium"
                                                 >
                                                     {srv.srv_number}
@@ -269,7 +270,7 @@ export default function SRVPage() {
                                             <td className="px-6 py-4 text-sm text-gray-900">{srv.srv_date}</td>
                                             <td className="px-6 py-4">
                                                 <a
-                                                    href={`/po/${srv.po_number}`}
+                                                    href={`/po/view?id=${srv.po_number}`}
                                                     className="text-blue-600 hover:text-blue-800 text-sm"
                                                 >
                                                     {srv.po_number}
@@ -283,7 +284,7 @@ export default function SRVPage() {
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <a
-                                                    href={`/srv/${srv.srv_number}`}
+                                                    href={`/srv/view?id=${srv.srv_number}`}
                                                     className="text-xs text-blue-600 hover:text-blue-800"
                                                 >
                                                     View Details

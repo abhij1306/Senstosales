@@ -6,6 +6,8 @@
 
 import { useState } from "react";
 import PaginationControls from "@/components/ui/PaginationControls";
+import DownloadButton from "@/components/DownloadButton";
+import { API_BASE_URL } from "@/lib/api";
 
 interface InvoiceRow {
     invoice_number: string;
@@ -46,9 +48,17 @@ export default function InvoiceDateSummary({ data }: InvoiceDateSummaryProps) {
 
     return (
         <div className="glass-card p-6">
-            <h3 className="text-[16px] font-semibold text-text-primary mb-4">
-                Invoice Summary ({data.period.start} to {data.period.end})
-            </h3>
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="text-[16px] font-semibold text-text-primary">
+                    Invoice Summary ({data.period.start} to {data.period.end})
+                </h3>
+                <DownloadButton
+                    url={`${API_BASE_URL}/api/smart-reports/date-summary/export?entity=invoice&start_date=${data.period.start}&end_date=${data.period.end}`}
+                    filename={`Invoice_Summary_${data.period.start}_to_${data.period.end}.xlsx`}
+                    label="Export"
+                    size="sm"
+                />
+            </div>
 
             {/* Totals */}
             <div className="grid grid-cols-3 gap-4 mb-6">

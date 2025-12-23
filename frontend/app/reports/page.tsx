@@ -9,13 +9,13 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
     FileText, Calendar, DollarSign, Package, AlertTriangle,
     Loader2, Percent, Clock, TrendingUp, Users, BarChart3, Activity
 } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, API_BASE_URL } from '@/lib/api';
 import POHealthReport from '@/components/reports/POHealthReport';
 import POAgingReport from '@/components/reports/POAgingReport';
 import POEfficiencyReport from '@/components/reports/POEfficiencyReport';
@@ -43,7 +43,7 @@ type ReportType = 'po_health' | 'po_aging' | 'po_efficiency' | 'po_dependency' |
 // I will replace the main component logic.
 
 // Add searchParams to props
-export default function SmartReportsPage() {
+function SmartReportsContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const initialTab = searchParams.get('tab') || 'summary';
@@ -514,12 +514,7 @@ export default function SmartReportsPage() {
 
                     {!dateSummaryLoading && dateSummaryData && (
                         <div className="mt-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="font-semibold text-lg capitalize">{dateSummaryEntity} Report</h3>
-                                <button onClick={handleExportDateSummary} className="text-sm text-primary hover:underline flex items-center gap-1">
-                                    <TrendingUp className="w-3 h-3" /> Export to Excel
-                                </button>
-                            </div>
+                            {/* Summary Component handles its own header/export now */}
                             {dateSummaryEntity === 'po' && <PODateSummary data={dateSummaryData} />}
                             {dateSummaryEntity === 'challan' && <ChallanDateSummary data={dateSummaryData} />}
                             {dateSummaryEntity === 'invoice' && <InvoiceDateSummary data={dateSummaryData} />}
@@ -694,5 +689,17 @@ export default function SmartReportsPage() {
                 )
             }
         </div >
+    );
+}
+
+export default function SmartReportsPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center h-full">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+            </div>
+        }>
+            <SmartReportsContent />
+        </Suspense>
     );
 }

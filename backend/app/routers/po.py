@@ -150,3 +150,32 @@ async def upload_po_batch(files: List[UploadFile] = File(...), db: sqlite3.Conne
         "failed": failed,
         "results": results
     }
+
+@router.get("/{po_number}/download")
+def download_po_excel(po_number: int, db: sqlite3.Connection = Depends(get_db)):
+    """Download PO as Excel"""
+    try:
+        po_detail = po_service.get_po_detail(db, po_number)
+        
+        # Flatten deliveries for now (using all deliveries from all items)
+        deliveries = []
+        for item in po_detail.items:
+            deliveries.extend(item.deliveries)
+
+        from app.services.excel_service import ExcelService
+        from fastapi.responses import StreamingResponse
+        
+        excel_file = ExcelService.generate_po_excel(po_detail.header, po_detail.items, deliveries)
+        
+        filename = f"PO_{po_number}.xlsx"
+        headers = {
+            'Content-Disposition': f'attachment; filename="{filename}"'
+        }
+        
+        return StreamingResponse(
+            excel_file, 
+            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers=headers
+        )
+    except Exception as e:
+        raise internal_error(f"Failed to generate Excel: {str(e)}", e)

@@ -135,11 +135,37 @@ async def startup_event():
 async def shutdown_event():
     logger.info("Sales Manager API - Shutting down")
 
-@app.get("/")
-def root():
-    return {
-        "message": f"{settings.PROJECT_NAME} v2.0",
-        "status": "running",
-        "docs": "/api/docs",
-        "health": "/api/health"
-    }
+import os
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
+
+# Mount static files if directory exists (PROD mode)
+# In development, we don't need this as we run separate frontend
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+static_dir = os.path.join(base_dir, "static")
+
+if os.path.exists(static_dir):
+    logger.info(f"Serving static files from {static_dir}")
+    
+    # Mount _next separately to ensure it is handled correctly
+    if os.path.exists(os.path.join(static_dir, "_next")):
+        app.mount("/_next", StaticFiles(directory=os.path.join(static_dir, "_next")), name="static_next")
+    
+    # Mount root to serve HTML files
+    # We use a custom catch-all to handle SPA routing if needed, 
+    # but with Next.js static export + .html extension stripping, 
+    # we might need to be careful.
+    # For a simple static export, usually StaticFiles(html=True) works for /path -> /path.html
+    
+    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
+
+else:
+    # Fallback root for API-only mode
+    @app.get("/")
+    def root():
+        return {
+            "message": f"{settings.PROJECT_NAME} v2.0 API Only",
+            "status": "running",
+            "docs": "/api/docs",
+            "health": "/api/health"
+        }

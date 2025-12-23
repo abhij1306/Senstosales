@@ -251,7 +251,7 @@ function CreateInvoicePageContent() {
 
             const response = await api.createInvoice(payload);
             if (response.invoice_number) {
-                router.push(`/invoice/${response.invoice_number}`);
+                router.push(`/invoice/view?id=${response.invoice_number}`);
             } else {
                 router.push('/invoice');
             }

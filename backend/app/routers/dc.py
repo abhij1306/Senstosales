@@ -268,3 +268,29 @@ def update_dc(dc_number: str, dc: DCCreate, items: List[dict], db: sqlite3.Conne
         logger.error(f"DC update failed due to integrity error: {e}", exc_info=e)
         raise internal_error(f"Database integrity error: {str(e)}", e)
 
+
+@router.get("/{dc_number}/download")
+def download_dc_excel(dc_number: str, db: sqlite3.Connection = Depends(get_db)):
+    """Download DC as Excel"""
+    try:
+        # Get full detail logic
+        dc_data = get_dc_detail(dc_number, db)
+        
+        from app.services.excel_service import ExcelService
+        from fastapi.responses import StreamingResponse
+        
+        excel_file = ExcelService.generate_dc_excel(dc_data['header'], dc_data['items'])
+        
+        filename = f"DC_{dc_number}.xlsx"
+        headers = {
+            'Content-Disposition': f'attachment; filename="{filename}"'
+        }
+        
+        return StreamingResponse(
+            excel_file, 
+            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers=headers
+        )
+    except Exception as e:
+        raise internal_error(f"Failed to generate Excel: {str(e)}", e)
+

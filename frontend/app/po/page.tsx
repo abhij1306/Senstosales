@@ -387,7 +387,7 @@ export default function POPage() {
                                         </td>
                                         <td className="px-6 py-3">
                                             <Link
-                                                href={`/po/${po.po_number}`}
+                                                href={`/po/view?id=${po.po_number}`}
                                                 className="text-primary font-semibold hover:text-blue-700 hover:underline text-[13px]"
                                             >
                                                 PO-{po.po_number}
@@ -423,7 +423,7 @@ export default function POPage() {
                                                             return dcs.map((dc, i) => (
                                                                 <Link
                                                                     key={i}
-                                                                    href={`/dc/${dc}`}
+                                                                    href={`/dc/view?id=${dc}`}
                                                                     className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[11px] rounded border border-indigo-100 font-medium hover:bg-indigo-100 transition-colors"
                                                                 >
                                                                     {dc}
@@ -442,7 +442,7 @@ export default function POPage() {
                                                                         {dcs.map((dc, i) => (
                                                                             <Link
                                                                                 key={i}
-                                                                                href={`/dc/${dc}`}
+                                                                                href={`/dc/view?id=${dc}`}
                                                                                 className="block px-2 py-1.5 text-xs font-medium text-text-primary hover:bg-indigo-50 hover:text-indigo-700 rounded transition-colors"
                                                                             >
                                                                                 {dc}

@@ -183,7 +183,7 @@ function CreateDCPageContent() {
             }));
 
             await api.createDC(dcPayload, itemsPayload);
-            router.push(`/dc/${formData.dc_number}`);
+            router.push(`/dc/view?id=${formData.dc_number}`);
         } catch (err) {
             console.error("Failed to create DC", err);
             setError(err instanceof Error ? err.message : "Failed to create DC");

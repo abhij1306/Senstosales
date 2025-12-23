@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Edit2, Save, X, FileText, Plus, Trash2, Truck, AlertCircle } from "lucide-react";
-import { api } from "@/lib/api";
+
+import { api, API_BASE_URL } from "@/lib/api";
 import { DCItemRow as DCItemRowType } from "@/types";
+import DownloadButton from "@/components/DownloadButton";
 
 const PO_NOTE_TEMPLATES = [
     { id: 't1', title: 'Standard Dispatch Note', content: 'Material is being dispatched against PO No: ... dated ...' },
@@ -15,10 +17,10 @@ const PO_NOTE_TEMPLATES = [
 
 
 
-export default function DCDetailPage() {
+function DCDetailContent() {
     const router = useRouter();
-    const params = useParams();
-    const dcId = params?.id as string;
+    const searchParams = useSearchParams();
+    const dcId = searchParams.get('id');
 
     const [loading, setLoading] = useState(true);
     const [editMode, setEditMode] = useState(false);
@@ -186,6 +188,7 @@ export default function DCDetailPage() {
                 dispatch_qty: item.dispatch_quantity
             }));
 
+            if (!dcId) return;
             await api.updateDC(dcId, dcPayload, itemsPayload);
             setEditMode(false);
             window.location.reload();
@@ -240,7 +243,7 @@ export default function DCDetailPage() {
                             Delivery Challan {formData.dc_number}
                             {formData.po_number && (
                                 <span className="text-[11px] font-medium text-text-secondary bg-gray-100 px-2 py-0.5 rounded border border-border flex items-center gap-1">
-                                    PO: <button onClick={() => router.push(`/po/${formData.po_number}`)} className="text-primary hover:underline">{formData.po_number}</button>
+                                    PO: <button onClick={() => router.push(`/po/view?id=${formData.po_number}`)} className="text-primary hover:underline">{formData.po_number}</button>
                                 </span>
                             )}
                         </h1>
@@ -267,10 +270,15 @@ export default function DCDetailPage() {
                         </>
                     ) : (
                         <>
+                            <DownloadButton
+                                url={`${API_BASE_URL}/api/dc/${formData.dc_number}/download`}
+                                filename={`DC_${formData.dc_number}.xlsx`}
+                                label="Download Challan"
+                            />
                             <button
                                 onClick={() => {
                                     if (hasInvoice && invoiceNumber) {
-                                        router.push(`/invoice/${invoiceNumber}`);
+                                        router.push(`/invoice/view?id=${invoiceNumber}`);
                                     } else {
                                         router.push(`/invoice/create?dc=${dcId}`);
                                     }
@@ -297,12 +305,14 @@ export default function DCDetailPage() {
             </div>
 
             {/* Error Display */}
-            {error && (
-                <div className="bg-red-50 border border-red-100 rounded-lg p-3 flex items-start gap-3 text-danger">
-                    <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                    <p className="text-sm font-medium">{error}</p>
-                </div>
-            )}
+            {
+                error && (
+                    <div className="bg-red-50 border border-red-100 rounded-lg p-3 flex items-start gap-3 text-danger">
+                        <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                        <p className="text-sm font-medium">{error}</p>
+                    </div>
+                )
+            }
 
             {/* Tabs & Content */}
             <div className="glass-card overflow-hidden">
@@ -561,6 +571,18 @@ export default function DCDetailPage() {
                     )}
                 </div>
             </div>
-        </div>
+        </div >
+    );
+}
+
+export default function DCDetailPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center h-full">
+                <div className="text-primary font-medium">Loading...</div>
+            </div>
+        }>
+            <DCDetailContent />
+        </Suspense>
     );
 }

@@ -356,13 +356,14 @@ def get_date_summary(
                         WHEN COALESCE(SUM(dci.dispatch_qty), 0) = 0 THEN 'Not Started'
                         WHEN COALESCE(SUM(dci.dispatch_qty), 0) >= COALESCE(SUM(poi.ord_qty), 0) THEN 'Completed'
                         ELSE 'In Progress'
-                    END as status
+                    END as status,
+                    po.supplier_name
                 FROM purchase_orders po
                 LEFT JOIN purchase_order_items poi ON po.po_number = poi.po_number
                 LEFT JOIN delivery_challan_items dci ON poi.id = dci.po_item_id
                 WHERE date(substr(po.po_date, 7, 4) || '-' || substr(po.po_date, 4, 2) || '-' || substr(po.po_date, 1, 2)) 
                       BETWEEN date(?) AND date(?)
-                GROUP BY po.po_number, po.po_date
+                GROUP BY po.po_number, po.po_date, po.supplier_name
                 ORDER BY date(substr(po.po_date, 7, 4) || '-' || substr(po.po_date, 4, 2) || '-' || substr(po.po_date, 1, 2)) DESC
             """
             rows = db.execute(query, (start_date, end_date)).fetchall()
@@ -383,7 +384,8 @@ def get_date_summary(
                         "total_ordered": row[2],
                         "total_dispatched": row[3],
                         "pending_qty": row[4],
-                        "status": row[5]
+                        "status": row[5],
+                        "supplier_name": row[6]
                     }
                     for row in rows
                 ],
@@ -450,8 +452,11 @@ def get_date_summary(
                     i.invoice_number,
                     i.invoice_date,
                     i.linked_dc_numbers,
-                    COALESCE(i.total_invoice_value, 0) as invoice_value
+                    COALESCE(i.total_invoice_value, 0) as invoice_value,
+                    po.supplier_name as party_name
                 FROM gst_invoices i
+                LEFT JOIN delivery_challans dc ON i.linked_dc_numbers = dc.dc_number
+                LEFT JOIN purchase_orders po ON dc.po_number = po.po_number
                 WHERE i.invoice_date BETWEEN ? AND ?
                 ORDER BY i.invoice_date DESC
             """
@@ -470,7 +475,8 @@ def get_date_summary(
                         "invoice_number": row[0],
                         "invoice_date": row[1],
                         "linked_dc_numbers": row[2],
-                        "invoice_value": float(row[3])
+                        "invoice_value": float(row[3]),
+                        "party_name": row[4]
                     }
                     for row in rows
                 ],
@@ -497,177 +503,21 @@ def export_date_summary(
     db: sqlite3.Connection = Depends(get_db)
 ):
     """
-    Export date-wise summary to Excel.
-    For 'invoice', generates the legacy 'SALE SUMMARY' format.
+    Export date-wise summary to Excel using ExcelService.
     """
     from fastapi.responses import StreamingResponse
-    from io import BytesIO
-    from openpyxl import Workbook
-    from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
+    from app.services.excel_service import ExcelService
     
     try:
-        wb = Workbook()
-        ws = wb.active
-        ws.title = f"{entity.upper()} Summary"
+        # Reuse the existing data fetching logic
+        summary_data = get_date_summary(entity, start_date, end_date, db)
+        rows = summary_data.get("rows", [])
         
-        # Styles
-        border_style = Border(
-            left=Side(style='thin'), 
-            right=Side(style='thin'), 
-            top=Side(style='thin'), 
-            bottom=Side(style='thin')
-        )
-        bold_font = Font(bold=True)
-        center_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        # Prepare filename
+        filename = f"{entity.upper()}_Summary_{start_date}_to_{end_date}.xlsx"
         
-        if entity == "invoice":
-            # --- SALE SUMMARY FORMAT ---
-            
-            # 1. Fetch Data with Items
-            query = """
-                SELECT 
-                    i.invoice_number,
-                    i.invoice_date,
-                    i.linked_dc_numbers,
-                    po.supplier_name, -- Consignee (Party Name)
-                    po.po_number,
-                    ii.description,
-                    ii.quantity,
-                    ii.amount, -- Using amount as taxable/assessable value for now
-                    i.total_invoice_value -- Final Total
-                FROM gst_invoices i
-                LEFT JOIN gst_invoice_items ii ON i.invoice_number = ii.invoice_number
-                LEFT JOIN delivery_challans dc ON i.linked_dc_numbers = dc.dc_number
-                LEFT JOIN purchase_orders po ON dc.po_number = po.po_number
-                WHERE i.invoice_date BETWEEN ? AND ?
-                ORDER BY i.invoice_date DESC, i.invoice_number
-            """
-            rows = db.execute(query, (start_date, end_date)).fetchall()
-
-            # 2. Header Section (Company Details)
-            # Fetch company name from POs (assuming we are the supplier for all)
-            company_row = db.execute("SELECT supplier_name FROM purchase_orders WHERE supplier_name IS NOT NULL LIMIT 1").fetchone()
-            company_name = company_row[0] if company_row else "SENSOVISION SYSTEMS"
-
-            ws.merge_cells('A1:O1') # Company Name
-            ws['A1'] = company_name
-            ws['A1'].font = Font(bold=True, size=16, color="000000")
-            ws['A1'].alignment = center_align
-            
-            ws.merge_cells('A2:O2') # Title
-            ws['A2'] = "SALE SUMMARY"
-            ws['A2'].font = Font(bold=True, size=12, underline="single")
-            ws['A2'].alignment = center_align
-
-            # 3. Column Headers
-            headers = [
-                "S. No.", "Inv No. & Dt", "DC No.", "Name of Party", 
-                "PO & Item Description", "Qty", "Inv Ass. Value", 
-                "E.D. 10 %", "ED Cess 2 %", "ED Cess1 %", "Sub Total", 
-                "VAT 13%", "CST 2 %", "Other Additons", "Total"
-            ]
-            
-            ws.append(headers) # This appends to the next open row (which is 3)
-            header_row_idx = 3
-            
-            for col_idx, header in enumerate(headers, 1):
-                cell = ws.cell(row=header_row_idx, column=col_idx)
-                cell.font = bold_font
-                cell.alignment = center_align
-                cell.border = border_style
-                # Set column widths roughly
-                ws.column_dimensions[cell.column_letter].width = 15
-            
-            ws.column_dimensions['D'].width = 25 # Party Name
-            ws.column_dimensions['E'].width = 30 # Description
-
-            # 4. Data Rows
-            current_row = 4
-            s_no = 1
-            
-            for row in rows:
-                # Unpack
-                inv_no = row[0]
-                inv_date_str = row[1] 
-                # Format date to DD/MM/YYYY
-                try:
-                    inv_date_obj = datetime.strptime(inv_date_str, '%Y-%m-%d')
-                    inv_date = inv_date_obj.strftime('%d/%m/%Y')
-                except:
-                    inv_date = inv_date_str
-
-                dc_no = row[2]
-                party_name = row[3] or "N/A"
-                po_no = row[4] or ""
-                desc = row[5] or ""
-                qty = row[6] or 0
-                taxable_val = float(row[7] or 0)
-                final_total = float(row[8] or 0)
-                
-                # Combine PO & Desc if needed? User image shows "PO & Item Description"
-                full_desc = f"{desc}\n(PO: {po_no})" if po_no else desc
-
-                # Legacy Tax placeholders (Defaults as 0 per user requirement implicitly)
-                ed_val = 0.0
-                ed_cess_val = 0.0
-                ed_cess1_val = 0.0
-                sub_total = taxable_val # + taxes if they existed
-                vat_val = 0.0
-                cst_val = 0.0
-                other_add = 0.0
-                
-                # Use final_total from DB for the last column, ensuring it matches
-                # If we were calculating: total = sub_total + vat + cst + others
-                
-                data_row = [
-                    s_no,
-                    f"{inv_no}\n{inv_date}",
-                    dc_no,
-                    party_name,
-                    full_desc,
-                    qty,
-                    taxable_val,
-                    ed_val,
-                    ed_cess_val,
-                    ed_cess1_val,
-                    sub_total,
-                    vat_val,
-                    cst_val,
-                    other_add,
-                    final_total
-                ]
-                
-                ws.append(data_row)
-                
-                # Styling for this row
-                for col_idx in range(1, 16):
-                    cell = ws.cell(row=current_row, column=col_idx)
-                    cell.border = border_style
-                    cell.alignment = Alignment(vertical="center", wrap_text=True)
-                    if col_idx in [7, 8, 9, 10, 11, 12, 13, 14, 15]: # Number columns
-                        cell.number_format = '0.00'
-                
-                current_row += 1
-                s_no += 1
-        
-        else:
-            # Fallback for 'po' and 'challan' (reuse previous simple logic or keep it minimal)
-            # For brevity in this tool call, I'll just create a simple dump for them
-            summary_data = get_date_summary(entity, start_date, end_date, db)
-            
-            # Simple header
-            headers = [k.replace('_', ' ').title() for k in summary_data["rows"][0].keys()] if summary_data["rows"] else []
-            ws.append(headers)
-            
-            for row in summary_data["rows"]:
-                ws.append(list(row.values()))
-
-        # Buffer
-        excel_file = BytesIO()
-        wb.save(excel_file)
-        excel_file.seek(0)
-        
-        filename = f"{entity}_summary_{start_date}_to_{end_date}.xlsx"
+        # Generate Excel
+        excel_file = ExcelService.generate_date_summary_excel(entity, start_date, end_date, rows)
         
         return StreamingResponse(
             excel_file,

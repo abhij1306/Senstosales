@@ -221,3 +221,28 @@ def create_invoice(request: EnhancedInvoiceCreate, db: sqlite3.Connection = Depe
     except sqlite3.IntegrityError as e:
         logger.error(f"Invoice creation failed due to integrity error: {e}", exc_info=e)
         raise internal_error(f"Database integrity error: {str(e)}", e)
+
+
+@router.get("/{invoice_number}/download")
+def download_invoice_excel(invoice_number: str, db: sqlite3.Connection = Depends(get_db)):
+    """Download Invoice as Excel"""
+    try:
+        data = get_invoice_detail(invoice_number, db)
+        
+        from app.services.excel_service import ExcelService
+        from fastapi.responses import StreamingResponse
+        
+        excel_file = ExcelService.generate_invoice_excel(data['header'], data['items'])
+        
+        filename = f"Invoice_{invoice_number}.xlsx"
+        headers = {
+            'Content-Disposition': f'attachment; filename="{filename}"'
+        }
+        
+        return StreamingResponse(
+            excel_file, 
+            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            headers=headers
+        )
+    except Exception as e:
+        raise internal_error(f"Failed to generate Excel: {str(e)}", e)

@@ -226,7 +226,7 @@ export default function InvoicePage() {
                                             </td>
                                             <td className="px-6 py-3">
                                                 <button
-                                                    onClick={() => router.push(`/invoice/${invoice.invoice_number}`)}
+                                                    onClick={() => router.push(`/invoice/view?id=${invoice.invoice_number}`)}
                                                     className="text-[13px] font-semibold text-primary hover:text-blue-700 hover:underline"
                                                 >
                                                     {invoice.invoice_number}
@@ -243,7 +243,7 @@ export default function InvoicePage() {
                                                     {invoice.linked_dc_numbers ? invoice.linked_dc_numbers.split(',').map((dc, i) => (
                                                         <button
                                                             key={i}
-                                                            onClick={() => router.push(`/dc/${dc.trim()}`)}
+                                                            onClick={() => router.push(`/dc/view?id=${dc.trim()}`)}
                                                             className="px-2 py-0.5 bg-gray-50 text-text-secondary text-[11px] rounded border border-border font-medium hover:bg-gray-100 hover:text-primary transition-colors"
                                                         >
                                                             {dc.trim()}
@@ -261,7 +261,7 @@ export default function InvoicePage() {
                                             </td>
                                             <td className="px-6 py-3 text-center">
                                                 <button
-                                                    onClick={() => router.push(`/invoice/${invoice.invoice_number}`)}
+                                                    onClick={() => router.push(`/invoice/view?id=${invoice.invoice_number}`)}
                                                     className="text-text-secondary hover:text-primary transition-colors p-1 rounded hover:bg-gray-100"
                                                 >
                                                     <Eye className="w-4 h-4" />

@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Printer, FileText, Package, Truck, Lock } from "lucide-react";
-import { api } from "@/lib/api";
+
+import { api, API_BASE_URL } from "@/lib/api";
+import DownloadButton from "@/components/DownloadButton";
 
 // ============================================================================
 // UTILITY FUNCTIONS
@@ -73,10 +75,10 @@ const Input = ({ label, value, onChange, type = "text", placeholder = "", requir
     </div>
 );
 
-export default function InvoiceDetailPage() {
+function InvoiceDetailContent() {
     const router = useRouter();
-    const params = useParams();
-    const invoiceId = params?.id as string;
+    const searchParams = useSearchParams();
+    const invoiceId = searchParams.get('id');
     const [activeTab, setActiveTab] = useState('details');
 
     const [data, setData] = useState<any>(null);
@@ -147,6 +149,11 @@ export default function InvoiceDetailPage() {
                     </div>
                 </div>
                 <div className="flex gap-3">
+                    <DownloadButton
+                        url={`${API_BASE_URL}/api/invoice/${header.invoice_number}/download`}
+                        filename={`Invoice_${header.invoice_number}.xlsx`}
+                        label="Download Excel"
+                    />
                     <button
                         onClick={() => window.print()}
                         className="px-4 py-2 text-sm font-medium text-text-secondary bg-white border border-border rounded-lg hover:bg-gray-50 flex items-center gap-2 transition-colors"
@@ -329,5 +336,17 @@ export default function InvoiceDetailPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function InvoiceDetailPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center h-full">
+                <div className="text-primary font-medium">Loading...</div>
+            </div>
+        }>
+            <InvoiceDetailContent />
+        </Suspense>
     );
 }

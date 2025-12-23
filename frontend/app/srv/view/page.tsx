@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { use } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, FileText, Package } from 'lucide-react';
+import { API_BASE_URL } from '@/lib/api';
 
 interface SRVHeader {
     srv_number: string;
@@ -28,8 +29,9 @@ interface SRVDetail {
     items: SRVItem[];
 }
 
-export default function SRVDetailPage({ params }: { params: Promise<{ srv_number: string }> }) {
-    const { srv_number } = use(params);
+function SRVDetailContent() {
+    const searchParams = useSearchParams();
+    const srv_number = searchParams.get('id');
     const [srv, setSrv] = useState<SRVDetail | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -39,7 +41,7 @@ export default function SRVDetailPage({ params }: { params: Promise<{ srv_number
 
     const loadSRVDetail = async () => {
         try {
-            const response = await fetch(`http://localhost:8000/api/srv/${srv_number}`);
+            const response = await fetch(`${API_BASE_URL}/api/srv/${srv_number}`);
             const data = await response.json();
             setSrv(data);
         } catch (error) {
@@ -109,7 +111,7 @@ export default function SRVDetailPage({ params }: { params: Promise<{ srv_number
                         <div>
                             <p className="text-xs font-medium text-gray-500 uppercase mb-1">PO Number</p>
                             <a
-                                href={`/po/${srv.header.po_number}`}
+                                href={`/po/view?id=${srv.header.po_number}`}
                                 className="text-sm font-medium text-blue-600 hover:text-blue-800"
                             >
                                 {srv.header.po_number}
@@ -179,5 +181,17 @@ export default function SRVDetailPage({ params }: { params: Promise<{ srv_number
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function SRVDetailPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 p-6 flex items-center justify-center">
+                <p className="text-gray-500">Loading SRV details...</p>
+            </div>
+        }>
+            <SRVDetailContent />
+        </Suspense>
     );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, TrendingUp } from "lucide-react";
 import { api } from '@/lib/api';
@@ -17,9 +17,10 @@ interface LocalReconciliationData {
     items: ReconciliationItem[];
 }
 
-export default function POReconciliationPage() {
-    const params = useParams();
-    const poNumber = parseInt(params.id as string);
+function POReconciliationContent() {
+    const searchParams = useSearchParams();
+    const poId = searchParams.get('id');
+    const poNumber = poId ? parseInt(poId) : 0;
     const [data, setData] = useState<LocalReconciliationData | null>(null);
     const [loading, setLoading] = useState(true);
 
@@ -204,5 +205,17 @@ export default function POReconciliationPage() {
                 </table>
             </div>
         </div>
+    );
+}
+
+export default function POReconciliationPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center h-full">
+                <div className="text-gray-500">Loading...</div>
+            </div>
+        }>
+            <POReconciliationContent />
+        </Suspense>
     );
 }
