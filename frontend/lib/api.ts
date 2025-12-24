@@ -21,14 +21,16 @@ export interface POListItem {
     [key: string]: any;
 }
 
-total_pos: number;
-total_value: number;
-pending_pos: number;
-completed_pos: number;
-open_orders_count: number;
-pending_approval_count: number;
-total_value_ytd: number;
-total_value_change: number;
+export interface POStats {
+    total_pos: number;
+    total_value: number;
+    pending_pos: number;
+    completed_pos: number;
+    open_orders_count: number;
+    pending_approval_count: number;
+    total_value_ytd: number;
+    total_value_change: number;
+}
 
 type FetchOptions = RequestInit & {
     retries?: number;
