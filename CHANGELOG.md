@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **Global Font Weight Check**: Audited and corrected font weight discrepancies between List and View pages.
+- **Accounting Formatting**:
+  - Adopted `tabular-nums` for all numeric columns (PO, Invoice, DC) to ensure perfect vertical alignment of digits.
+  - Enforced strict Right Alignment for all monetary and quantity fields.
+  - Applied Indian Currency Formatting (Lakhs/Crores) to all large values across Dashboards and Lists for better readability.
 
 ## [2.2.0] - 2025-12-25
 

@@ -486,12 +486,8 @@ function DCDetailContent() {
                                                     <div className="text-xs text-slate-800 font-medium py-1">{item.description}</div>
                                                 )}
                                             </td>
-                                            <td className="px-4 py-2 text-right text-xs text-slate-500">
-                                                {item.ordered_quantity}
-                                            </td>
-                                            <td className="px-4 py-2 text-right text-xs text-slate-700 font-bold">
-                                                {item.remaining_post_dc}
-                                            </td>
+                                            <td className="px-3 py-2 text-right font-medium text-slate-600">{(item.ordered_quantity || 0).toLocaleString('en-IN')}</td>
+                                            <td className="px-3 py-2 text-right font-medium text-amber-600">{(item.remaining_post_dc || 0).toLocaleString('en-IN')}</td>
                                             <td className="px-4 py-2">
                                                 {editMode ? (
                                                     <input

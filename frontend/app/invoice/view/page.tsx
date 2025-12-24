@@ -280,15 +280,15 @@ function InvoiceDetailContent() {
                                         <tr key={idx} className="hover:bg-white/60 transition-colors bg-white/20">
                                             <td className="px-4 py-3 text-xs text-slate-700 font-bold">{item.po_sl_no}</td>
                                             <td className="px-4 py-3 text-xs text-slate-700 font-medium">{item.description}</td>
-                                            <td className="px-4 py-3 text-xs text-slate-700 text-right">{item.quantity}</td>
+                                            <td className="px-4 py-3 text-xs text-slate-700 text-right">{item.quantity?.toLocaleString('en-IN')}</td>
                                             <td className="px-4 py-3 text-xs text-slate-500">{item.unit}</td>
                                             <td className="px-4 py-3 text-xs text-slate-700 flex items-center justify-end gap-0.5">
-                                                <span className="text-slate-400">₹</span>{item.rate?.toFixed(2)}
+                                                <span className="text-slate-400">₹</span>{item.rate?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                             </td>
-                                            <td className="px-4 py-3 text-xs text-slate-700 text-right font-medium">₹{item.taxable_value?.toFixed(2)}</td>
-                                            <td className="px-4 py-3 text-xs text-slate-500 text-right">₹{item.cgst_amount?.toFixed(2)}</td>
-                                            <td className="px-4 py-3 text-xs text-slate-500 text-right">₹{item.sgst_amount?.toFixed(2)}</td>
-                                            <td className="px-4 py-3 text-xs text-slate-800 text-right font-bold">₹{item.total_amount?.toFixed(2)}</td>
+                                            <td className="px-4 py-3 text-xs text-slate-700 text-right font-medium">₹{item.taxable_value?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                            <td className="px-4 py-3 text-xs text-slate-500 text-right">₹{item.cgst_amount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                            <td className="px-4 py-3 text-xs text-slate-500 text-right">₹{item.sgst_amount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                            <td className="px-4 py-3 text-xs text-slate-800 text-right font-bold">₹{item.total_amount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                         </tr>
                                     ))}
                                 </tbody>

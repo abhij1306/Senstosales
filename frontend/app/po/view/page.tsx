@@ -414,16 +414,16 @@ function PODetailContent() {
                                                             }}
                                                         />
                                                     ) : (
-                                                        <span className="font-medium text-slate-700 text-xs">{item.ordered_quantity}</span>
+                                                        <span className="font-medium text-slate-700 text-xs">{(item.ordered_quantity || 0).toLocaleString('en-IN')}</span>
                                                     )}
                                                 </div>
                                                 <div>
                                                     <span className="block text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-0.5">Delivered</span>
-                                                    <span className="font-medium text-blue-600 text-xs">{item.delivered_quantity || 0}</span>
+                                                    <span className="font-medium text-blue-600 text-xs">{(item.delivered_quantity || 0).toLocaleString('en-IN')}</span>
                                                 </div>
                                                 <div>
                                                     <span className="block text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-0.5">Received</span>
-                                                    <span className="font-medium text-emerald-600 text-xs">{item.received_quantity || 0}</span>
+                                                    <span className="font-medium text-emerald-600 text-xs">{(item.received_quantity || 0).toLocaleString('en-IN')}</span>
                                                 </div>
                                                 {/* <div>
                                                     <span className="block text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-0.5">Rejected</span>

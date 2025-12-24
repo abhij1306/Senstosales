@@ -7,7 +7,7 @@ import { FileText, Truck, Receipt, MoveUpRight, Clock, Sparkles, AlertCircle } f
 import GlassCard from "@/components/ui/GlassCard";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { DenseTable } from "@/components/ui/DenseTable";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatIndianCurrency } from "@/lib/utils";
 import ReconciliationBadge from "@/components/ui/ReconciliationBadge";
 
 export default function DashboardPage() {
@@ -81,7 +81,7 @@ export default function DashboardPage() {
       header: "Amount",
       accessorKey: "amount" as keyof ActivityItem,
       className: "text-right font-medium text-slate-700",
-      cell: (item: ActivityItem) => item.amount ? `₹${item.amount.toLocaleString()}` : '-'
+      cell: (item: ActivityItem) => item.amount ? `₹${item.amount.toLocaleString('en-IN')}` : '-'
     },
     {
       header: "Status",
@@ -122,7 +122,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <KpiTile
           title="Total Sales (Month)"
-          value={`₹${summary.total_sales_month.toLocaleString('en-IN')}`}
+          value={formatIndianCurrency(summary.total_sales_month)}
           trend={summary.sales_growth}
           icon={FileText}
           color="blue"
@@ -143,7 +143,7 @@ export default function DashboardPage() {
         />
         <KpiTile
           title="Total PO Value (YTD)"
-          value={`₹${summary.total_po_value.toLocaleString('en-IN')}`}
+          value={formatIndianCurrency(summary.total_po_value)}
           trend={summary.po_value_growth}
           icon={Receipt}
           color="emerald"

@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { DenseTable } from "@/components/ui/DenseTable";
+import { formatIndianCurrency } from "@/lib/utils";
 
 export default function InvoicePage() {
     const router = useRouter();
@@ -71,7 +72,7 @@ export default function InvoicePage() {
         {
             header: "Total Value",
             accessorKey: "total_invoice_value" as keyof InvoiceListItem,
-            className: "text-right font-medium text-slate-700",
+            className: "text-right font-medium text-slate-700 tabular-nums",
             cell: (inv: InvoiceListItem) => `₹${inv.total_invoice_value?.toLocaleString('en-IN') || '0'}`
         },
         {
@@ -112,7 +113,7 @@ export default function InvoicePage() {
                             <TrendingUp className="w-4 h-4 text-emerald-500" />
                         </div>
                         <div className="flex flex-col">
-                            <div className="text-[28px] font-bold text-slate-800">₹{stats.total_invoiced.toLocaleString('en-IN')}</div>
+                            <div className="text-[28px] font-bold text-slate-800">{formatIndianCurrency(stats.total_invoiced)}</div>
                             <div className="text-[10px] text-emerald-600 font-medium">+ {stats.total_invoiced_change}% vs last month</div>
                         </div>
                     </Card>
@@ -123,7 +124,7 @@ export default function InvoicePage() {
                             <FileText className="w-4 h-4 text-blue-500" />
                         </div>
                         <div className="flex flex-col">
-                            <div className="text-[28px] font-bold text-slate-800">₹{stats.gst_collected.toLocaleString('en-IN')}</div>
+                            <div className="text-[28px] font-bold text-slate-800">{formatIndianCurrency(stats.gst_collected)}</div>
                             <div className="text-[10px] text-blue-600 font-medium">+ {stats.gst_collected_change}% vs last month</div>
                         </div>
                     </Card>
@@ -134,8 +135,8 @@ export default function InvoicePage() {
                             <AlertCircle className="w-4 h-4 text-amber-500" />
                         </div>
                         <div className="flex flex-col">
-                            <div className="text-[28px] font-bold text-slate-800">₹{stats.pending_payments.toLocaleString('en-IN')}</div>
-                            <div className="text-[10px] text-amber-600 font-medium">{stats.pending_payments_count} Unpaid Invoices</div>
+                            <div className="text-[28px] font-bold text-slate-800">{formatIndianCurrency(stats.pending_payments)}</div>
+                            <div className="text-[10px] text-amber-600 font-medium">{stats.pending_payments_count.toLocaleString('en-IN')} Unpaid Invoices</div>
                         </div>
                     </Card>
                 </div>

@@ -12,7 +12,7 @@ import GlassCard from "@/components/ui/GlassCard";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { DenseTable, SortConfig, Column } from "@/components/ui/DenseTable";
 import { Pagination } from "@/components/ui/Pagination";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatIndianCurrency } from "@/lib/utils";
 import { useToast } from "@/components/ui/Toast";
 
 interface UploadResult {
@@ -210,17 +210,17 @@ export default function POPage() {
             header: "Ord",
             accessorKey: "total_ordered_quantity",
             enableSorting: true,
-            className: "text-right w-[80px] text-slate-700 font-medium border-l border-slate-100",
-            cell: (po: POListItem) => po.total_ordered_quantity?.toFixed(0) || '-'
+            className: "text-right w-[80px] text-slate-700 font-medium tabular-nums border-l border-slate-100",
+            cell: (po: POListItem) => po.total_ordered_quantity?.toLocaleString('en-IN') || '-'
         },
         {
             header: "Del",
             accessorKey: "total_dispatched_quantity",
             enableSorting: true,
-            className: "text-right w-[80px] text-slate-700 border-l border-slate-100",
+            className: "text-right w-[80px] text-slate-700 tabular-nums border-l border-slate-100",
             cell: (po: POListItem) => (
                 <span className={(po.total_dispatched_quantity || 0) > 0 ? "text-slate-700 font-medium" : "text-slate-400 font-normal"}>
-                    {po.total_dispatched_quantity?.toFixed(0) || '0'}
+                    {po.total_dispatched_quantity?.toLocaleString('en-IN') || '0'}
                 </span>
             )
         },
@@ -228,10 +228,10 @@ export default function POPage() {
             header: "Recd",
             accessorKey: "total_received_quantity",
             enableSorting: true,
-            className: "text-right w-[80px] border-l border-slate-100",
+            className: "text-right w-[80px] tabular-nums border-l border-slate-100",
             cell: (po: POListItem) => (
                 <span className={(po.total_received_quantity || 0) > 0 ? "text-emerald-600 font-medium" : "text-slate-400 font-normal"}>
-                    {po.total_received_quantity?.toFixed(0) || '0'}
+                    {po.total_received_quantity?.toLocaleString('en-IN') || '0'}
                 </span>
             )
         },
@@ -239,10 +239,10 @@ export default function POPage() {
             header: "Rej",
             accessorKey: "total_rejected_quantity",
             enableSorting: true,
-            className: "text-right w-[80px] border-l border-slate-100 border-r-2 border-r-transparent",
+            className: "text-right w-[80px] tabular-nums border-l border-slate-100 border-r-2 border-r-transparent",
             cell: (po: POListItem) => (
                 <span className={(po.total_rejected_quantity || 0) > 0 ? "text-red-600 font-medium" : "text-slate-300 font-normal"}>
-                    {po.total_rejected_quantity?.toFixed(0) || '0'}
+                    {po.total_rejected_quantity?.toLocaleString('en-IN') || '0'}
                 </span>
             )
         },
@@ -250,10 +250,10 @@ export default function POPage() {
             header: "Value",
             accessorKey: "po_value",
             enableSorting: true,
-            className: "text-right",
+            className: "text-right tabular-nums",
             cell: (po: POListItem) => (
                 <span className="font-semibold text-slate-700">
-                    ₹{(po.po_value || 0).toLocaleString('en-IN')}
+                    {formatIndianCurrency(po.po_value)}
                 </span>
             )
         }
@@ -341,21 +341,21 @@ export default function POPage() {
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total POs</span>
                             <FileText className="w-4 h-4 text-indigo-500" />
                         </div>
-                        <div className="text-[28px] font-bold text-slate-800">{pos.length}</div>
+                        <div className="text-[28px] font-bold text-slate-800">{pos.length.toLocaleString('en-IN')}</div>
                     </GlassCard>
                     <GlassCard className="flex flex-col justify-between h-[90px] p-4">
                         <div className="flex justify-between items-start">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Orders</span>
                             <ClipboardList className="w-4 h-4 text-blue-500" />
                         </div>
-                        <div className="text-[28px] font-bold text-slate-800">{stats.open_orders_count}</div>
+                        <div className="text-[28px] font-bold text-slate-800">{stats.open_orders_count.toLocaleString('en-IN')}</div>
                     </GlassCard>
                     <GlassCard className="flex flex-col justify-between h-[90px] p-4">
                         <div className="flex justify-between items-start">
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending</span>
                             <Clock className="w-4 h-4 text-amber-500" />
                         </div>
-                        <div className="text-[28px] font-bold text-slate-800">{stats.pending_approval_count}</div>
+                        <div className="text-[28px] font-bold text-slate-800">{stats.pending_approval_count.toLocaleString('en-IN')}</div>
                     </GlassCard>
                     <GlassCard className="flex flex-col justify-between h-[90px] p-4">
                         <div className="flex justify-between items-start">
@@ -363,7 +363,7 @@ export default function POPage() {
                             <DollarSign className="w-4 h-4 text-emerald-500" />
                         </div>
                         <div className="flex flex-col">
-                            <div className="text-[28px] font-bold text-slate-800">₹{stats.total_value_ytd.toLocaleString('en-IN')}</div>
+                            <div className="text-[28px] font-bold text-slate-800">{formatIndianCurrency(stats.total_value_ytd)}</div>
                             <div className="text-[10px] text-emerald-600 font-medium flex items-center gap-1">
                                 <TrendingUp className="w-3 h-3" />
                                 {stats.total_value_change}% vs last month

@@ -436,8 +436,10 @@ function CreateDCPageContent() {
                                                     readOnly={!!item.po_item_id}
                                                 />
                                             </td>
-                                            <td className="px-4 py-3 text-right text-sm text-slate-500">{item.ordered_quantity}</td>
-                                            <td className="px-4 py-3 text-right text-sm font-bold text-slate-700">{item.remaining_post_dc}</td>
+                                            <td className="px-3 py-2 text-right font-medium text-slate-600">{item.ordered_quantity?.toLocaleString('en-IN') || 0}</td>
+                                            <td className={`px-3 py-2 text-right font-medium ${(item.remaining_quantity || 0) > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+                                                {(item.remaining_quantity || 0).toLocaleString('en-IN')}
+                                            </td>
                                             <td className="px-4 py-3">
                                                 <input
                                                     type="number"

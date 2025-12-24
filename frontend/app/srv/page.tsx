@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Upload, FileText, CheckCircle2, XCircle, TrendingDown, Loader2, Search, Trash2 } from 'lucide-react';
 import { API_BASE_URL } from '@/lib/api';
-import { formatDate } from '@/lib/utils';
+import { formatDate, formatIndianCurrency } from '@/lib/utils';
 import GlassCard from "@/components/ui/GlassCard";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { DenseTable, SortConfig, Column } from "@/components/ui/DenseTable";
@@ -246,15 +246,15 @@ export default function SRVPage() {
             header: "Received",
             accessorKey: "total_received_qty",
             enableSorting: true,
-            className: "text-right font-medium text-emerald-600",
-            cell: (srv: SRVListItem) => srv.total_received_qty.toFixed(2)
+            className: "text-right font-medium text-emerald-600 tabular-nums",
+            cell: (srv: SRVListItem) => srv.total_received_qty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
         },
         {
             header: "Rejected",
             accessorKey: "total_rejected_qty",
             enableSorting: true,
-            className: "text-right font-medium text-red-600",
-            cell: (srv: SRVListItem) => srv.total_rejected_qty > 0 ? srv.total_rejected_qty.toFixed(2) : '-'
+            className: "text-right font-medium text-red-600 tabular-nums",
+            cell: (srv: SRVListItem) => srv.total_rejected_qty > 0 ? srv.total_rejected_qty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '-'
         },
         {
             header: "Actions",
@@ -340,7 +340,7 @@ export default function SRVPage() {
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total SRVs</span>
                             <FileText className="w-4 h-4 text-blue-500" />
                         </div>
-                        <div className="text-[28px] font-bold text-slate-800">{stats.total_srvs}</div>
+                        <div className="text-[28px] font-bold text-slate-800">{stats.total_srvs.toLocaleString('en-IN')}</div>
                     </GlassCard>
 
                     <GlassCard className="p-4 flex flex-col justify-between h-[90px]">
@@ -348,7 +348,7 @@ export default function SRVPage() {
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Received Qty</span>
                             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
                         </div>
-                        <div className="text-[28px] font-bold text-slate-800">{stats.total_received_qty.toFixed(0)}</div>
+                        <div className="text-[28px] font-bold text-slate-800">{formatIndianCurrency(stats.total_received_qty)}</div>
                     </GlassCard>
 
                     <GlassCard className="p-4 flex flex-col justify-between h-[90px]">
@@ -356,7 +356,7 @@ export default function SRVPage() {
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Rejected Qty</span>
                             <XCircle className="w-4 h-4 text-red-500" />
                         </div>
-                        <div className="text-[28px] font-bold text-slate-800">{stats.total_rejected_qty.toFixed(0)}</div>
+                        <div className="text-[28px] font-bold text-slate-800">{formatIndianCurrency(stats.total_rejected_qty)}</div>
                     </GlassCard>
 
                     <GlassCard className="p-4 flex flex-col justify-between h-[90px]">
@@ -364,7 +364,7 @@ export default function SRVPage() {
                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Missing PO Link</span>
                             <TrendingDown className="w-4 h-4 text-amber-500" />
                         </div>
-                        <div className="text-[28px] font-bold text-slate-800">{stats.missing_po_count}</div>
+                        <div className="text-[28px] font-bold text-slate-800">{stats.missing_po_count.toLocaleString('en-IN')}</div>
                     </GlassCard>
                 </div>
             )}

@@ -86,7 +86,7 @@ export default function DCListPage() {
     {
       header: "Value",
       accessorKey: "total_value" as keyof DCListItem,
-      className: "text-right font-medium text-slate-700",
+      className: "text-right font-medium text-slate-700 tabular-nums",
       cell: (dc: DCListItem) => dc.total_value > 0 ? `₹${dc.total_value.toLocaleString('en-IN')}` : '-'
     },
     {
@@ -133,7 +133,7 @@ export default function DCListPage() {
               <Truck className="w-4 h-4 text-purple-500" />
             </div>
             <div className="flex flex-col">
-              <div className="text-[28px] font-bold text-slate-800">{stats.total_challans}</div>
+              <div className="text-[28px] font-bold text-slate-800">{stats.total_challans.toLocaleString('en-IN')}</div>
               <div className="text-[10px] text-emerald-600 font-medium">+5% vs last month</div>
             </div>
           </Card>
@@ -143,7 +143,7 @@ export default function DCListPage() {
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">In Transit</span>
               <Clock className="w-4 h-4 text-amber-500" />
             </div>
-            <div className="text-[28px] font-bold text-slate-800">{stats.pending_delivery}</div>
+            <div className="text-[28px] font-bold text-slate-800">{stats.pending_delivery.toLocaleString('en-IN')}</div>
           </Card>
 
           <Card variant="glass" padding="none" className="flex flex-col justify-between h-[90px] p-4">
@@ -152,7 +152,7 @@ export default function DCListPage() {
               <CheckCircle className="w-4 h-4 text-emerald-500" />
             </div>
             <div className="flex flex-col">
-              <div className="text-[28px] font-bold text-slate-800">{stats.completed_delivery}</div>
+              <div className="text-[28px] font-bold text-slate-800">{stats.completed_delivery.toLocaleString('en-IN')}</div>
               <div className="text-[10px] text-emerald-600 font-medium">98% delivery success</div>
             </div>
           </Card>
