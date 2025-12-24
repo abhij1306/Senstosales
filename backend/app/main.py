@@ -1,12 +1,15 @@
 """
 FastAPI Main Application with Structured Logging and Observability
 """
+# CRITICAL: Apply multipart limit fix before any other imports!
+import app.core.multipart_fix
+
 from app.core.config import settings
 from app.core.exceptions import AppException
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import dashboard, po, dc, invoice, reports, search, alerts, reconciliation, po_notes, health, voice, smart_reports, ai_reports, srv
+from app.routers import dashboard, po, dc, invoice, reports, search, alerts, reconciliation, po_notes, health, srv
 from app.middleware import RequestLoggingMiddleware
 from app.core.logging_config import setup_logging
 from app.db import validate_database_path
@@ -40,14 +43,12 @@ app.add_middleware(RequestLoggingMiddleware)
 
 # Include routers
 app.include_router(health.router, prefix="/api", tags=["Health"])
-app.include_router(voice.router, prefix="/api/voice", tags=["Voice Agent"])
+
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
 app.include_router(po.router, prefix="/api/po", tags=["Purchase Orders"])
 app.include_router(dc.router, prefix="/api/dc", tags=["Delivery Challans"])
 app.include_router(invoice.router, prefix="/api/invoice", tags=["Invoices"])
 app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
-app.include_router(smart_reports.router, prefix="/api/smart-reports", tags=["Smart Reports"])
-app.include_router(ai_reports.router, prefix="/api/ai-reports", tags=["AI Reports"])
 app.include_router(search.router, prefix="/api/search", tags=["Search"])
 app.include_router(alerts.router, prefix="/api/alerts", tags=["Alerts"])
 app.include_router(reconciliation.router, prefix="/api/reconciliation", tags=["Reconciliation"])

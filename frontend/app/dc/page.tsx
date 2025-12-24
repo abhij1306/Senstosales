@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Filter, Eye, Truck, CheckCircle, Clock, Calendar as CalendarIcon, FileText } from "lucide-react";
+import { Plus, Search, Filter, Truck, CheckCircle, Clock } from "lucide-react";
 import { api, DCListItem, DCStats } from "@/lib/api";
-import Pagination from "@/components/Pagination";
+import { formatDate } from "@/lib/utils";
+import GlassCard from "@/components/ui/GlassCard";
+import StatusBadge from "@/components/ui/StatusBadge";
+import { DenseTable } from "@/components/ui/DenseTable";
 
 export default function DCListPage() {
   const router = useRouter();
@@ -15,11 +18,6 @@ export default function DCListPage() {
   // Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Status");
-  const [dateFilter, setDateFilter] = useState("");
-
-  // Pagination State
-  const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
 
   useEffect(() => {
     const loadData = async () => {
@@ -48,31 +46,61 @@ export default function DCListPage() {
 
     const matchesStatus = statusFilter === "All Status" || dc.status === statusFilter;
 
-    // Simple date match (exact string match for now, can be enhanced)
-    const matchesDate = !dateFilter || dc.dc_date === dateFilter;
-
-    return matchesSearch && matchesStatus && matchesDate;
+    return matchesSearch && matchesStatus;
   });
 
-  // Pagination Logic
-  const paginatedDCs = filteredDCs.slice(
-    (currentPage - 1) * pageSize,
-    currentPage * pageSize
-  );
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Delivered': return 'bg-success/10 text-success border border-success/20';
-      case 'Pending': return 'bg-warning/10 text-warning border border-warning/20';
-      case 'Draft': return 'bg-text-secondary/10 text-text-secondary border border-text-secondary/20';
-      default: return 'bg-blue-50 text-blue-800 border-indigo-200';
+  const columns = [
+    {
+      header: "DC Number",
+      accessorKey: "dc_number" as keyof DCListItem,
+      cell: (dc: DCListItem) => (
+        <div className="font-medium text-purple-600">{dc.dc_number}</div>
+      )
+    },
+    {
+      header: "Date",
+      accessorKey: "dc_date" as keyof DCListItem,
+      cell: (dc: DCListItem) => <span className="text-slate-500">{formatDate(dc.dc_date)}</span>
+    },
+    {
+      header: "Consignee",
+      accessorKey: "consignee_name" as keyof DCListItem,
+      cell: (dc: DCListItem) => (
+        <div className="flex items-center gap-2 max-w-[200px] truncate">
+          <div className="w-5 h-5 rounded bg-indigo-50 flex items-center justify-center text-indigo-700 font-bold border border-indigo-100 uppercase shrink-0">
+            {dc.consignee_name ? dc.consignee_name.substring(0, 2) : 'CN'}
+          </div>
+          <span className="text-slate-700 truncate">{dc.consignee_name}</span>
+        </div>
+      )
+    },
+    {
+      header: "PO Ref",
+      accessorKey: "po_number" as keyof DCListItem,
+      cell: (dc: DCListItem) => (
+        <span className="text-xs font-medium text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
+          PO-{dc.po_number}
+        </span>
+      )
+    },
+    {
+      header: "Value",
+      accessorKey: "total_value" as keyof DCListItem,
+      className: "text-right font-medium",
+      cell: (dc: DCListItem) => dc.total_value > 0 ? `₹${dc.total_value.toLocaleString('en-IN')}` : '-'
+    },
+    {
+      header: "Status",
+      accessorKey: "status" as keyof DCListItem,
+      className: "text-right",
+      cell: (dc: DCListItem) => <StatusBadge status={dc.status} className="ml-auto" />
     }
-  };
+  ];
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-primary font-medium">Loading Delivery Challans...</div>
+      <div className="flex items-center justify-center h-[50vh] text-slate-400 font-medium animate-pulse">
+        Loading Dispatches...
       </div>
     );
   }
@@ -82,201 +110,88 @@ export default function DCListPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[20px] font-semibold text-text-primary tracking-tight">Delivery Challans</h1>
-          <p className="text-[13px] text-text-secondary mt-1">Manage your outbound delivery notes and status.</p>
+          <h1 className="text-[20px] font-semibold text-slate-900 tracking-tight">Delivery Challans</h1>
+          <p className="text-xs text-slate-500 mt-0.5">Outbound delivery management</p>
         </div>
-        <button
-          onClick={() => router.push("/dc/create")}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm text-sm font-medium"
-        >
-          <Plus className="w-4 h-4" />
-          Create New Challan
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => router.push("/dc/create")}
+            className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all shadow-sm shadow-purple-500/20 text-xs font-semibold"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Create Challan
+          </button>
+        </div>
       </div>
 
       {/* KPI Cards */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Total Challans */}
-          <div className="glass-card p-6 flex items-start justify-between">
-            <div>
-              <p className="text-[12px] font-semibold text-text-secondary uppercase tracking-wider">Total Challans</p>
-              <h3 className="text-[24px] font-bold text-text-primary mt-2">
-                {stats.total_challans}
-              </h3>
-              <div className="flex items-center mt-2 text-success text-[12px] font-medium">
-                {/* Placeholder change */}
-                <span>+5% from last month</span>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <GlassCard className="flex flex-col justify-between h-[90px] p-4">
+            <div className="flex justify-between items-start">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Dispatched</span>
+              <Truck className="w-4 h-4 text-purple-500" />
             </div>
-            <div className="p-3 bg-blue-50 rounded-lg text-primary">
-              <Truck className="w-6 h-6" />
+            <div className="flex flex-col">
+              <div className="text-[28px] font-bold text-slate-800">{stats.total_challans}</div>
+              <div className="text-[10px] text-emerald-600 font-medium">+5% vs last month</div>
             </div>
-          </div>
+          </GlassCard>
 
-          {/* Pending Delivery */}
-          <div className="glass-card p-6 flex items-start justify-between">
-            <div>
-              <p className="text-[12px] font-semibold text-text-secondary uppercase tracking-wider">Pending Delivery</p>
-              <h3 className="text-[24px] font-bold text-text-primary mt-2">
-                {stats.pending_delivery}
-              </h3>
-              <div className="flex items-center mt-2 text-warning text-[12px] font-medium">
-                <span>Needs Attention</span>
-              </div>
+          <GlassCard className="flex flex-col justify-between h-[90px] p-4">
+            <div className="flex justify-between items-start">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">In Transit</span>
+              <Clock className="w-4 h-4 text-amber-500" />
             </div>
-            <div className="p-3 bg-amber-50 rounded-lg text-amber-600">
-              <Clock className="w-6 h-6" />
-            </div>
-          </div>
+            <div className="text-[28px] font-bold text-slate-800">{stats.pending_delivery}</div>
+          </GlassCard>
 
-          {/* Completed */}
-          <div className="glass-card p-6 flex items-start justify-between">
-            <div>
-              <p className="text-[12px] font-semibold text-text-secondary uppercase tracking-wider">Completed</p>
-              <h3 className="text-[24px] font-bold text-text-primary mt-2">
-                {stats.completed_delivery}
-              </h3>
-              <div className="flex items-center mt-2 text-success text-[12px] font-medium">
-                <span>98% delivery rate</span>
-              </div>
+          <GlassCard className="flex flex-col justify-between h-[90px] p-4">
+            <div className="flex justify-between items-start">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Completed</span>
+              <CheckCircle className="w-4 h-4 text-emerald-500" />
             </div>
-            <div className="p-3 bg-emerald-50 rounded-lg text-emerald-600">
-              <CheckCircle className="w-6 h-6" />
+            <div className="flex flex-col">
+              <div className="text-[28px] font-bold text-slate-800">{stats.completed_delivery}</div>
+              <div className="text-[10px] text-emerald-600 font-medium">98% delivery success</div>
             </div>
-          </div>
+          </GlassCard>
         </div>
       )}
 
-      {/* Main Content Card */}
-      <div className="glass-card overflow-hidden">
-        {/* Filters Bar */}
-        <div className="p-4 border-b border-border bg-gray-50/30 flex flex-col sm:flex-row gap-4 justify-between items-center">
-          <div className="relative w-full sm:w-96">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
-            <input
-              type="text"
-              placeholder="Search DC, PO, or Customer..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-            />
-          </div>
-          <div className="flex gap-4 w-full sm:w-auto items-center">
-            <div className="relative">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="appearance-none pl-4 pr-10 py-2 bg-white border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer min-w-[140px]"
-              >
-                <option>All Status</option>
-                <option>Pending</option>
-                <option>Delivered</option>
-              </select>
-              <Filter className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-text-secondary pointer-events-none" />
-            </div>
-            <div className="relative">
-              <input
-                type="date"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="px-4 py-2 bg-white border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary h-[38px]"
-              />
-            </div>
-
-          </div>
+      {/* Filters */}
+      <div className="flex gap-2 items-center">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by DC, PO or Consignee..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-4 py-1.5 bg-white/60 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none"
+          />
         </div>
-
-        {/* Data Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-50/50 text-text-secondary border-b border-border text-[11px] uppercase tracking-wider font-semibold">
-                <th className="px-6 py-4">DC Number</th>
-                <th className="px-6 py-4">Date</th>
-                <th className="px-6 py-4">Customer / Recipient</th>
-                <th className="px-6 py-4">Associated PO</th>
-                <th className="px-6 py-4 text-center">Status</th>
-                <th className="px-6 py-4 text-right">Total Value</th>
-                <th className="px-6 py-4 text-center w-16"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border/50 bg-white/50">
-              {filteredDCs.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center justify-center">
-                      <FileText className="w-12 h-12 text-border mb-3" />
-                      <h3 className="text-lg font-medium text-text-primary">No delivery challans found</h3>
-                      <p className="text-text-secondary text-sm mt-1 max-w-sm">
-                        Try adjusting your search or filters.
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                paginatedDCs.map((dc) => (
-                  <tr key={dc.dc_number} className="hover:bg-gray-50/50 transition-colors group">
-                    <td className="px-6 py-3">
-                      <span className="text-[13px] font-semibold text-primary hover:text-blue-700 cursor-pointer" onClick={() => router.push(`/dc/view?id=${dc.dc_number}`)}>
-                        {dc.dc_number}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3 text-[13px] text-text-secondary font-medium">{dc.dc_date}</td>
-                    <td className="px-6 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 rounded bg-indigo-50 flex items-center justify-center text-[10px] text-indigo-700 font-bold uppercase border border-indigo-100">
-                          {dc.consignee_name ? dc.consignee_name.substring(0, 2) : 'CN'}
-                        </div>
-                        <span className="text-[13px] text-text-primary font-medium">{dc.consignee_name}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-3">
-                      <LinkWrapper href={`/po/view?id=${dc.po_number}`} className="px-2 py-1 bg-gray-50 text-text-secondary text-[11px] rounded border border-border font-medium hover:bg-gray-100 transition-colors inline-block">
-                        PO-{dc.po_number}
-                      </LinkWrapper>
-                    </td>
-                    <td className="px-6 py-3 text-center">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium ${getStatusColor(dc.status)}`}>
-                        {dc.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3 text-right text-[13px] font-semibold text-text-primary">
-                      {dc.total_value > 0 ? `₹${dc.total_value.toLocaleString('en-IN')}` : '-'}
-                    </td>
-                    <td className="px-6 py-3 text-center">
-                      <button
-                        onClick={() => router.push(`/dc/view?id=${dc.dc_number}`)}
-                        className="text-text-secondary hover:text-primary transition-colors p-1 rounded hover:bg-gray-100"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+        <div className="relative">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="appearance-none pl-8 pr-8 py-1.5 bg-white/60 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none text-slate-700 font-medium h-[34px]"
+          >
+            <option>All Status</option>
+            <option>Pending</option>
+            <option>Delivered</option>
+          </select>
+          <Filter className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
         </div>
-
-        {/* Pagination Integrated */}
-        <Pagination
-          currentPage={currentPage}
-          totalItems={filteredDCs.length}
-          itemsPerPage={pageSize}
-          onPageChange={setCurrentPage}
-        />
       </div>
+
+      <DenseTable
+        loading={loading}
+        data={filteredDCs}
+        columns={columns}
+        onRowClick={(dc) => router.push(`/dc/view?id=${dc.dc_number}`)}
+        className="bg-white/60 shadow-sm backdrop-blur-sm min-h-[500px]"
+      />
     </div>
   );
-}
-
-// Simple internal helper to avoid Next.js link wrapping issues if needed, or just use button/span for now since filtering by PO usually goes to PO list
-function LinkWrapper({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) {
-  const router = useRouter();
-  return (
-    <span onClick={() => router.push(href)} className={`cursor-pointer ${className}`}>
-      {children}
-    </span>
-  )
 }

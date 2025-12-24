@@ -8,7 +8,10 @@ import {
     Upload, X, CheckCircle, XCircle, Loader2, Plus, Search, Filter,
     TrendingUp, ClipboardList, Clock, DollarSign, FileText, ChevronRight
 } from "lucide-react";
-import Pagination from "@/components/Pagination";
+import GlassCard from "@/components/ui/GlassCard";
+import StatusBadge from "@/components/ui/StatusBadge";
+import { DenseTable } from "@/components/ui/DenseTable";
+import { formatDate } from "@/lib/utils";
 
 interface UploadResult {
     filename: string;
@@ -34,10 +37,6 @@ export default function POPage() {
     const [uploadResults, setUploadResults] = useState<BatchUploadResponse | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
     const [statusFilter, setStatusFilter] = useState("All Statuses");
-
-    // Pagination State
-    const [currentPage, setCurrentPage] = useState(1);
-    const pageSize = 10;
 
     useEffect(() => {
         const fetchData = async () => {
@@ -69,15 +68,11 @@ export default function POPage() {
 
     const handleUpload = async () => {
         if (selectedFiles.length === 0) return;
-
         setUploading(true);
         setUploadResults(null);
-
         try {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const response: { success: boolean, results: any[] } = await api.uploadPOBatch(selectedFiles);
-
-            // Transform response to BatchUploadResponse format
             const results: BatchUploadResponse = {
                 total: response.results.length,
                 successful: response.results.filter((r: any) => r.success).length,
@@ -89,9 +84,7 @@ export default function POPage() {
                     message: r.message || (r.success ? 'Uploaded successfully' : 'Upload failed')
                 }))
             };
-
             setUploadResults(results);
-
             if (results.successful > 0) {
                 const [updatedPos, updatedStats] = await Promise.all([
                     api.listPOs(),
@@ -100,7 +93,6 @@ export default function POPage() {
                 setPOs(updatedPos);
                 setStats(updatedStats);
             }
-
             setSelectedFiles([]);
         } catch (error) {
             console.error('Upload failed:', error);
@@ -109,52 +101,111 @@ export default function POPage() {
         }
     };
 
-    // Filter logic
     const filteredPOs = pos.filter(po => {
         const matchesSearch =
             po.po_number.toString().includes(searchQuery) ||
             (po.supplier_name && po.supplier_name.toLowerCase().includes(searchQuery.toLowerCase()));
-
-        // Mock status filtering matching the previous logic or potential new statuses
         const status = po.po_status || 'New';
         const matchesStatus = statusFilter === 'All Statuses' || status === statusFilter;
-
         return matchesSearch && matchesStatus;
     });
 
-    // Pagination Logic
-    const paginatedPOs = filteredPOs.slice(
-        (currentPage - 1) * pageSize,
-        currentPage * pageSize
-    );
+    const columns = [
+        {
+            header: "PO Number",
+            accessorKey: "po_number" as keyof POListItem,
+            cell: (po: POListItem) => (
+                <div className="font-medium text-blue-600">PO-{po.po_number}</div>
+            )
+        },
+        {
+            header: "Date",
+            accessorKey: "po_date" as keyof POListItem,
+            cell: (po: POListItem) => <span className="text-slate-500">{formatDate(po.po_date)}</span>
+        },
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-full">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-        );
-    }
+        {
+            header: "Value",
+            accessorKey: "po_value" as keyof POListItem,
+            className: "text-right font-medium",
+            cell: (po: POListItem) => `₹${po.po_value?.toLocaleString('en-IN') || '0'}`
+        },
+        {
+            header: "Ordered",
+            accessorKey: "total_ordered_quantity" as keyof POListItem,
+            className: "text-right font-medium",
+            cell: (po: POListItem) => po.total_ordered_quantity?.toLocaleString() || '0'
+        },
+        {
+            header: "Pending",
+            accessorKey: "total_pending_quantity" as keyof POListItem,
+            className: "text-center",
+            cell: (po: POListItem) => (
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded font-semibold ${po.total_pending_quantity > 0
+                    ? 'bg-amber-100 text-amber-700'
+                    : 'bg-emerald-100 text-emerald-700'
+                    }`}>
+                    {po.total_pending_quantity?.toLocaleString() || '0'}
+                </span>
+            )
+        },
+        {
+            header: "Linked Challans",
+            accessorKey: "linked_dc_numbers" as keyof POListItem,
+            cell: (po: POListItem) => {
+                if (!po.linked_dc_numbers) return <span className="text-slate-300">-</span>;
+                const dcs = po.linked_dc_numbers.split(',').map(d => d.trim()).filter(Boolean);
+                if (dcs.length === 0) return <span className="text-slate-300">-</span>;
+
+                return (
+                    <div className="flex flex-wrap gap-1">
+                        {dcs.slice(0, 2).map((dc, i) => (
+                            <span key={i} className="px-1.5 py-0.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded font-medium">
+                                {dc}
+                            </span>
+                        ))}
+                        {dcs.length > 2 && (
+                            <span className="px-1.5 py-0.5 bg-slate-50 text-slate-500 border border-slate-100 rounded">
+                                +{dcs.length - 2}
+                            </span>
+                        )}
+                    </div>
+                )
+            }
+        },
+        {
+            header: "",
+            accessorKey: "po_number" as keyof POListItem,
+            className: "w-8",
+            cell: () => <ChevronRight className="w-4 h-4 text-slate-300" />
+        }
+    ];
+
+    if (loading) return (
+        <div className="flex justify-center items-center h-[50vh]">
+            <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+        </div>
+    );
 
     return (
         <div className="space-y-6">
-            {/* Page Header */}
-            <div className="flex items-center justify-between">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-[20px] font-semibold text-text-primary tracking-tight">Purchase Orders</h1>
-                    <p className="text-[13px] text-text-secondary mt-1">Manage procurement requests, track status, and view history.</p>
+                    <h1 className="text-[20px] font-semibold text-slate-900 tracking-tight">Purchase Orders</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Procurement tracking and management</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-2">
                     <button
                         onClick={() => router.push('/po/create')}
-                        className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm font-medium shadow-sm transition-colors"
+                        className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-xs font-semibold shadow-sm transition-all shadow-blue-500/20"
                     >
-                        <Plus className="w-4 h-4" />
-                        Create New PO
+                        <Plus className="w-3.5 h-3.5" />
+                        Create Order
                     </button>
-                    <label className="px-4 py-2 bg-white border border-border rounded-lg text-sm font-medium text-text-secondary hover:bg-gray-50 cursor-pointer flex items-center gap-2 shadow-sm transition-colors">
-                        <Upload className="w-4 h-4" />
-                        Upload PO Files
+                    <label className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 cursor-pointer flex items-center gap-2 transition-colors">
+                        <Upload className="w-3.5 h-3.5" />
+                        Batch Upload
                         <input
                             type="file"
                             accept=".html"
@@ -167,323 +218,84 @@ export default function POPage() {
                 </div>
             </div>
 
-            {/* KPI Cards */}
+            {/* KPIs */}
             {stats && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Open Orders */}
-                    <div className="glass-card p-6 flex items-start justify-between">
-                        <div>
-                            <p className="text-[12px] font-semibold text-text-secondary uppercase tracking-wider">Open Orders</p>
-                            <h3 className="text-[24px] font-bold text-text-primary mt-2">
-                                {stats.open_orders_count}
-                            </h3>
-                            <span className="inline-flex mt-2 items-center px-2 py-0.5 rounded text-[11px] font-medium bg-success/10 text-success border border-success/20">
-                                Active
-                            </span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <GlassCard className="flex flex-col justify-between h-[90px] p-4">
+                        <div className="flex justify-between items-start">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Orders</span>
+                            <ClipboardList className="w-4 h-4 text-blue-500" />
                         </div>
-                        <div className="p-3 bg-blue-50 rounded-lg text-primary">
-                            <ClipboardList className="w-6 h-6" />
+                        <div className="text-[28px] font-bold text-slate-800">{stats.open_orders_count}</div>
+                    </GlassCard>
+                    <GlassCard className="flex flex-col justify-between h-[90px] p-4">
+                        <div className="flex justify-between items-start">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending</span>
+                            <Clock className="w-4 h-4 text-amber-500" />
                         </div>
-                    </div>
-
-                    {/* Pending Approval */}
-                    <div className="glass-card p-6 flex items-start justify-between">
-                        <div>
-                            <p className="text-[12px] font-semibold text-text-secondary uppercase tracking-wider">Pending Approval</p>
-                            <h3 className="text-[24px] font-bold text-text-primary mt-2">
-                                {stats.pending_approval_count}
-                            </h3>
-                            <span className="inline-flex mt-2 items-center px-2 py-0.5 rounded text-[11px] font-medium bg-warning/10 text-warning border border-warning/20">
-                                Requires Attention
-                            </span>
+                        <div className="text-[28px] font-bold text-slate-800">{stats.pending_approval_count}</div>
+                    </GlassCard>
+                    <GlassCard className="flex flex-col justify-between h-[90px] p-4">
+                        <div className="flex justify-between items-start">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Value (YTD)</span>
+                            <DollarSign className="w-4 h-4 text-emerald-500" />
                         </div>
-                        <div className="p-3 bg-amber-50 rounded-lg text-warning">
-                            <Clock className="w-6 h-6" />
-                        </div>
-                    </div>
-
-                    {/* Total Value (YTD) */}
-                    <div className="glass-card p-6 flex items-start justify-between">
-                        <div>
-                            <p className="text-[12px] font-semibold text-text-secondary uppercase tracking-wider">Total Value (YTD)</p>
-                            <h3 className="text-[24px] font-bold text-text-primary mt-2">
-                                ₹{stats.total_value_ytd.toLocaleString('en-IN')}
-                            </h3>
-                            <div className="flex items-center mt-2 text-success text-[12px] font-medium">
-                                <TrendingUp className="w-3 h-3 mr-1" />
-                                <span>{stats.total_value_change}% from last month</span>
+                        <div className="flex flex-col">
+                            <div className="text-[28px] font-bold text-slate-800">₹{stats.total_value_ytd.toLocaleString('en-IN')}</div>
+                            <div className="text-[10px] text-emerald-600 font-medium flex items-center gap-1">
+                                <TrendingUp className="w-3 h-3" />
+                                {stats.total_value_change}% vs last month
                             </div>
                         </div>
-                        <div className="p-3 bg-emerald-50 rounded-lg text-emerald-600">
-                            <DollarSign className="w-6 h-6" />
-                        </div>
-                    </div>
+                    </GlassCard>
                 </div>
             )}
 
-            {/* Upload Area (Conditional) */}
+            {/* Upload Feedback */}
             {(selectedFiles.length > 0 || uploadResults) && (
-                <div className="glass-card p-6 space-y-6">
-                    {/* Selected Files List */}
+                <GlassCard className="p-4 space-y-4 border-dashed border-blue-200 bg-blue-50/20">
                     {selectedFiles.length > 0 && (
-                        <div>
-                            <div className="flex items-center justify-between mb-3">
-                                <h3 className="text-sm font-medium text-text-primary">
-                                    Selected Files ({selectedFiles.length})
-                                </h3>
-                                <button
-                                    onClick={handleUpload}
-                                    disabled={uploading}
-                                    className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                                >
-                                    {uploading ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                            Uploading...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Upload className="w-4 h-4" />
-                                            Upload All
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-                            <div className="space-y-2">
-                                {selectedFiles.map((file, idx) => (
-                                    <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-border">
-                                        <span className="text-sm text-text-primary">{file.name}</span>
-                                        <button
-                                            onClick={() => removeFile(idx)}
-                                            disabled={uploading}
-                                            className="text-text-secondary hover:text-danger disabled:opacity-50 transition-colors"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
+                        <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium text-slate-700">{selectedFiles.length} files selected</span>
+                            <button
+                                onClick={handleUpload}
+                                disabled={uploading}
+                                className="text-xs font-bold text-blue-600 hover:underline disabled:opacity-50"
+                            >
+                                {uploading ? "Uploading..." : "Start Upload"}
+                            </button>
                         </div>
                     )}
-
-                    {/* Upload Results */}
                     {uploadResults && (
-                        <div>
-                            <h3 className="text-[16px] font-medium text-text-primary mb-3">Upload Results</h3>
-                            <div className="flex gap-4 mb-4">
-                                <div className="flex items-center gap-2">
-                                    <CheckCircle className="w-5 h-5 text-success" />
-                                    <span className="text-sm text-text-secondary">
-                                        <strong className="text-text-primary">{uploadResults.successful}</strong> successful
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <XCircle className="w-5 h-5 text-danger" />
-                                    <span className="text-sm text-text-secondary">
-                                        <strong className="text-text-primary">{uploadResults.failed}</strong> failed
-                                    </span>
-                                </div>
-                            </div>
-                            <div className="space-y-2">
-                                {uploadResults.results.map((result, idx) => (
-                                    <div
-                                        key={idx}
-                                        className={`p-3 rounded-lg border ${result.success
-                                            ? 'bg-success/10 border-success/20'
-                                            : 'bg-danger/10 border-danger/20'
-                                            }`}
-                                    >
-                                        <div className="flex items-start gap-2">
-                                            {result.success ? (
-                                                <CheckCircle className="w-4 h-4 text-success mt-0.5" />
-                                            ) : (
-                                                <XCircle className="w-4 h-4 text-danger mt-0.5" />
-                                            )}
-                                            <div className="flex-1">
-                                                <div className="text-sm font-medium text-text-primary">
-                                                    {result.filename}
-                                                </div>
-                                                <div className={`text-sm ${result.success ? 'text-success' : 'text-danger'}`}>
-                                                    {result.message}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                        <div className="flex gap-4 text-xs">
+                            <span className="text-emerald-600 font-medium">{uploadResults.successful} success</span>
+                            <span className="text-red-600 font-medium">{uploadResults.failed} failed</span>
                         </div>
                     )}
-                </div>
+                </GlassCard>
             )}
 
-            {/* Main Content Card */}
-            <div className="glass-card overflow-hidden">
-                {/* Filters */}
-                <div className="p-4 border-b border-border bg-gray-50/30 flex flex-col sm:flex-row gap-4 justify-between items-center">
-                    <div className="relative w-full sm:w-96">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-                        <input
-                            type="text"
-                            placeholder="Search by PO number or supplier..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-white border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
-                        />
-                    </div>
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <div className="relative flex-1 sm:flex-none">
-                            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary" />
-                            <select
-                                value={statusFilter}
-                                onChange={(e) => setStatusFilter(e.target.value)}
-                                className="w-full sm:w-40 pl-10 pr-8 py-2 bg-white border border-border rounded-lg text-sm appearance-none focus:outline-none focus:ring-2 focus:ring-primary cursor-pointer text-text-secondary"
-                            >
-                                <option>All Statuses</option>
-                                <option>Active</option>
-                                <option>New</option>
-                                <option>Closed</option>
-                            </select>
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none border-l border-border h-4" />
-                        </div>
-                    </div>
+            {/* filters */}
+            <div className="flex gap-2">
+                <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                        type="text"
+                        placeholder="Filter orders..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-4 py-1.5 bg-white/60 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+                    />
                 </div>
-
-                {/* Table */}
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-gray-50/50 text-text-secondary border-b border-border text-[11px] uppercase tracking-wider font-semibold">
-                                <th className="px-6 py-4 w-12 text-center">
-                                    <input type="checkbox" className="rounded border-border text-primary focus:ring-primary" />
-                                </th>
-                                <th className="px-6 py-4">PO Number</th>
-                                <th className="px-6 py-4">Date</th>
-                                <th className="px-6 py-4 text-right">Value</th>
-                                <th className="px-6 py-4 text-right">Ordered</th>
-                                <th className="px-6 py-4 text-right">Dispatched</th>
-                                <th className="px-6 py-4 text-center">Pending</th>
-                                <th className="px-6 py-4">Linked Challans</th>
-                                <th className="px-6 py-4 w-16"></th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-border/50 bg-white/50">
-                            {filteredPOs.length === 0 ? (
-                                <tr>
-                                    <td colSpan={9} className="px-6 py-12 text-center">
-                                        <div className="flex flex-col items-center justify-center">
-                                            <FileText className="w-12 h-12 text-border mb-3" />
-                                            <h3 className="text-lg font-medium text-text-primary">No purchase orders found</h3>
-                                            <p className="text-text-secondary text-sm mt-1 max-w-sm">
-                                                Try adjusting your search or filters, or upload a new PO to get started.
-                                            </p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : (
-                                paginatedPOs.map((po) => (
-                                    <tr key={po.po_number} className="hover:bg-gray-50/50 transition-colors group">
-                                        <td className="px-6 py-3 text-center">
-                                            <input type="checkbox" className="rounded border-border text-primary focus:ring-primary" />
-                                        </td>
-                                        <td className="px-6 py-3">
-                                            <Link
-                                                href={`/po/view?id=${po.po_number}`}
-                                                className="text-primary font-semibold hover:text-blue-700 hover:underline text-[13px]"
-                                            >
-                                                PO-{po.po_number}
-                                            </Link>
-                                        </td>
-                                        <td className="px-6 py-3 text-[13px] text-text-secondary font-medium">
-                                            {po.po_date || 'N/A'}
-                                        </td>
-                                        <td className="px-6 py-3 text-[13px] text-text-primary font-semibold text-right">
-                                            ₹{po.po_value?.toLocaleString('en-IN') || '0'}
-                                        </td>
-                                        <td className="px-6 py-3 text-[13px] text-text-secondary text-right font-medium">
-                                            {po.total_ordered_quantity?.toLocaleString() || '0'}
-                                        </td>
-                                        <td className="px-6 py-3 text-[13px] text-primary text-right font-medium">
-                                            {po.total_dispatched_quantity?.toLocaleString() || '0'}
-                                        </td>
-                                        <td className="px-6 py-3 text-center">
-                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium border ${po.total_pending_quantity > 0
-                                                ? 'bg-warning/10 text-warning border-warning/20'
-                                                : 'bg-success/10 text-success border-success/20'
-                                                }`}>
-                                                {po.total_pending_quantity?.toLocaleString() || '0'}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-3 text-[13px]">
-                                            {po.linked_dc_numbers ? (
-                                                <div className="flex flex-wrap gap-1.5">
-                                                    {(() => {
-                                                        const dcs = po.linked_dc_numbers.split(',').map(d => d.trim()).filter(Boolean);
-
-                                                        if (dcs.length <= 2) {
-                                                            return dcs.map((dc, i) => (
-                                                                <Link
-                                                                    key={i}
-                                                                    href={`/dc/view?id=${dc}`}
-                                                                    className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[11px] rounded border border-indigo-100 font-medium hover:bg-indigo-100 transition-colors"
-                                                                >
-                                                                    {dc}
-                                                                </Link>
-                                                            ));
-                                                        }
-
-                                                        return (
-                                                            <div className="relative group">
-                                                                <button className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[11px] rounded border border-indigo-100 font-bold hover:bg-indigo-100 transition-colors">
-                                                                    {dcs.length} Challans
-                                                                </button>
-                                                                <div className="absolute left-0 top-full mt-1 hidden group-hover:block w-48 bg-white border border-border shadow-xl rounded-lg p-2 z-20">
-                                                                    <div className="text-[10px] uppercase font-bold text-text-secondary mb-2 px-1 tracking-wider">Linked Challans</div>
-                                                                    <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
-                                                                        {dcs.map((dc, i) => (
-                                                                            <Link
-                                                                                key={i}
-                                                                                href={`/dc/view?id=${dc}`}
-                                                                                className="block px-2 py-1.5 text-xs font-medium text-text-primary hover:bg-indigo-50 hover:text-indigo-700 rounded transition-colors"
-                                                                            >
-                                                                                {dc}
-                                                                            </Link>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })()}
-                                                </div>
-                                            ) : (
-                                                <span className="text-text-secondary/50 text-xs italic">--</span>
-                                            )}
-                                        </td>
-                                        <td className="px-6 py-3 text-center">
-                                            <div className="flex justify-end">
-                                                <button className="text-text-secondary hover:text-text-primary p-1 rounded-full hover:bg-gray-100 transition-colors">
-                                                    <div className="flex space-x-[3px]">
-                                                        <div className="w-1 h-1 bg-current rounded-full" />
-                                                        <div className="w-1 h-1 bg-current rounded-full" />
-                                                        <div className="w-1 h-1 bg-current rounded-full" />
-                                                    </div>
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-
-                {/* Pagination */}
-                <Pagination
-                    currentPage={currentPage}
-                    totalItems={filteredPOs.length}
-                    itemsPerPage={pageSize}
-                    onPageChange={setCurrentPage}
-                />
             </div>
+
+            <DenseTable
+                loading={loading}
+                data={filteredPOs}
+                columns={columns}
+                onRowClick={(po) => router.push(`/po/view?id=${po.po_number}`)}
+                className="bg-white/60 shadow-sm backdrop-blur-sm min-h-[500px]"
+            />
         </div>
     );
 }

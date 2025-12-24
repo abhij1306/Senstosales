@@ -19,6 +19,34 @@ from app.models import DCCreate
 
 logger = logging.getLogger(__name__)
 
+def generate_dc_number(po_number: str, db: sqlite3.Connection) -> str:
+    """
+    Generate next DC number deterministically based on PO number
+    Format: {po_number}-DC-{seq}
+    Example: PO123-DC-01, PO123-DC-02
+    """
+    # Find last DC for this PO
+    last_dc = db.execute("""
+        SELECT dc_number FROM delivery_challans 
+        WHERE po_number = ? 
+        ORDER BY created_at DESC, dc_number DESC 
+        LIMIT 1
+    """, (po_number,)).fetchone()
+    
+    if not last_dc:
+        return f"{po_number}-DC-01"
+    
+    last_val = last_dc[0]
+    parts = last_val.split("-DC-")
+    
+    if len(parts) == 2 and parts[1].isdigit():
+        seq = int(parts[1]) + 1
+        return f"{po_number}-DC-{seq:02d}"
+    
+    # Fallback if format is weird
+    return f"{po_number}-DC-{uuid.uuid4().hex[:4].upper()}"
+
+
 
 def validate_dc_header(dc: DCCreate) -> None:
     """
@@ -113,6 +141,46 @@ def validate_dc_items(items: List[dict], db: sqlite3.Connection, exclude_dc: Opt
                         "already_dispatched": already_dispatched,
                         "remaining": remaining,
                         "invariant": "DC-1"
+                    }
+                )
+
+        # GLOBAL INVARIANT: Dispatch cannot exceed PO Item Ordered Quantity
+        # Use Reconciliation Ledger View for single source of truth
+        recon_row = db.execute("""
+            SELECT rl.ordered_quantity, rl.total_delivered_qty 
+            FROM reconciliation_ledger rl
+            JOIN purchase_order_items poi ON rl.po_number = poi.po_number AND rl.po_item_no = poi.po_item_no
+            WHERE poi.id = ?
+        """, (po_item_id,)).fetchone()
+        
+        if recon_row:
+            global_ordered = recon_row[0]
+            global_delivered = recon_row[1]
+            
+            # If updating, exclude current DC contribution from 'global_delivered'
+            if exclude_dc:
+                current_dc_contribution = db.execute("""
+                    SELECT COALESCE(SUM(dispatch_qty), 0)
+                    FROM delivery_challan_items
+                    WHERE dc_number = ? AND po_item_id = ?
+                """, (exclude_dc, po_item_id)).fetchone()[0]
+                global_delivered -= current_dc_contribution
+            
+            # Allow small float tolerance if needed
+            remaining_global = global_ordered - global_delivered
+            
+            if dispatch_qty > remaining_global + 0.001:  # Simple float tolerance
+                 raise BusinessRuleViolation(
+                    f"Item {idx + 1}: Over-dispatch error. Total Ordered: {global_ordered}, "
+                    f"Already Delivered: {global_delivered}, Remaining: {remaining_global}. "
+                    f"Attempting to dispatch: {dispatch_qty}",
+                    details={
+                        "item_index": idx,
+                        "global_ordered": global_ordered,
+                        "already_delivered": global_delivered,
+                        "remaining_global": remaining_global,
+                        "dispatch_qty": dispatch_qty,
+                        "invariant": "Global-PO-Limit"
                     }
                 )
 
@@ -275,4 +343,43 @@ def update_dc(dc_number: str, dc: DCCreate, items: List[dict], db: sqlite3.Conne
         return ServiceResult.fail(
             error_code=ErrorCode.INTERNAL_ERROR,
             message=f"Failed to update DC: {str(e)}"
+        )
+
+
+def delete_dc(dc_number: str, db: sqlite3.Connection) -> ServiceResult[Dict]:
+    """
+    Delete a Delivery Challan
+    Rolls back quantity reconciliation by removing the records
+    """
+    try:
+        # INVARIANT: DC-2 - DC cannot be deleted if it has an invoice
+        invoice_number = check_dc_has_invoice(dc_number, db)
+        if invoice_number:
+            raise ConflictError(
+                f"Cannot delete DC {dc_number} - already linked to invoice {invoice_number}",
+                details={
+                    "dc_number": dc_number,
+                    "invoice_number": invoice_number,
+                    "invariant": "DC-2"
+                }
+            )
+        
+        # Check if DC exists
+        dc_row = db.execute("SELECT 1 FROM delivery_challans WHERE dc_number = ?", (dc_number,)).fetchone()
+        if not dc_row:
+            raise ResourceNotFoundError("DC", dc_number)
+            
+        # Delete DC Header (Items will be deleted via ON DELETE CASCADE)
+        db.execute("DELETE FROM delivery_challans WHERE dc_number = ?", (dc_number,))
+        
+        logger.info(f"Successfully deleted DC {dc_number}")
+        return ServiceResult.ok({"success": True, "message": f"DC {dc_number} deleted"})
+        
+    except (ResourceNotFoundError, ConflictError) as e:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete DC: {e}", exc_info=True)
+        return ServiceResult.fail(
+            error_code=ErrorCode.INTERNAL_ERROR,
+            message=f"Failed to delete DC: {str(e)}"
         )

@@ -193,6 +193,10 @@ class DashboardSummary(BaseModel):
     active_challans_growth: str # e.g. "Stable"
     total_po_value: float
     po_value_growth: float
+    # Global Reconciliation Totals
+    total_ordered: float = 0
+    total_delivered: float = 0
+    total_received: float = 0
 
 class ActivityItem(BaseModel):
     """Recent Activity Item"""
@@ -212,6 +216,9 @@ class SRVHeader(BaseModel):
     srv_date: str
     po_number: str
     srv_status: Optional[str] = "Received"
+    po_found: Optional[bool] = True  # Whether PO exists in database
+    file_hash: Optional[str] = None
+    is_active: Optional[bool] = True
     created_at: Optional[str] = None
 
 class SRVItem(BaseModel):
@@ -221,8 +228,19 @@ class SRVItem(BaseModel):
     lot_no: Optional[int] = None
     received_qty: float
     rejected_qty: float
+    order_qty: Optional[float] = 0
+    challan_qty: Optional[float] = 0
+    accepted_qty: Optional[float] = 0
+    unit: Optional[str] = None
     challan_no: Optional[str] = None
+    challan_date: Optional[str] = None
     invoice_no: Optional[str] = None
+    invoice_date: Optional[str] = None
+    div_code: Optional[str] = None
+    pmir_no: Optional[str] = None
+    finance_date: Optional[str] = None
+    cnote_no: Optional[str] = None
+    cnote_date: Optional[str] = None
     remarks: Optional[str] = None
 
 class SRVDetail(BaseModel):
@@ -237,6 +255,8 @@ class SRVListItem(BaseModel):
     po_number: str
     total_received_qty: float = 0.0
     total_rejected_qty: float = 0.0
+    po_found: Optional[bool] = True  # Whether PO exists in database
+    warning_message: Optional[str] = None  # Warning if PO not found
     created_at: Optional[str] = None
 
 class SRVStats(BaseModel):
@@ -245,4 +265,5 @@ class SRVStats(BaseModel):
     total_received_qty: float
     total_rejected_qty: float
     rejection_rate: float  # Percentage
+    missing_po_count: int  # Count of SRVs with PO not found
 

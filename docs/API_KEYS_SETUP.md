@@ -1,5 +1,8 @@
 # 🔑 API Keys Setup
 
+> [!NOTE]
+> As of v2.1, AI summaries in the Reports module have been replaced by deterministic, rule-based SQL insights for 100% accuracy. API keys are still required for the **Voice Agent** features.
+
 ## Required API Keys
 
 To use the voice agent, you need to add your API keys to the `.env` file.

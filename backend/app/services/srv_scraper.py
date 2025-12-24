@@ -8,131 +8,109 @@ import re
 from datetime import datetime
 
 
-def scrape_srv_html(html_content: str) -> Dict:
+def scrape_srv_html(html_content: str) -> List[Dict]:
     """
-    Parse SRV HTML and extract structured data.
+    Parse SRV HTML and extract structured data for MULTIPLE SRVs.
     
     Args:
         html_content: Raw HTML string from SRV file
         
     Returns:
-        dict with structure:
+        List of dicts, each with structure:
         {
-            "header": {
-                "srv_number": str,
-                "srv_date": str (YYYY-MM-DD),
-                "po_number": str
-            },
-            "items": [
-                {
-                    "po_item_no": int,
-                    "lot_no": int,
-                    "received_qty": float,
-                    "rejected_qty": float,
-                    "challan_no": str,
-                    "invoice_no": str
-                }
-            ]
+            "header": { ... },
+            "items": [ ... ]
         }
     """
     soup = BeautifulSoup(html_content, 'html.parser')
     
-    # Extract header fields
-    header = extract_srv_header(soup)
+    # We need to find the main data table and group rows by SRV Number
+    srv_groups = {} # {srv_number: {header: {}, items: []}}
     
-    # Extract SRV items from table
-    items = extract_srv_items(soup)
-    
-    return {
-        "header": header,
-        "items": items
-    }
-
-
-def extract_srv_header(soup: BeautifulSoup) -> Dict:
-    """Extract SRV header fields from HTML."""
-    header = {
-        "srv_number": None,
-        "srv_date": None,
-        "po_number": None
-    }
-    
-    # Find all text in the document
-    text_content = soup.get_text()
-    
-    # Extract SRV number (pattern: "SRVs Raised on PO <number>")
-    srv_match = re.search(r'SRVs?\s+Raised\s+on\s+PO\s+(\d+)', text_content, re.IGNORECASE)
-    if srv_match:
-        header["po_number"] = srv_match.group(1)
-    
-    # Try alternative patterns for PO number
-    if not header["po_number"]:
-        po_match = re.search(r'PURCHASE\s+ORDER\s+(\d+)', text_content, re.IGNORECASE)
-        if po_match:
-            header["po_number"] = po_match.group(1)
-    
-    # Extract SRV details from tables
     tables = soup.find_all('table')
     for table in tables:
-        rows = table.find_all('tr')
-        for row in rows:
-            cells = row.find_all(['td', 'th'])
-            if len(cells) >= 2:
-                for i in range(len(cells) - 1):
-                    key = cells[i].get_text(strip=True).upper()
-                    value = cells[i + 1].get_text(strip=True)
-                    
-                    # SRV Number (may be labeled as PMR NO, SRV NO, etc.)
-                    if 'PMR' in key and 'NO' in key and not header["srv_number"]:
-                        header["srv_number"] = value
-                    elif 'SRV' in key and 'NO' in key and not header["srv_number"]:
-                        header["srv_number"] = value
-                    
-                    # SRV Date
-                    if 'SRV' in key and 'DATE' in key and not header["srv_date"]:
-                        header["srv_date"] = parse_date(value)
-                    elif 'PMR' in key and 'DATE' in key and not header["srv_date"]:
-                        header["srv_date"] = parse_date(value)
-                    
-                    # PO Number
-                    if 'PO' in key and 'NO' in key and not header["po_number"]:
-                        # Extract just the number
-                        po_match = re.search(r'\d+', value)
-                        if po_match:
-                            header["po_number"] = po_match.group(0)
-    
-    return header
-
-
-def extract_srv_items(soup: BeautifulSoup) -> List[Dict]:
-    """Extract SRV items from the items table."""
-    items = []
-    
-    # Find the main items table (look for headers like "PO ITM", "RCD QTY", etc.)
-    tables = soup.find_all('table')
-    
-    for table in tables:
-        headers = []
+        # Get headers
         header_row = table.find('tr')
-        if header_row:
-            header_cells = header_row.find_all(['th', 'td'])
-            headers = [cell.get_text(strip=True).upper() for cell in header_cells]
+        if not header_row:
+            continue
             
-            # Check if this looks like an SRV items table
-            if any('RCD' in h or 'RECEIVED' in h for h in headers):
-                # This is likely the items table
-                rows = table.find_all('tr')[1:]  # Skip header row
+        headers = []
+        for th in header_row.find_all(['th', 'td']):
+            text = th.get_text(strip=True).upper()
+            # Normalize whitespace: replace multiple spaces with single space
+            text = " ".join(text.split())
+            headers.append(text)
+        
+        # Check if this is the main table (has PO ITM, SRV NO, RECVD QTY etc)
+        # Also check for "PO ITEM" or "SRV NO" variates
+        header_set = set(headers)
+        if ('PO ITM' in header_set or 'PO ITEM' in header_set) and ('SRV NO' in header_set or 'SRV NUMBER' in header_set):
+            # Process data rows
+            rows = table.find_all('tr')[1:] # Skip header
+            
+            for row in rows:
+                cells = row.find_all('td')
+                if len(cells) < 5 or (len(cells) == 1 and cells[0].get_text(strip=True) == ''):
+                    continue
                 
-                for row in rows:
-                    cells = row.find_all('td')
-                    if len(cells) < 5:  # Need at least a few columns
-                        continue
+                # Parse the row
+                # We need a temporary item extraction to get the SRV Number
+                # We reuse parse_srv_item_row but we need to extract header info from it too
+                
+                # To do this cleanly, we'll manually extract SRV NO first
+                # Map headers
+                header_map = {h: i for i, h in enumerate(headers)}
+                
+                def get_cell_val(keys):
+                    for key in keys:
+                        if key in header_map and header_map[key] < len(cells):
+                            return cells[header_map[key]].get_text(strip=True)
+                    return None
+
+                srv_number = get_cell_val(['SRV NO', 'SRV', 'SRV_NO'])
+                
+                # Validation: Skip header rows or invalid rows
+                if not srv_number or srv_number in ['SRV NO', 'SRV ITM', 'SRV']:
+                    continue
+                if not re.search(r'\d+', srv_number):
+                    continue
                     
-                    item = parse_srv_item_row(cells, headers)
-                    if item and item.get('po_item_no'):
-                        items.append(item)
-    
-    return items
+                # Initialize group if not exists
+                if srv_number not in srv_groups:
+                    # Extract Header Info from this row
+                    po_number_raw = get_cell_val(['PO NO', 'PURCHASE ORDER', 'PO_NO', 'PO NUMBER'])
+                    po_number = str(parse_int(po_number_raw)) if po_number_raw else None
+                    srv_date = parse_date(get_cell_val(['SRV DATE', 'DATE']))
+                    
+                    srv_groups[srv_number] = {
+                        "header": {
+                            "srv_number": srv_number,
+                            "srv_date": srv_date,
+                            "po_number": po_number,
+                            "srv_status": "Received",
+                            "po_found": True # Default, updated in ingestion
+                        },
+                        "items": []
+                    }
+                
+                # Extract Item
+                item = parse_srv_item_row(cells, headers)
+                if item and item.get('po_item_no') is not None:
+                    srv_groups[srv_number]["items"].append(item)
+
+    # Convert groups to list
+    results = []
+    for srv_num, data in srv_groups.items():
+        results.append(data)
+        
+    return results
+
+
+# Deprecated/Unused helper functions kept for compatibility if needed, 
+# but effectively replaced by the logic above.
+# We can remove extract_srv_header and extract_srv_items entirely 
+# or keep them as stubs if other code imports them (unlikely).
+# For cleanliness, I will allow them to remain but scrape_srv_html is the entry point.
 
 
 def parse_srv_item_row(cells: List, headers: List[str]) -> Optional[Dict]:
@@ -152,45 +130,65 @@ def parse_srv_item_row(cells: List, headers: List[str]) -> Optional[Dict]:
         for idx, header in enumerate(headers):
             header_map[header] = idx
         
-        # Extract PO Item Number (PO ITM, ITEM NO, etc.)
-        for key in ['PO ITM', 'ITEM', 'ITM', 'PO_ITM']:
-            if key in header_map:
-                item["po_item_no"] = parse_int(cells[header_map[key]].get_text(strip=True))
-                break
+        # Helper to safely get cell text
+        def get_val(keys):
+            for key in keys:
+                if key in header_map:
+                    return cells[header_map[key]].get_text(strip=True)
+            return None
+
+        # Extract PO Item Number
+        val = get_val(['PO ITM', 'ITEM', 'ITM', 'PO_ITM', 'PO ITEM'])
+        if val:
+            item["po_item_no"] = parse_int(val)
+        elif len(cells) > 0:
+            # Fallback to logic if header parsing completely failed but structure is known
+             # But with the exact map this shouldn't be needed often
+             try:
+                 item["po_item_no"] = parse_int(cells[2].get_text(strip=True)) # Index 2 is PO ITM usually
+             except:
+                 pass
+
+        # Extract SRV Number (for internal grouping/validation)
+        item["row_srv_number"] = get_val(['SRV NO', 'SRV', 'SRV_NO'])
         
-        # If no header match, try first column
-        if not item["po_item_no"] and len(cells) > 0:
-            item["po_item_no"] = parse_int(cells[0].get_text(strip=True))
+        # Extract Lot Number (SUB ITM)
+        item["lot_no"] = parse_int(get_val(['SUB ITM', 'LOT NO', 'LOT']))
         
-        # Extract Lot Number
-        for key in ['LOT NO', 'LOT', 'SUB ITM']:
-            if key in header_map:
-                item["lot_no"] = parse_int(cells[header_map[key]].get_text(strip=True))
-                break
+        # Extract Received Quantity
+        item["received_qty"] = parse_decimal(get_val(['RECVD QTY', 'RECEIVED QTY', 'RCD QTY', 'RECEIVED']))
         
-        # Extract Received Quantity (RCD QTY, RECEIVED, ACCEPTED)
-        for key in ['RCD QTY', 'RECEIVED', 'ACCEPTED', 'RCVD QTY']:
-            if key in header_map:
-                item["received_qty"] = parse_decimal(cells[header_map[key]].get_text(strip=True))
-                break
+        # Extract Rejected Quantity
+        item["rejected_qty"] = parse_decimal(get_val(['REJ QTY', 'REJECTED QTY', 'REJECTED']))
         
-        # Extract Rejected Quantity (REJ QTY, REJECTED)
-        for key in ['REJ QTY', 'REJECTED', 'REJECT']:
-            if key in header_map:
-                item["rejected_qty"] = parse_decimal(cells[header_map[key]].get_text(strip=True))
-                break
+        # Extract Accepted Quantity
+        item["accepted_qty"] = parse_decimal(get_val(['ACCEPTED QTY', 'ACCPT QTY', 'ACCEPTED']))
         
         # Extract Challan Number
-        for key in ['CHALLAN NO', 'CHALLAN', 'DC', 'DC NO']:
-            if key in header_map:
-                item["challan_no"] = cells[header_map[key]].get_text(strip=True) or None
-                break
+        item["challan_no"] = get_val(['CHALLAN NO', 'CHALLAN', 'DC NO']) or None
         
-        # Extract Invoice Number
-        for key in ['TAX INV', 'INVOICE', 'INV NO', 'TAX INV NO']:
-            if key in header_map:
-                item["invoice_no"] = cells[header_map[key]].get_text(strip=True) or None
-                break
+        # Extract Challan Date
+        item["challan_date"] = parse_date(get_val(['CHALLAN DATE', 'CHALLAN DT', 'DC DATE']))
+        
+        # Extract Invoice Number (TAX INV)
+        item["invoice_no"] = get_val(['TAX INV', 'INVOICE NO', 'INV NO']) or None
+        
+        # Extract Invoice Date (TAX INV DT)
+        item["invoice_date"] = parse_date(get_val(['TAX INV DT', 'INVOICE DATE', 'INV DT']))
+        
+        # Extract Unit
+        item["unit"] = get_val(['UNIT', 'UOM']) or None
+        
+        # Extract Quantities
+        item["order_qty"] = parse_decimal(get_val(['ORDER QTY', 'PO QTY']))
+        item["challan_qty"] = parse_decimal(get_val(['CHALLAN QTY', 'DC QTY']))
+        
+        # Extract Extended Fields
+        item["div_code"] = get_val(['DIV', 'DIVISION']) or None
+        item["pmir_no"] = get_val(['PMIR NO', 'PMIR']) or None
+        item["finance_date"] = parse_date(get_val(['FINANCE DT', 'FINANCE DATE']))
+        item["cnote_no"] = get_val(['CNOTE NO.', 'CNOTE NO', 'CNOTE']) or None
+        item["cnote_date"] = parse_date(get_val(['CNOTE DATE', 'CNOTE DT']))
         
         return item
         
@@ -214,9 +212,12 @@ def parse_date(date_str: str) -> Optional[str]:
     formats = [
         '%d/%m/%Y',  # 27/09/2025
         '%d-%m-%Y',  # 27-09-2025
-        '%Y-%m-%d',  # 2025-09-27 (already correct)
+        '%Y-%m-%d',  # 2025-09-27
         '%d.%m.%Y',  # 27.09.2025
         '%d %m %Y',  # 27 09 2025
+        '%d/%m/%y',  # 27/09/25
+        '%d-%m-%y',  # 27-09-25
+        '%d.%m.%y',  # 27.09.25
     ]
     
     for fmt in formats:
@@ -232,7 +233,7 @@ def parse_date(date_str: str) -> Optional[str]:
 
 def parse_int(value_str: str) -> Optional[int]:
     """Parse integer from string, handling empty values."""
-    if not value_str or value_str == '-' or value_str == '':
+    if value_str is None or value_str == '-' or value_str.strip() == '':
         return None
     
     try:

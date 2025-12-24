@@ -11,6 +11,7 @@ import sqlite3
 from bs4 import BeautifulSoup
 from app.services.po_scraper import extract_po_header, extract_items
 from app.services.ingest_po import POIngestionService
+from app.services.srv_po_linker import update_srvs_on_po_upload
 
 from app.services.po_service import po_service
 
@@ -77,10 +78,19 @@ async def upload_po_html(file: UploadFile = File(...), db: sqlite3.Connection = 
     try:
         # DB transaction is already active via get_db dependency
         success, warnings = ingestion_service.ingest_po(db, po_header, po_items)
+        
+        # Update any SRVs that were waiting for this PO
+        po_number = str(po_header.get("PURCHASE ORDER"))
+        linked_srvs_count = update_srvs_on_po_upload(po_number, db)
+        
+        if linked_srvs_count > 0:
+            warnings.append(f"\u2705 Linked {linked_srvs_count} existing SRV(s) to PO {po_number}")
+        
         return {
             "success": success,
             "po_number": po_header.get("PURCHASE ORDER"),
-            "warnings": warnings
+            "warnings": warnings,
+            "linked_srvs": linked_srvs_count
         }
     except Exception as e:
         raise internal_error(f"Failed to ingest PO: {str(e)}", e)
@@ -92,6 +102,7 @@ async def upload_po_batch(files: List[UploadFile] = File(...), db: sqlite3.Conne
     results = []
     successful = 0
     failed = 0
+    total_linked_srvs = 0
     
     ingestion_service = POIngestionService()
     
@@ -100,7 +111,8 @@ async def upload_po_batch(files: List[UploadFile] = File(...), db: sqlite3.Conne
             "filename": file.filename,
             "success": False,
             "po_number": None,
-            "message": ""
+            "message": "",
+            "linked_srvs": 0
         }
         
         try:
@@ -128,11 +140,20 @@ async def upload_po_batch(files: List[UploadFile] = File(...), db: sqlite3.Conne
             # Ingest into database
             success, warnings = ingestion_service.ingest_po(db, po_header, po_items)
             
-            
             if success:
+                # Update any SRVs that were waiting for this PO
+                po_number = str(po_header.get("PURCHASE ORDER"))
+                linked_srvs_count = update_srvs_on_po_upload(po_number, db)
+                total_linked_srvs += linked_srvs_count
+                
                 result["success"] = True
                 result["po_number"] = po_header.get("PURCHASE ORDER")
-                result["message"] = warnings[0] if warnings else f"Successfully ingested PO {po_header.get('PURCHASE ORDER')}"
+                result["linked_srvs"] = linked_srvs_count
+                
+                message = warnings[0] if warnings else f"Successfully ingested PO {po_header.get('PURCHASE ORDER')}"
+                if linked_srvs_count > 0:
+                    message += f" (Linked {linked_srvs_count} SRV(s))"
+                result["message"] = message
                 successful += 1
             else:
                 result["message"] = "Failed to ingest PO"
@@ -148,6 +169,7 @@ async def upload_po_batch(files: List[UploadFile] = File(...), db: sqlite3.Conne
         "total": len(files),
         "successful": successful,
         "failed": failed,
+        "total_linked_srvs": total_linked_srvs,
         "results": results
     }
 

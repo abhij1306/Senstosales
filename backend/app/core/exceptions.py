@@ -16,11 +16,12 @@ class ResourceNotFoundException(AppException):
         )
 
 class BusinessRuleViolation(AppException):
-    def __init__(self, message: str):
+    def __init__(self, message: str, details: dict = None):
         super().__init__(
             message=message,
             error_code="BUSINESS_RULE_VIOLATION",
-            status_code=400
+            status_code=400,
+            details=details
         )
 
 class AuthenticationError(AppException):

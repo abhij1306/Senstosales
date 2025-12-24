@@ -16,6 +16,9 @@ export interface DashboardSummary {
     active_challans_growth: string;
     total_po_value: number;
     po_value_growth: number;
+    total_ordered: number;
+    total_delivered: number;
+    total_received: number;
 }
 
 export interface ActivityItem {
@@ -208,6 +211,7 @@ export interface DCItemRow {
     already_dispatched?: number;
     remaining_quantity?: number;
     dispatched_quantity?: number; // API field
+    received_quantity?: number; // Added for reconciliation visualization
     dispatch_quantity: number; // UI field (primary) - User asked for dispatched_quantity but kept dispatch_quantity as UI field in previous code? 
     // Wait, user said "Normalize all field names... dispatched_quantity".
     // I should probably unify these two if possible?
@@ -429,4 +433,64 @@ export interface CreateResponse {
     invoice_number?: string;
     total_amount?: number;
     items_count?: number;
+}
+
+
+// ============================================================
+// SRV (STORES RECEIPT VOUCHER) TYPES
+// ============================================================
+
+export interface SRVHeader {
+    srv_number: string;
+    srv_date: string;
+    po_number: string;
+    srv_status: string;
+    po_found?: boolean;
+    created_at?: string;
+}
+
+export interface SRVItem {
+    id: number;
+    po_item_no: number;
+    lot_no: number | null;
+    received_qty: number;
+    rejected_qty: number;
+    // Extended fields
+    order_qty?: number;
+    challan_qty?: number;
+    accepted_qty?: number;
+    unit?: string;
+    challan_no: string | null;
+    challan_date?: string;
+    invoice_no: string | null;
+    invoice_date?: string;
+    div_code?: string;
+    pmir_no?: string;
+    finance_date?: string;
+    cnote_no?: string;
+    cnote_date?: string;
+    remarks: string | null;
+}
+
+export interface SRVDetail {
+    header: SRVHeader;
+    items: SRVItem[];
+}
+
+export interface SRVListItem {
+    srv_number: string;
+    srv_date: string;
+    po_number: string;
+    total_received_qty: number;
+    total_rejected_qty: number;
+    po_found?: boolean;
+    warning_message?: string;
+    created_at?: string;
+}
+
+export interface SRVStats {
+    total_srvs: number;
+    total_received_qty: number;
+    total_rejected_qty: number;
+    missing_po_count: number;
 }

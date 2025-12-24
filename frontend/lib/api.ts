@@ -29,7 +29,10 @@ import {
     InvoiceCreate,
     DCDetail,
     InvoiceDetail,
-    CreateResponse
+    CreateResponse,
+    SRVStats,
+    SRVListItem,
+    SRVDetail
 } from '@/types';
 
 // Re-exporting for backward compatibility if needed, but best to use direct imports
@@ -216,7 +219,7 @@ export const api = {
 
     // Dashboard
     async getDashboardInsights(): Promise<{ type: 'success' | 'warning' | 'error'; text: string; action: string }[]> {
-        return apiFetch<{ type: 'success' | 'warning' | 'error'; text: string; action: string }[]>('/api/smart-reports/insight-strip');
+        return apiFetch<{ type: 'success' | 'warning' | 'error'; text: string; action: string }[]>('/api/dashboard/insights');
     },
 
     async getDashboardSummary(): Promise<DashboardSummary> {
@@ -329,5 +332,19 @@ export const api = {
             method: 'POST',
             body: JSON.stringify(payload),
         });
+    },
+
+    // SRVs
+    async getSRVStats(): Promise<SRVStats> {
+        return apiFetch<SRVStats>('/api/srv/stats');
+    },
+
+    async listSRVs(poNumber?: number): Promise<SRVListItem[]> {
+        const url = poNumber ? `/api/srv/?po=${poNumber}` : '/api/srv/';
+        return apiFetch<SRVListItem[]>(url);
+    },
+
+    async getSRVDetail(srvNumber: string): Promise<SRVDetail> {
+        return apiFetch<SRVDetail>(`/api/srv/${srvNumber}`);
     }
 };

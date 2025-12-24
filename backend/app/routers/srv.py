@@ -4,6 +4,7 @@ Handles SRV upload, listing, and detail retrieval.
 """
 from fastapi import APIRouter, File, UploadFile, Depends, HTTPException
 import sqlite3
+import re
 from typing import List
 from datetime import datetime
 
@@ -21,14 +22,13 @@ async def upload_batch_srvs(
     db: sqlite3.Connection = Depends(get_db)
 ):
     """
-    Upload multiple SRV HTML files in batch.
-    Parses, validates, and inserts into database.
+    Upload multiple SRV HTML files in batch using process_srv_file.
     """
     results = []
+    from app.services.srv_ingestion import process_srv_file
     
     for file in files:
         try:
-            # Validate file type
             if not file.filename.endswith('.html'):
                 results.append({
                     "filename": file.filename,
@@ -37,48 +37,29 @@ async def upload_batch_srvs(
                 })
                 continue
             
-            # Read file content
+            po_match = re.search(r'SRV_(\d+)\.html', file.filename, re.IGNORECASE)
+            po_from_filename = po_match.group(1) if po_match else None
+            
             content = await file.read()
-            html_content = content.decode('utf-8')
-            
-            # Parse SRV HTML
-            srv_data = scrape_srv_html(html_content)
-            
-            # Validate extracted data
-            is_valid, validation_message = validate_srv_data(srv_data, db)
-            if not is_valid:
-                results.append({
-                    "filename": file.filename,
-                    "success": False,
-                    "message": validation_message
-                })
-                continue
-            
-            # Insert into database
-            ingest_srv_to_db(srv_data, db)
+            success, messages = process_srv_file(content, file.filename, db, po_from_filename)
             
             results.append({
                 "filename": file.filename,
-                "success": True,
-                "srv_number": srv_data['header']['srv_number'],
-                "po_number": srv_data['header']['po_number'],
-                "message": f"Successfully uploaded SRV {srv_data['header']['srv_number']}"
+                "success": success,
+                "message": "; ".join(messages),
+                "messages": messages
             })
             
         except Exception as e:
             results.append({
                 "filename": file.filename,
                 "success": False,
-                "message": f"Error processing file: {str(e)}"
+                "message": f"Error: {str(e)}"
             })
-    
-    successful = sum(1 for r in results if r["success"])
-    failed = len(results) - successful
     
     return {
         "total": len(files),
-        "successful": successful,
-        "failed": failed,
+        "successful": sum(1 for r in results if r["success"]),
         "results": results
     }
 
@@ -98,6 +79,7 @@ def get_srv_list(
             s.srv_number,
             s.srv_date,
             s.po_number,
+            COALESCE(s.po_found, 1) as po_found,
             COALESCE(SUM(si.received_qty), 0) as total_received_qty,
             COALESCE(SUM(si.rejected_qty), 0) as total_rejected_qty,
             s.created_at
@@ -111,7 +93,7 @@ def get_srv_list(
         params["po_number"] = po_number
     
     query += """
-        GROUP BY s.srv_number, s.srv_date, s.po_number, s.created_at
+        GROUP BY s.srv_number, s.srv_date, s.po_number, s.po_found, s.created_at
         ORDER BY s.srv_date DESC, s.srv_number DESC
         LIMIT :limit OFFSET :skip
     """
@@ -123,12 +105,17 @@ def get_srv_list(
     
     srvs = []
     for row in result:
+        po_found = bool(row['po_found'])
+        warning_msg = None if po_found else f"PO {row['po_number']} not found in database"
+        
         srvs.append({
             "srv_number": row['srv_number'],
             "srv_date": row['srv_date'],
             "po_number": row['po_number'],
             "total_received_qty": float(row['total_received_qty']),
             "total_rejected_qty": float(row['total_rejected_qty']),
+            "po_found": po_found,
+            "warning_message": warning_msg,
             "created_at": row['created_at']
         })
     
@@ -144,7 +131,8 @@ def get_srv_stats(db: sqlite3.Connection = Depends(get_db)):
         SELECT 
             COUNT(DISTINCT s.srv_number) as total_srvs,
             COALESCE(SUM(si.received_qty), 0) as total_received,
-            COALESCE(SUM(si.rejected_qty), 0) as total_rejected
+            COALESCE(SUM(si.rejected_qty), 0) as total_rejected,
+            COUNT(DISTINCT CASE WHEN s.po_found = 0 THEN s.srv_number END) as missing_po_count
         FROM srvs s
         LEFT JOIN srv_items si ON s.srv_number = si.srv_number
     """).fetchone()
@@ -160,7 +148,8 @@ def get_srv_stats(db: sqlite3.Connection = Depends(get_db)):
         "total_srvs": result['total_srvs'] or 0,
         "total_received_qty": total_received,
         "total_rejected_qty": total_rejected,
-        "rejection_rate": round(rejection_rate, 2)
+        "rejection_rate": round(rejection_rate, 2),
+        "missing_po_count": int(result['missing_po_count'] or 0)
     }
 
 
@@ -182,7 +171,10 @@ def get_srv_detail(srv_number: str, db: sqlite3.Connection = Depends(get_db)):
     items_result = db.execute("""
             SELECT 
                 id, po_item_no, lot_no, received_qty, rejected_qty,
-                challan_no, invoice_no, remarks
+                challan_no, invoice_no, remarks,
+                order_qty, challan_qty, accepted_qty, unit,
+                challan_date, invoice_date, div_code, pmir_no,
+                finance_date, cnote_no, cnote_date
             FROM srv_items
             WHERE srv_number = ?
             ORDER BY po_item_no, lot_no
@@ -190,43 +182,31 @@ def get_srv_detail(srv_number: str, db: sqlite3.Connection = Depends(get_db)):
         (srv_number,)
     ).fetchall()
     
-    # Build response
-    header = SRVHeader(
-        srv_number=header_result['srv_number'],
-        srv_date=header_result['srv_date'],
-        po_number=header_result['po_number'],
-        srv_status=header_result['srv_status'],
-        created_at=header_result['created_at']
-    )
+    # Build response using dict(row) to capture all columns automatically
+    header = SRVHeader(**dict(header_result))
     
     items = []
     for row in items_result:
-        items.append(SRVItem(
-            id=row['id'],
-            po_item_no=row['po_item_no'],
-            lot_no=row['lot_no'],
-            received_qty=float(row['received_qty']),
-            rejected_qty=float(row['rejected_qty']),
-            challan_no=row['challan_no'],
-            invoice_no=row['invoice_no'],
-            remarks=row['remarks']
-        ))
+        items.append(SRVItem(**dict(row)))
     
     return SRVDetail(header=header, items=items)
 
 
-@router.get("/po/{po_number}/srvs")
+@router.get("/po/{po_number}/srvs", response_model=List[SRVListItem])
 def get_srvs_for_po(po_number: str, db: sqlite3.Connection = Depends(get_db)):
     """
-    Get all SRVs linked to a specific PO.
-    Used in PO detail page to show SRV history.
+    Get all SRVs linked to a specific PO with aggregated quantities.
     """
     result = db.execute("""
             SELECT 
-                srv_number, srv_date, srv_status, created_at
-            FROM srvs
-            WHERE po_number = ?
-            ORDER BY srv_date DESC
+                s.srv_number, s.srv_date, s.po_number, s.srv_status, s.created_at, s.po_found,
+                COALESCE(SUM(si.received_qty), 0) as total_received_qty,
+                COALESCE(SUM(si.rejected_qty), 0) as total_rejected_qty
+            FROM srvs s
+            LEFT JOIN srv_items si ON s.srv_number = si.srv_number
+            WHERE s.po_number = ?
+            GROUP BY s.srv_number
+            ORDER BY s.srv_date DESC
         """,
         (po_number,)
     ).fetchall()
@@ -236,8 +216,25 @@ def get_srvs_for_po(po_number: str, db: sqlite3.Connection = Depends(get_db)):
         srvs.append({
             "srv_number": row['srv_number'],
             "srv_date": row['srv_date'],
-            "srv_status": row['srv_status'],
+            "po_number": row['po_number'],
+            "total_received_qty": float(row['total_received_qty']),
+            "total_rejected_qty": float(row['total_rejected_qty']),
+            "po_found": bool(row['po_found']),
             "created_at": row['created_at']
         })
     
     return srvs
+
+
+@router.delete("/{srv_number}")
+def delete_srv_endpoint(srv_number: str, db: sqlite3.Connection = Depends(get_db)):
+    """
+    Delete an SRV and rollback its quantities.
+    """
+    from app.services.srv_ingestion import delete_srv
+    
+    success, message = delete_srv(srv_number, db)
+    if not success:
+        raise HTTPException(status_code=400, detail=message)
+    
+    return {"message": message}

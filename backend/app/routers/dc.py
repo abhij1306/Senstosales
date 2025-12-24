@@ -122,7 +122,15 @@ def get_dc_detail(dc_number: str, db: sqlite3.Connection = Depends(get_db)):
             poi.material_description,
             poi.unit,
             poi.po_rate,
-            pod.dely_qty as lot_ordered_qty
+            pod.dely_qty as lot_ordered_qty,
+            (
+                SELECT COALESCE(SUM(si.received_qty), 0)
+                FROM srv_items si
+                JOIN srvs s ON si.srv_number = s.srv_number
+                WHERE s.is_active = 1 
+                  AND si.po_item_no = poi.po_item_no
+                  AND si.challan_no = dci.dc_number
+            ) as received_quantity
         FROM delivery_challan_items dci
         JOIN purchase_order_items poi ON dci.po_item_id = poi.id
         LEFT JOIN purchase_order_deliveries pod ON dci.po_item_id = pod.po_item_id AND dci.lot_no = pod.lot_no
@@ -137,6 +145,7 @@ def get_dc_detail(dc_number: str, db: sqlite3.Connection = Depends(get_db)):
         po_item_id = item_dict["po_item_id"]
         lot_no = item_dict["lot_no"]
         lot_ordered = item_dict["lot_ordered_qty"] or 0
+        item_dict["received_quantity"] = item_dict.get("received_quantity", 0)
         
         if lot_no:
              total_dispatched = db.execute("""
@@ -293,4 +302,33 @@ def download_dc_excel(dc_number: str, db: sqlite3.Connection = Depends(get_db)):
         )
     except Exception as e:
         raise internal_error(f"Failed to generate Excel: {str(e)}", e)
+
+
+@router.delete("/{dc_number}")
+def delete_dc(dc_number: str, db: sqlite3.Connection = Depends(get_db)):
+    """
+    Delete a Delivery Challan
+    CRITICAL: Validates invoice linkage before deletion
+    """
+    try:
+        # Use BEGIN IMMEDIATE for transaction safety
+        db.execute("BEGIN IMMEDIATE")
+        
+        from app.services.dc import delete_dc as service_delete_dc
+        result = service_delete_dc(dc_number, db)
+        
+        db.commit()
+        return result.data
+        
+    except (ResourceNotFoundError, ConflictError) as e:
+        db.rollback()
+        status_code = map_error_code_to_http_status(e.error_code)
+        raise HTTPException(
+            status_code=status_code,
+            detail={"message": e.message, "error_code": e.error_code.value}
+        )
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error deleting DC {dc_number}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 

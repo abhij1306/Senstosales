@@ -272,7 +272,7 @@ function CreateInvoicePageContent() {
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div>
-                        <h1 className="text-xl font-bold text-text-primary flex items-center gap-3 tracking-tight">
+                        <h1 className="text-[20px] font-semibold text-text-primary flex items-center gap-3 tracking-tight">
                             Generate Tax Invoice
                         </h1>
                         <p className="text-sm text-text-muted mt-0.5">

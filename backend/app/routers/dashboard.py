@@ -46,15 +46,31 @@ def get_dashboard_summary(db: sqlite3.Connection = Depends(get_db)):
         value_row = db.execute("SELECT SUM(po_value) FROM purchase_orders").fetchone()
         total_po_value = value_row[0] if value_row and value_row[0] else 0.0
 
+        # 6. Global Reconciliation Snapshot
+        recon_row = db.execute("""
+            SELECT 
+                SUM(ordered_quantity), 
+                SUM(total_delivered_qty), 
+                SUM(total_received_qty) 
+            FROM reconciliation_ledger
+        """).fetchone()
+        
+        total_order = recon_row[0] or 0.0
+        total_deliv = recon_row[1] or 0.0
+        total_recvd = recon_row[2] or 0.0
+
         return {
             "total_sales_month": total_sales,
-            "sales_growth": 0.0, # Not enough historical data yet
+            "sales_growth": 0.0,
             "pending_pos": pending_pos,
             "new_pos_today": new_pos_today,
             "active_challans": active_challans,
-            "active_challans_growth": "Stable", # Standard output until historical tracking
+            "active_challans_growth": "Stable",
             "total_po_value": total_po_value,
-            "po_value_growth": 0.0 # Not enough historical data yet
+            "po_value_growth": 0.0,
+            "total_ordered": total_order,
+            "total_delivered": total_deliv,
+            "total_received": total_recvd
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -110,3 +126,68 @@ def get_recent_activity(limit: int = 10, db: sqlite3.Connection = Depends(get_db
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/insights")
+def get_dashboard_insights(db: sqlite3.Connection = Depends(get_db)):
+    """
+    Get deterministic insights/alerts based on business rules.
+    Replaces the old AI-based insights.
+    """
+    insights = []
+    
+    try:
+        # Rule 1: Pending POs
+        pending_pos = db.execute("SELECT COUNT(*) FROM purchase_orders WHERE po_status = 'New' OR po_status IS NULL").fetchone()[0]
+        if pending_pos > 5:
+            insights.append({
+                "type": "warning",
+                "text": f"{pending_pos} Purchase Orders pending approval",
+                "action": "view_pending"
+            })
+            
+        # Rule 2: Uninvoiced Challans
+        uninvoiced = db.execute("""
+            SELECT COUNT(DISTINCT dc.dc_number)
+            FROM delivery_challans dc
+            LEFT JOIN gst_invoices i ON dc.dc_number = i.linked_dc_numbers
+            WHERE i.invoice_number IS NULL
+        """).fetchone()[0]
+        
+        if uninvoiced > 0:
+             insights.append({
+                "type": "success" if uninvoiced < 10 else "warning",
+                "text": f"{uninvoiced} Challans ready for invoicing",
+                "action": "view_uninvoiced"
+            })
+
+        # Rule 3: Recent Rejections (SRV)
+        recent_rejections = db.execute("""
+            SELECT COUNT(*) FROM srv_items 
+            WHERE rejected_qty > 0 
+            AND created_at >= date('now', '-7 days')
+        """).fetchone()[0]
+        
+        if recent_rejections > 0:
+             insights.append({
+                "type": "error",
+                "text": f"{recent_rejections} items rejected in last 7 days",
+                "action": "view_srv"
+            })
+            
+        # Fallback if quiet
+        if not insights:
+            insights.append({
+                "type": "success",
+                "text": "All systems operational. No immediate alerts.",
+                "action": "none"
+            })
+            
+        return insights
+
+    except Exception as e:
+        # Fail gracefully
+        return [{
+            "type": "error",
+            "text": "System alert check failed",
+            "action": "none"
+        }]

@@ -1,77 +1,149 @@
 """
-Reports Router
-Provides various business reports via ReportsService
+Reports Router - Unified Deterministic Reporting
+Routes requests to report_service and handles file exports.
 """
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, HTTPException
+from fastapi.responses import StreamingResponse
 from app.db import get_db
-from typing import Optional
+from app.services import report_service
 import sqlite3
-from datetime import datetime
-
-from app.services.reports_service import reports_service
+import pandas as pd
+import io
+from typing import Optional, List
 
 router = APIRouter()
 
-@router.get("/po-dc-invoice-reconciliation")
-def po_dc_invoice_reconciliation(
-    po_number: Optional[int] = None,
-    db: sqlite3.Connection = Depends(get_db)
-):
-    """PO-DC-Invoice Reconciliation Report"""
-    return reports_service.get_reconciliation_report(db, po_number)
+def export_df_to_excel(df: pd.DataFrame, filename: str) -> StreamingResponse:
+    """Helper to stream DataFrame as Excel"""
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False, sheet_name='Report')
+        # Auto-adjust columns
+        worksheet = writer.sheets['Report']
+        for i, col in enumerate(df.columns):
+            width = max(df[col].astype(str).map(len).max(), len(col)) + 4
+            worksheet.set_column(i, i, width)
+            
+    output.seek(0)
+    headers = {
+        'Content-Disposition': f'attachment; filename="{filename}"'
+    }
+    return StreamingResponse(
+        output,
+        media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        headers=headers
+    )
 
-
-@router.get("/dc-without-invoice")
-def dc_without_invoice(db: sqlite3.Connection = Depends(get_db)):
-    """DCs that haven't been invoiced yet"""
-    return reports_service.get_pending_dcs(db)
-
-
-@router.get("/invoice-summary")
-def invoice_summary(
+@router.get("/reconciliation")
+def get_reconciliation_report(
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
+    export: bool = False,
     db: sqlite3.Connection = Depends(get_db)
 ):
-    """Invoice Summary Report with GST breakdown"""
-    return reports_service.get_invoice_summary(db, start_date, end_date)
+    """PO vs Delivered vs Received vs Rejected"""
+    # Default to last 30 days if not provided
+    if not start_date or not end_date:
+        from datetime import datetime, timedelta
+        end = datetime.now()
+        start = end - timedelta(days=30)
+        start_date = start.strftime("%Y-%m-%d")
+        end_date = end.strftime("%Y-%m-%d")
+    
+    df = report_service.get_po_reconciliation_by_date(start_date, end_date, db)
+    if export:
+        return export_df_to_excel(df, f"PO_Reconciliation_{start_date}_{end_date}.xlsx")
+    return df.fillna(0).to_dict(orient="records")
 
-
-@router.get("/supplier-summary")
-def supplier_summary(db: sqlite3.Connection = Depends(get_db)):
-    """Supplier-wise PO summary"""
-    return reports_service.get_supplier_summary(db)
-
-
-@router.get("/monthly-summary")
-def monthly_summary(
-    year: int = Query(default=datetime.now().year),
+@router.get("/sales")
+def get_sales_report(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    export: bool = False,
     db: sqlite3.Connection = Depends(get_db)
 ):
-    """Monthly summary of POs, DCs, and Invoices"""
-    return reports_service.get_monthly_summary(db, year)
+    """Monthly Sales Summary"""
+    if not start_date or not end_date:
+        from datetime import datetime, timedelta
+        end = datetime.now()
+        start = end - timedelta(days=30)
+        start_date = start.strftime("%Y-%m-%d")
+        end_date = end.strftime("%Y-%m-%d")
+    
+    df = report_service.get_monthly_sales_summary(start_date, end_date, db)
+    if export:
+        return export_df_to_excel(df, f"Monthly_Sales_{start_date}_{end_date}.xlsx")
+    return df.fillna(0).to_dict(orient="records")
 
-
-@router.get("/insight-strip")
-def insight_strip(db: sqlite3.Connection = Depends(get_db)):
-    """Generate high-impact insights for the dashboard"""
-    return reports_service.get_dashboard_insights(db)
-
-
-@router.get("/trends")
-def trends(
-    range: str = "year",
+@router.get("/register/dc")
+def get_dc_register(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    export: bool = False,
     db: sqlite3.Connection = Depends(get_db)
 ):
-    """Get sales vs dispatch vs invoice trends"""
-    return reports_service.get_trends(db, range)
+    """DC Register"""
+    if not start_date or not end_date:
+        from datetime import datetime, timedelta
+        end = datetime.now()
+        start = end - timedelta(days=30)
+        start_date = start.strftime("%Y-%m-%d")
+        end_date = end.strftime("%Y-%m-%d")
+    
+    df = report_service.get_dc_register(start_date, end_date, db)
+    if export:
+        return export_df_to_excel(df, f"DC_Register_{start_date}_{end_date}.xlsx")
+    return df.fillna(0).to_dict(orient="records")
 
-
-@router.get("/smart-table")
-def smart_table(
-    filter: Optional[str] = None,
+@router.get("/register/invoice")
+def get_invoice_register(
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    export: bool = False,
     db: sqlite3.Connection = Depends(get_db)
 ):
-    """Unified Smart Table Data"""
-    return reports_service.get_smart_table(db, filter)
+    """Invoice Register"""
+    if not start_date or not end_date:
+        from datetime import datetime, timedelta
+        end = datetime.now()
+        start = end - timedelta(days=30)
+        start_date = start.strftime("%Y-%m-%d")
+        end_date = end.strftime("%Y-%m-%d")
+    
+    df = report_service.get_invoice_register(start_date, end_date, db)
+    if export:
+        return export_df_to_excel(df, f"Invoice_Register_{start_date}_{end_date}.xlsx")
+    return df.fillna(0).to_dict(orient="records")
 
+@router.get("/pending")
+def get_pending_items(
+    export: bool = False,
+    db: sqlite3.Connection = Depends(get_db)
+):
+    """Pending PO Items"""
+    df = report_service.get_pending_po_items(db)
+    if export:
+        return export_df_to_excel(df, "Pending_PO_Items.xlsx")
+    return df.fillna(0).to_dict(orient="records")
+
+@router.get("/kpis")
+def get_dashboard_kpis(db: sqlite3.Connection = Depends(get_db)):
+    """Quick KPIs for dashboard (Legacy support)"""
+    # Simple deterministic KPIs
+    try:
+        pending_count = db.execute("SELECT COUNT(*) FROM purchase_order_items WHERE pending_qty > 0").fetchone()[0]
+        uninvoiced_dc = db.execute("""
+            SELECT COUNT(*) FROM delivery_challans dc
+            LEFT JOIN gst_invoice_dc_links l ON dc.dc_number = l.dc_number
+            WHERE l.dc_number IS NULL
+        """).fetchone()[0]
+        
+        return {
+            "pending_items": pending_count,
+            "uninvoiced_dcs": uninvoiced_dc,
+            "system_status": "Healthy"
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+ 

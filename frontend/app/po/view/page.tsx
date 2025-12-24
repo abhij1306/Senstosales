@@ -5,8 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Edit2, Save, X, ChevronDown, ChevronUp, Plus } from "lucide-react";
 
 import { api, API_BASE_URL } from '@/lib/api';
-import { PODetail, POItem, PODelivery } from "@/types";
+import { formatDate } from '@/lib/utils';
+import { PODetail, POItem, PODelivery, SRVListItem } from "@/types";
 import DownloadButton from "@/components/DownloadButton";
+
 
 function PODetailContent() {
     const router = useRouter();
@@ -18,6 +20,7 @@ function PODetailContent() {
     const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
     const [hasDC, setHasDC] = useState(false);
     const [dcId, setDCId] = useState<string | null>(null);
+    const [srvs, setSrvs] = useState<SRVListItem[]>([]);
     const [activeTab, setActiveTab] = useState("basic");
 
     useEffect(() => {
@@ -42,8 +45,20 @@ function PODetailContent() {
                         setHasDC(true);
                         setDCId(dcCheck.dc_id || null);
                     }
+                    if (dcCheck && dcCheck.has_dc) {
+                        setHasDC(true);
+                        setDCId(dcCheck.dc_id || null);
+                    }
                 } catch {
                     // Ignore error if check fails (e.g. 404)
+                }
+
+                // Load SRVs
+                try {
+                    const srvData = await api.listSRVs(parseInt(poId));
+                    setSrvs(srvData);
+                } catch (err) {
+                    console.error("Failed to load SRVs:", err);
                 }
             } catch (err) {
                 console.error("Failed to load PO:", err);
@@ -196,7 +211,7 @@ function PODetailContent() {
                             </span>
                         </h1>
                         <p className="text-[13px] text-text-secondary mt-0.5 font-medium">
-                            Created on {header.po_date}
+                            Created on {formatDate(header.po_date)}
                         </p>
                     </div>
                 </div>
@@ -215,7 +230,7 @@ function PODetailContent() {
                                     // TODO: Implement save functionality
                                     alert('Save functionality coming in Phase 2');
                                 }}
-                                className="px-3 py-1.5 text-xs font-medium bg-primary text-white rounded hover:bg-blue-700 transition-colors"
+                                className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm"
                             >
                                 <Save className="w-3 h-3 inline mr-1" />
                                 Save Changes
@@ -236,9 +251,9 @@ function PODetailContent() {
                                         router.push(`/dc/create?po=${header.po_number}`);
                                     }
                                 }}
-                                className={`px-4 py-2 text-sm font-medium text-white rounded shadow-sm hover:shadow transition-all flex items-center gap-2 ${hasDC
-                                    ? 'bg-primary hover:bg-blue-700'
-                                    : 'bg-success hover:bg-green-700'
+                                className={`px-4 py-2 text-sm font-bold text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 ${hasDC
+                                    ? 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
+                                    : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800'
                                     }`}
                             >
                                 <Plus className="w-4 h-4" />
@@ -264,7 +279,9 @@ function PODetailContent() {
                             { id: 'basic', label: 'Basic Info' },
                             { id: 'references', label: 'References' },
                             { id: 'financial', label: 'Financial & Tax' },
+                            { id: 'financial', label: 'Financial & Tax' },
                             { id: 'issuer', label: 'Issuer & Inspection' },
+                            { id: 'srvs', label: `SRVs (${srvs.length})` },
                         ].map(tab => (
                             <button
                                 key={tab.id}
@@ -344,6 +361,46 @@ function PODetailContent() {
                                     )}
                                 </div>
                             )}
+
+
+                        </div>
+                    )}
+
+                    {activeTab === 'srvs' && (
+                        <div>
+                            {srvs.length > 0 ? (
+                                <div className="space-y-4">
+                                    {srvs.map((srv) => (
+                                        <div key={srv.srv_number} className="border border-border rounded-lg p-4 bg-white flex items-center justify-between hover:shadow-sm transition-shadow">
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="font-semibold text-text-primary text-sm">SRV {srv.srv_number}</span>
+                                                    <span className="text-xs text-text-secondary bg-gray-100 px-2 py-0.5 rounded-full">{formatDate(srv.srv_date)}</span>
+                                                    {!srv.po_found && (
+                                                        <span className="text-[10px] bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                                            ⚠️ PO Link Missing
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <div className="flex gap-4 text-xs text-text-secondary">
+                                                    <div>Received: <span className="font-medium text-green-600">{srv.total_received_qty.toFixed(2)}</span></div>
+                                                    <div>Rejected: <span className="font-medium text-red-600">{srv.total_rejected_qty.toFixed(2)}</span></div>
+                                                </div>
+                                            </div>
+                                            <a
+                                                href={`/srv/${srv.srv_number}`}
+                                                className="px-3 py-1.5 text-xs font-medium text-primary bg-primary/5 rounded hover:bg-primary/10 transition-colors"
+                                            >
+                                                View Details
+                                            </a>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="text-center py-8 text-text-secondary">
+                                    <p>No SRVs found for this PO.</p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -356,7 +413,7 @@ function PODetailContent() {
                     {editMode && (
                         <button
                             onClick={addItem}
-                            className="px-3 py-1.5 bg-success/10 text-success text-xs font-medium rounded border border-success/20 hover:bg-success/20 flex items-center gap-1 transition-colors"
+                            className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-xs font-medium rounded border border-emerald-200 hover:bg-emerald-100 flex items-center gap-1 transition-colors"
                         >
                             <Plus className="w-3 h-3" /> Add Item
                         </button>
@@ -478,6 +535,7 @@ function PODetailContent() {
                                                     <span className="text-[10px] uppercase font-bold text-text-secondary block mb-1">Value</span>
                                                     <div className="text-text-primary font-bold text-xs">₹{item.item_value?.toLocaleString()}</div>
                                                 </div>
+
                                             </div>
                                             <div className="flex items-center gap-2 ml-4 mt-1">
                                                 {editMode && (
@@ -538,8 +596,8 @@ function PODetailContent() {
                                                         <tr key={idx} className="hover:bg-gray-50/30 transition-colors">
                                                             <td className="px-3 py-2 text-text-primary font-medium">{delivery.lot_no}</td>
                                                             <td className="px-3 py-2 text-text-primary text-right font-medium">{delivery.delivered_quantity}</td>
-                                                            <td className="px-3 py-2 text-text-secondary text-[13px]">{delivery.dely_date}</td>
-                                                            <td className="px-3 py-2 text-text-secondary text-[13px]">{delivery.entry_allow_date}</td>
+                                                            <td className="px-3 py-2 text-text-secondary text-[13px]">{formatDate(delivery.dely_date)}</td>
+                                                            <td className="px-3 py-2 text-text-secondary text-[13px]">{formatDate(delivery.entry_allow_date)}</td>
                                                             <td className="px-3 py-2 text-text-secondary text-[13px]">{delivery.dest_code}</td>
                                                             {editMode && (
                                                                 <td className="px-3 py-2 text-right">

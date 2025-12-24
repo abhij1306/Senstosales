@@ -101,7 +101,7 @@ function POReconciliationContent() {
 
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-semibold text-gray-900">PO #{poNumber} Reconciliation</h1>
+                    <h1 className="text-[20px] font-semibold text-gray-900">PO #{poNumber} Reconciliation</h1>
                     <p className="text-sm text-gray-500 mt-1">Ordered vs Dispatched Tracking</p>
                 </div>
 
@@ -109,7 +109,7 @@ function POReconciliationContent() {
                     <TrendingUp className="w-5 h-5 text-blue-600" />
                     <div>
                         <div className="text-sm text-gray-600">Fulfillment Rate</div>
-                        <div className="text-2xl font-semibold text-blue-600">{data.fulfillment_rate}%</div>
+                        <div className="text-[28px] font-semibold text-blue-600">{data.fulfillment_rate}%</div>
                     </div>
                 </div>
             </div>
@@ -132,15 +132,15 @@ function POReconciliationContent() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                 <div className="bg-white rounded-lg border border-gray-200 p-4">
                     <div className="text-sm text-gray-500">Total Ordered</div>
-                    <div className="text-2xl font-semibold text-gray-900 mt-1">{data.total_ordered}</div>
+                    <div className="text-[28px] font-semibold text-gray-900 mt-1">{data.total_ordered}</div>
                 </div>
                 <div className="bg-white rounded-lg border border-gray-200 p-4">
                     <div className="text-sm text-gray-500">Total Dispatched</div>
-                    <div className="text-2xl font-semibold text-green-600 mt-1">{data.total_dispatched}</div>
+                    <div className="text-[28px] font-semibold text-green-600 mt-1">{data.total_dispatched}</div>
                 </div>
                 <div className="bg-white rounded-lg border border-gray-200 p-4">
                     <div className="text-sm text-gray-500">Pending</div>
-                    <div className="text-2xl font-semibold text-orange-600 mt-1">{data.total_pending}</div>
+                    <div className="text-[28px] font-semibold text-orange-600 mt-1">{data.total_pending}</div>
                 </div>
             </div>
 

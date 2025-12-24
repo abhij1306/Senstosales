@@ -21,10 +21,19 @@ if getattr(sys, 'frozen', False):
     INTERNAL_DIR = Path(sys._MEIPASS)
 else:
     # Running as script
-    BASE_DIR = Path(__file__).parent.parent
-    INTERNAL_DIR = Path(__file__).parent.parent.parent
+    # Handle case where script is run from project root vs backend dir
+    current_path = Path(__file__).resolve()
+    if current_path.parent.name == 'app':
+        # running from backend/app
+        BASE_DIR = current_path.parent.parent
+    else:
+        # fallback or other structure
+        BASE_DIR = current_path.parent.parent
 
-DATABASE_DIR = BASE_DIR / "database"
+# For production: database is in root/db/, migrations in root/migrations/
+# BASE_DIR is backend/ directory, so parent is root/
+INTERNAL_DIR = BASE_DIR.parent
+DATABASE_DIR = INTERNAL_DIR / "db"
 DATABASE_PATH = DATABASE_DIR / "business.db"
 MIGRATIONS_DIR = INTERNAL_DIR / "migrations"
 
@@ -39,9 +48,15 @@ def init_db(conn: sqlite3.Connection):
         "003_add_drawing_number_and_po_notes.sql",
         "004_complete_schema_alignment.sql",
         "v4_add_srv_tables.sql",
+        "005_add_srv_po_found.sql",
+        "006_fix_srv_schema.sql",
+        "007_add_missing_srv_fields.sql",
+        "008_add_extended_srv_fields.sql",
+        "009_add_lot_no_to_dc_items.sql",
         "add_invoice_enhancements.sql",
         "add_indexes.sql",
-        "add_constraints.sql"
+        "add_constraints.sql",
+        "012_add_rejected_qty_to_poi.sql"
     ]
     
     cursor = conn.cursor()
@@ -63,15 +78,13 @@ def init_db(conn: sqlite3.Connection):
     logger.info("Database initialization complete.")
 
 def validate_database_path():
-    """Validate database path exists and is accessible"""
-    # Create database directory if it doesn't exist
+    """Ensure database directory exists"""
     if not DATABASE_DIR.exists():
-        logger.info(f"Creating database directory: {DATABASE_DIR}")
+        print(f"Creating database directory at {DATABASE_DIR}")
         DATABASE_DIR.mkdir(parents=True, exist_ok=True)
     
-    # Create database file if it doesn't exist
     if not DATABASE_PATH.exists():
-        logger.warning(f"Database file not found. Creating new database at: {DATABASE_PATH}")
+        print(f"WARNING: Database file not found at {DATABASE_PATH}")
         # Connect and initialize
         try:
             conn = sqlite3.connect(str(DATABASE_PATH))

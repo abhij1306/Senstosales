@@ -4,28 +4,41 @@ __pycache__/
 *$py.class
 *.so
 .Python
-*.egg
-*.egg-info/
-dist/
 build/
-
-# Virtual Environment
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
 venv/
-env/
 ENV/
+env/
 
 # Database
 *.db
 *.sqlite
 *.sqlite3
 database/*.db
+*.db-journal
+*.db-shm
+*.db-wal
+db/business.db*
 
-# Environment variables
+# Environment variables (SENSITIVE)
 .env
 .env.local
 .env.*.local
 
-# IDEs
+# IDE
 .vscode/
 .idea/
 *.swp
@@ -47,29 +60,28 @@ node_modules/
 out/
 .cache/
 
-# Test files
-# tests/
-*.html
-*.xls
-*.xlsx
+# Test files (DO NOT COMMIT)
+test_*.py
+debug_*.py
+trace_*.py
+check_*.py
+apply_*.py
+*_test.py
+validation_results.json
 
 # Temporary files
 tmp/
 temp/
 *.tmp
+*.xls
+*.xlsx
 
 # Coverage
 .coverage
 htmlcov/
 *.cover
 
-# PyInstaller
-*.spec
-backend/static/
-backend/build/
-backend/dist/
-SenstoSales.spec
-
 # Editor config
 .project
 .settings/
+

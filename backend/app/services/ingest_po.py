@@ -110,13 +110,7 @@ class POIngestionService:
                     inspection_at=excluded.inspection_at, issuer_name=excluded.issuer_name, issuer_designation=excluded.issuer_designation,
                     issuer_phone=excluded.issuer_phone, remarks=excluded.remarks, updated_at=CURRENT_TIMESTAMP
             """, tuple(header_data.values()))
-            
-            # Delete existing items and deliveries if updating
-            # This is safe because we are in a transaction
-            if existing:
-                db.execute("DELETE FROM purchase_order_items WHERE po_number = ?", (po_number,))
-                # Cascade delete handles deliveries if configured, but let's be explicit if needed. 
-                # Assuming FK constraints are ON and ON DELETE CASCADE is set (checked db.py, PRAGMA foreign_keys = ON is set)
+
             
             # Group items by PO_ITM to eliminate repetition
             items_grouped = {}
@@ -131,25 +125,36 @@ class POIngestionService:
                 
                 items_grouped[po_item_no]['deliveries'].append(item)
             
-            # Insert unique items and their deliveries
+            # Insert or Update unique items and their deliveries
             for po_item_no, data in items_grouped.items():
                 item = data['item']
-                item_id = str(uuid.uuid4())
+                
+                # Check if item already exists to preserve its ID
+                existing_item = db.execute(
+                    "SELECT id FROM purchase_order_items WHERE po_number = ? AND po_item_no = ?",
+                    (po_number, po_item_no)
+                ).fetchone()
+                
+                item_id = existing_item['id'] if existing_item else str(uuid.uuid4())
                 
                 # Standardized variable names
                 ordered_quantity = to_float(item.get('ORD QTY')) or 0
                 item_value = to_float(item.get('ITEM VALUE')) or 0
-                received_quantity = to_float(item.get('RCD QTY')) or 0 # Keeping rcd_qty in DB, mapped to received_quantity var
+                received_quantity = to_float(item.get('RCD QTY')) or 0
                 description = item.get('DESCRIPTION') or ""
                 drg_no = item.get('DRG') or ""
                 
-                # Insert item
-                # Note: DB columns (ord_qty, rcd_qty) remain unchanged as per backward compatibility rules
+                # Upsert item
                 db.execute("""
                     INSERT INTO purchase_order_items
                     (id, po_number, po_item_no, material_code, material_description, drg_no, mtrl_cat,
                      unit, po_rate, ord_qty, rcd_qty, item_value, hsn_code, delivered_qty, pending_qty)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+                    ON CONFLICT(po_number, po_item_no) DO UPDATE SET
+                        material_code=excluded.material_code, material_description=excluded.material_description,
+                        drg_no=excluded.drg_no, mtrl_cat=excluded.mtrl_cat, unit=excluded.unit,
+                        po_rate=excluded.po_rate, ord_qty=excluded.ord_qty,
+                        item_value=excluded.item_value, updated_at=CURRENT_TIMESTAMP
                 """, (
                     item_id,
                     po_number,
@@ -167,10 +172,13 @@ class POIngestionService:
                     ordered_quantity  # pending_qty = ordered_quantity initially
                 ))
                 
+                # Clear existing deliveries for this item and re-insert
+                # Deliveries do not have FKs pointing TO them, so this is safe and preserves data integrity
+                db.execute("DELETE FROM purchase_order_deliveries WHERE po_item_id = ?", (item_id,))
+                
                 # Insert deliveries
                 for delivery in data['deliveries']:
                     delivery_id = str(uuid.uuid4())
-                    
                     delivered_quantity = to_float(delivery.get('DELY QTY'))
                     
                     db.execute("""

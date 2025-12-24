@@ -2,6 +2,7 @@ import uvicorn
 import os
 import sys
 import multiprocessing
+import traceback
 
 # Add the directory containing this script to sys.path
 # This ensures we can import 'app' correctly
@@ -27,5 +28,15 @@ if __name__ == "__main__":
         from app.main import app
         uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
     except Exception as e:
-        print(f"Failed to start server: {e}")
+        error_msg = f"Failed to start server: {e}\n\nFull traceback:\n{traceback.format_exc()}"
+        print(error_msg)
+        
+        # Write to error log
+        try:
+            with open("error.log", "w") as f:
+                f.write(error_msg)
+            print("\nError details written to error.log")
+        except:
+            pass
+            
         input("Press Enter to exit...")

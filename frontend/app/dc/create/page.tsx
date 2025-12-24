@@ -204,7 +204,7 @@ function CreateDCPageContent() {
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div>
-                        <h1 className="text-xl font-bold text-text-primary flex items-center gap-3 tracking-tight">
+                        <h1 className="text-[20px] font-semibold text-text-primary flex items-center gap-3 tracking-tight">
                             Create Delivery Challan
                         </h1>
                         <p className="text-sm text-text-muted mt-0.5">
@@ -249,7 +249,7 @@ function CreateDCPageContent() {
                     <button
                         onClick={handleSubmit}
                         disabled={isSubmitting}
-                        className="px-5 py-2 bg-primary text-white rounded-lg hover:bg-blue-700 text-sm font-medium shadow-sm transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                        className="px-5 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-sm font-medium shadow-sm transition-all flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
                     >
                         {isSubmitting ? 'Saving...' : (
                             <>
@@ -270,7 +270,7 @@ function CreateDCPageContent() {
             <div className="grid grid-cols-1 gap-6">
 
                 {/* Basic Details */}
-                <Card title="Transport & Consignee Details" padding="md">
+                <Card title="Consignee Details" padding="md">
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-1.5">
                             <label className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider">DC Number <span className="text-danger">*</span></label>

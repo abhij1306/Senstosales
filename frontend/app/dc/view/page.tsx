@@ -5,8 +5,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Edit2, Save, X, FileText, Plus, Trash2, Truck, AlertCircle } from "lucide-react";
 
 import { api, API_BASE_URL } from "@/lib/api";
+import { formatDate } from "@/lib/utils";
 import { DCItemRow as DCItemRowType } from "@/types";
 import DownloadButton from "@/components/DownloadButton";
+
 
 const PO_NOTE_TEMPLATES = [
     { id: 't1', title: 'Standard Dispatch Note', content: 'Material is being dispatched against PO No: ... dated ...' },
@@ -42,10 +44,7 @@ function DCDetailContent() {
         consignee_name: "The Sr. Manager (CRX)",
         consignee_address: "M/S Bharat Heavy Eletrical Ltd. Bhopal",
         department_no: "",
-        mode_of_transport: "",
-        vehicle_number: "",
-        transporter_name: "",
-        lr_number: "",
+
         eway_bill_number: "",
     });
 
@@ -65,10 +64,6 @@ function DCDetailContent() {
                         consignee_name: data.header.consignee_name || "The Sr. Manager (CRX)",
                         consignee_address: data.header.consignee_address || "M/S Bharat Heavy Eletrical Ltd. Bhopal",
                         department_no: data.header.department_no?.toString() || "",
-                        mode_of_transport: data.header.mode_of_transport || "",
-                        vehicle_number: data.header.vehicle_no || "",
-                        transporter_name: data.header.transporter || "",
-                        lr_number: data.header.lr_no || "",
                         eway_bill_number: data.header.eway_bill_no || "",
                     });
 
@@ -81,6 +76,7 @@ function DCDetailContent() {
                             ordered_quantity: item.lot_ordered_qty || item.ordered_qty || 0,
                             remaining_post_dc: item.remaining_post_dc || 0,
                             dispatch_quantity: item.dispatch_qty || item.dispatch_quantity || 0,
+                            received_quantity: item.received_quantity || 0,
                             po_item_id: item.po_item_id
                         }));
                         setItems(mappedItems);
@@ -174,10 +170,6 @@ function DCDetailContent() {
                 po_number: formData.po_number ? parseInt(formData.po_number) : undefined,
                 consignee_name: formData.consignee_name,
                 consignee_address: formData.consignee_address,
-                vehicle_no: formData.vehicle_number,
-                lr_no: formData.lr_number,
-                transporter: formData.transporter_name,
-                mode_of_transport: formData.mode_of_transport,
                 eway_bill_number: formData.eway_bill_number,
                 remarks: notes.join("\n\n")
             };
@@ -248,7 +240,7 @@ function DCDetailContent() {
                             )}
                         </h1>
                         <p className="text-[13px] text-text-secondary mt-0.5">
-                            Date: {formData.dc_date}
+                            Date: {formatDate(formData.dc_date)}
                         </p>
                     </div>
                 </div>
@@ -283,9 +275,9 @@ function DCDetailContent() {
                                         router.push(`/invoice/create?dc=${dcId}`);
                                     }
                                 }}
-                                className={`px-4 py-2 text-sm font-medium text-white rounded-lg flex items-center gap-2 shadow-sm transition-colors ${hasInvoice
-                                    ? 'bg-primary hover:bg-blue-700'
-                                    : 'bg-success hover:bg-green-700'
+                                className={`px-4 py-2 text-sm font-bold text-white rounded-lg flex items-center gap-2 shadow-sm hover:shadow-md transition-all ${hasInvoice
+                                    ? 'bg-blue-600 hover:bg-blue-700'
+                                    : 'bg-emerald-600 hover:bg-emerald-700'
                                     }`}
                             >
                                 <FileText className="w-4 h-4" />
@@ -326,88 +318,47 @@ function DCDetailContent() {
                     >
                         Basic Info
                     </button>
-                    <button
-                        onClick={() => setActiveTab('transport')}
-                        className={`px-4 py-3 text-[13px] font-semibold transition-all relative top-[1px] border-b-2 ${activeTab === 'transport'
-                            ? "border-primary text-primary bg-transparent"
-                            : "border-transparent text-text-secondary hover:text-text-primary"
-                            }`}
-                    >
-                        Transport Details
-                    </button>
                 </div>
 
                 <div className="p-6">
-                    {activeTab === 'basic' && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            <Field
-                                label="DC Number"
-                                value={formData.dc_number}
-                                onChange={(v: string) => setFormData({ ...formData, dc_number: v })}
-                                disabled={true}
-                            />
-                            <Field
-                                label="DC Date"
-                                value={formData.dc_date}
-                                onChange={(v: string) => setFormData({ ...formData, dc_date: v })}
-                            />
-                            <Field
-                                label="Supplier Phone No"
-                                value={formData.supplier_phone}
-                                onChange={(v: string) => setFormData({ ...formData, supplier_phone: v })}
-                            />
-                            <Field
-                                label="Supplier GSTIN"
-                                value={formData.supplier_gstin}
-                                onChange={(v: string) => setFormData({ ...formData, supplier_gstin: v })}
-                            />
-                            <Field
-                                label="Consignee Name"
-                                value={formData.consignee_name}
-                                onChange={(v: string) => setFormData({ ...formData, consignee_name: v })}
-                            />
-                            <div className="col-span-1">
-                                <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-secondary mb-1">Consignee Address</label>
-                                <textarea
-                                    value={formData.consignee_address}
-                                    onChange={(e) => setFormData({ ...formData, consignee_address: e.target.value })}
-                                    disabled={!editMode}
-                                    rows={2}
-                                    className={`w-full px-3 py-2 text-sm border border-border rounded-lg focus:ring-1 focus:ring-primary focus:border-primary text-text-primary bg-white ${!editMode ? 'bg-gray-50 text-text-secondary' : ''}`}
-                                />
-                            </div>
-                        </div>
-                    )}
-
-                    {activeTab === 'transport' && (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <Field
-                                label="Mode of Transport"
-                                value={formData.mode_of_transport}
-                                onChange={(v: string) => setFormData({ ...formData, mode_of_transport: v })}
-                            />
-                            <Field
-                                label="Vehicle Number"
-                                value={formData.vehicle_number}
-                                onChange={(v: string) => setFormData({ ...formData, vehicle_number: v })}
-                            />
-                            <Field
-                                label="Transporter Name"
-                                value={formData.transporter_name}
-                                onChange={(v: string) => setFormData({ ...formData, transporter_name: v })}
-                            />
-                            <Field
-                                label="LR Number"
-                                value={formData.lr_number}
-                                onChange={(v: string) => setFormData({ ...formData, lr_number: v })}
-                            />
-                            <Field
-                                label="E-Way Bill Number"
-                                value={formData.eway_bill_number}
-                                onChange={(v: string) => setFormData({ ...formData, eway_bill_number: v })}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <Field
+                            label="DC Number"
+                            value={formData.dc_number}
+                            onChange={(v: string) => setFormData({ ...formData, dc_number: v })}
+                            disabled={true}
+                        />
+                        <Field
+                            label="DC Date"
+                            value={formData.dc_date}
+                            onChange={(v: string) => setFormData({ ...formData, dc_date: v })}
+                        />
+                        <Field
+                            label="Supplier Phone No"
+                            value={formData.supplier_phone}
+                            onChange={(v: string) => setFormData({ ...formData, supplier_phone: v })}
+                        />
+                        <Field
+                            label="Supplier GSTIN"
+                            value={formData.supplier_gstin}
+                            onChange={(v: string) => setFormData({ ...formData, supplier_gstin: v })}
+                        />
+                        <Field
+                            label="Consignee Name"
+                            value={formData.consignee_name}
+                            onChange={(v: string) => setFormData({ ...formData, consignee_name: v })}
+                        />
+                        <div className="col-span-1">
+                            <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-secondary mb-1">Consignee Address</label>
+                            <textarea
+                                value={formData.consignee_address}
+                                onChange={(e) => setFormData({ ...formData, consignee_address: e.target.value })}
+                                disabled={!editMode}
+                                rows={2}
+                                className={`w-full px-3 py-2 text-sm border border-border rounded-lg focus:ring-1 focus:ring-primary focus:border-primary text-text-primary bg-white ${!editMode ? 'bg-gray-50 text-text-secondary' : ''}`}
                             />
                         </div>
-                    )}
+                    </div>
                 </div>
             </div>
 
@@ -462,7 +413,9 @@ function DCDetailContent() {
                                                 readOnly
                                             />
                                         ) : (
-                                            <span className="text-sm text-text-primary line-clamp-1" title={item.description}>{item.description}</span>
+                                            <div className="flex flex-col gap-2">
+                                                <span className="text-sm text-text-primary line-clamp-1" title={item.description}>{item.description}</span>
+                                            </div>
                                         )}
                                     </td>
                                     <td className="px-4 py-2 text-right text-[13px] text-text-secondary font-medium">

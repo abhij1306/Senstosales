@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Printer, FileText, Package, Truck, Lock } from "lucide-react";
 
 import { api, API_BASE_URL } from "@/lib/api";
+import { formatDate } from "@/lib/utils";
 import DownloadButton from "@/components/DownloadButton";
 
 // ============================================================================
@@ -144,7 +145,7 @@ function InvoiceDetailContent() {
                             )}
                         </h1>
                         <p className="text-[13px] text-text-secondary mt-0.5">
-                            Issued Date: {header.invoice_date}
+                            Issued Date: {formatDate(header.invoice_date)}
                         </p>
                     </div>
                 </div>
@@ -308,33 +309,6 @@ function InvoiceDetailContent() {
                     </div>
                 </div>
             </div>
-
-            {/* Linked DCs */}
-            {linked_dcs && linked_dcs.length > 0 && (
-                <div className="glass-card overflow-hidden">
-                    <div className="p-4 border-b border-border bg-gray-50/30">
-                        <h2 className="text-[14px] font-semibold text-text-primary flex items-center gap-2">
-                            <Truck className="w-4 h-4 text-primary" />
-                            Linked Delivery Challans
-                        </h2>
-                    </div>
-                    <div className="p-4">
-                        {linked_dcs.map((dc: any) => (
-                            <button
-                                key={dc.dc_number}
-                                onClick={() => router.push(`/dc/${dc.dc_number}`)}
-                                className="w-full text-left p-3 hover:bg-gray-50 rounded-lg transition-colors flex items-center justify-between"
-                            >
-                                <div>
-                                    <div className="text-sm font-semibold text-text-primary">{dc.dc_number}</div>
-                                    <div className="text-xs text-text-secondary">{dc.dc_date}</div>
-                                </div>
-                                <ArrowLeft className="w-4 h-4 text-text-secondary rotate-180" />
-                            </button>
-                        ))}
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

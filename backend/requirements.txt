@@ -8,3 +8,6 @@ httpx
 python-dotenv
 openpyxl
 pydantic-settings>=2.0.0
+
+pandas
+xlsxwriter

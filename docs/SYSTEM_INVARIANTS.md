@@ -17,6 +17,10 @@ This document defines the **absolute truths** of the SenstoSales system. These i
 - **Formula**: `Σ(delivery.dely_qty) ≤ po_item.ord_qty`
 - **Enforcement**: Service layer validation before DC creation
 
+#### PO-3: Idempotent Ingestion
+- **Rule**: Re-uploading a PO must preserve existing links (DCs, SRVs)
+- **Enforcement**: `POIngestionService` uses UPSERT instead of DELETE/INSERT
+
 ### 2. Delivery Challan (DC) Invariants
 
 #### DC-1: Dispatch Quantity Constraint
@@ -35,6 +39,10 @@ This document defines the **absolute truths** of the SenstoSales system. These i
 - **Rule**: If a DC references a PO, that PO must exist
 - **Enforcement**: Foreign key constraint + service validation
 - **Error**: Raises `ResourceNotFoundError` if PO not found
+
+#### DC-4: Deletion Rollback
+- **Rule**: Deleting a DC must restore pending quantities in the reconciliation ledger
+- **Enforcement**: Cascading deletes + SQL view aggregation
 
 ### 3. Invoice Invariants
 
@@ -58,6 +66,17 @@ This document defines the **absolute truths** of the SenstoSales system. These i
 - **Rule**: An invoice must reference at least one valid DC
 - **Enforcement**: Service layer validates DC existence before invoice creation
 - **Error**: Raises `ResourceNotFoundError` if DC not found
+
+### 4. Store Receipt Voucher (SRV) Invariants
+
+#### SRV-1: Receipt Integrity
+- **Rule**: `received_qty = accepted_qty + rejected_qty`
+- **Enforcement**: Backend automatically calculates `accepted_qty` if not provided
+- **Formula**: `accepted_qty = max(0, received_qty - rejected_qty)`
+
+#### SRV-2: Synchronization
+- **Rule**: All active SRV item totals must be reflected in `purchase_order_items`
+- **Enforcement**: Real-time aggregation trigger or service-layer sync
 
 ### 4. Data Integrity Invariants
 

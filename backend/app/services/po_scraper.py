@@ -92,12 +92,12 @@ def extract_po_header(soup):
                     if inline and has_value(inline.group(1)):
                         return clean(inline.group(1))
 
-                    if prefer == "adjacent" and c_idx + 1 < len(cells):
+                    if prefer in ["adjacent", "any"] and c_idx + 1 < len(cells):
                         val = clean(cells[c_idx + 1].get_text())
                         if has_value(val):
                             return val
 
-                    if r_idx + 1 < len(rows):
+                    if r_idx + 1 < len(rows) and prefer in ["below", "any"]:
                         below_cells = rows[r_idx + 1].find_all("td")
                         if c_idx < len(below_cells):
                             val = clean(below_cells[c_idx].get_text())
@@ -119,8 +119,8 @@ def extract_po_header(soup):
 
     # Below-cell fields
     for k, rx in {
-        "PURCHASE ORDER": r"^PURCHASE\s+ORDER$",
-        "PO DATE": r"PO\s+DATE",
+        "PURCHASE ORDER": r"PURCHASE\s+ORDER(?:\s+NO[\.]?)?",
+        "PO DATE": r"^PO\s+DATE$",  # Fixed: Must match exactly "PO DATE", not any "*DATE"
         "ENQUIRY": r"^ENQUIRY$",  # Made more specific - exact match only
         "SUPP CODE": r"SUPP\s+CODE",
         "ORD-TYPE": r"ORD-TYPE",
@@ -140,7 +140,19 @@ def extract_po_header(soup):
         "TOTAL VALUE": r"TOTAL\s+VALUE",
         "SUPP NAME M/S": r"^SUPP\s+NAME\s+M/S$"
     }.items():
-        header[k] = find_value(rx, prefer="below")
+        pref = "any" if k in ["PURCHASE ORDER", "PO DATE"] else "below"
+        header[k] = find_value(rx, prefer=pref)
+
+    # Fallback: Try adjacent if main fields missing (handles different formats like test files)
+    if not header.get("PURCHASE ORDER"):
+        header["PURCHASE ORDER"] = find_value(r"PURCHASE\s+ORDER", prefer="adjacent")
+        # If still empty, try "Purchase Order No" specifically
+        if not header.get("PURCHASE ORDER"):
+             header["PURCHASE ORDER"] = find_value(r"Purchase\s+Order\s+No", prefer="adjacent")
+
+    if not header.get("PO DATE"):
+        # Try finding just "Date" which is common in simple tables
+        header["PO DATE"] = find_value(r"(PO\s+)?DATE", prefer="adjacent")
     
     # Validate ENQUIRY - reject if too long (likely grabbed "Important Note" text)
     if header.get("ENQUIRY") and len(str(header["ENQUIRY"])) > 50:

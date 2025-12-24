@@ -16,9 +16,9 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: Optional[SecretStr] = None
     
     # Database
-    # Default to the existing hardcoded path structure for backward compatibility
-    # relative to backend/ (CWD)
-    DATABASE_URL: str = "sqlite:///../database/business.db" 
+    # Relative path from backend/ directory (where main.py runs)
+    # to root/db/business.db
+    DATABASE_URL: str = "sqlite:///../db/business.db" 
 
     # CORS
     BACKEND_CORS_ORIGINS: list[str] = ["*"]

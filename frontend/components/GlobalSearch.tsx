@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { Search, X, FileText, Truck, Receipt } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { api, SearchResult } from "@/lib/api";
+import { cn } from "@/lib/utils";
+import StatusBadge from "@/components/ui/StatusBadge";
 
 export default function GlobalSearch() {
     const [isOpen, setIsOpen] = useState(false);
@@ -14,61 +16,38 @@ export default function GlobalSearch() {
     const inputRef = useRef<HTMLInputElement>(null);
     const router = useRouter();
 
-    // Keyboard shortcut: Ctrl+K and Escape
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.ctrlKey || e.metaKey) && e.key === "k") {
                 e.preventDefault();
                 setIsOpen(true);
             }
-            if (e.key === "Escape") {
-                setIsOpen(false);
-            }
+            if (e.key === "Escape") setIsOpen(false);
         };
-
         document.addEventListener("keydown", handleKeyDown);
         return () => document.removeEventListener("keydown", handleKeyDown);
     }, []);
 
-    // Focus input when opened
     useEffect(() => {
-        if (isOpen && inputRef.current) {
-            inputRef.current.focus();
-        }
+        if (isOpen && inputRef.current) inputRef.current.focus();
     }, [isOpen]);
 
-    // Close on click outside
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
-
-    // Search on query change
     useEffect(() => {
         const search = async () => {
             if (query.length < 2) {
                 setResults([]);
                 return;
             }
-
             setLoading(true);
             try {
                 const data = await api.searchGlobal(query);
                 setResults(data);
             } catch (error) {
-                console.error('Search failed:', error);
                 setResults([]);
             } finally {
                 setLoading(false);
             }
         };
-
         const debounce = setTimeout(search, 300);
         return () => clearTimeout(debounce);
     }, [query]);
@@ -76,107 +55,91 @@ export default function GlobalSearch() {
     const handleResultClick = (result: SearchResult) => {
         setIsOpen(false);
         setQuery("");
-
-        if (result.type === "PO") {
-            router.push(`/po/view?id=${result.number}`);
-        } else if (result.type === "DC") {
-            router.push(`/dc/view?id=${result.number}`);
-        } else if (result.type === "Invoice") {
-            router.push(`/invoice/view?id=${result.number}`);
-        }
-    };
-
-    const getTypeBadgeColor = (type: string) => {
-        switch (type) {
-            case "PO": return "bg-blue-100 text-blue-700";
-            case "DC": return "bg-green-100 text-green-700";
-            case "INVOICE": return "bg-purple-100 text-purple-700";
-            default: return "bg-gray-100 text-gray-700";
-        }
+        if (result.type === "PO") router.push(`/po/view?id=${result.number}`);
+        else if (result.type === "DC") router.push(`/dc/view?id=${result.number}`);
+        else if (result.type === "Invoice") router.push(`/invoice/view?id=${result.number}`);
     };
 
     if (!isOpen) {
         return (
             <button
                 onClick={() => setIsOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-blue-600 transition-colors"
             >
-                <Search className="w-4 h-4" />
-                <span>Search...</span>
-                <kbd className="px-2 py-0.5 text-xs bg-white border border-gray-300 rounded">Ctrl+K</kbd>
+                <Search className="w-3.5 h-3.5" />
+                <span>Search <span className="opacity-50 mx-1">⌘K</span></span>
             </button>
         );
     }
 
     return (
         <>
-            {/* Backdrop */}
-            <div
-                className="fixed inset-0 bg-black bg-opacity-50 z-40"
-                onClick={() => setIsOpen(false)}
-            />
+            <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-50 transition-all" onClick={() => setIsOpen(false)} />
 
-            {/* Search Modal */}
-            <div className="fixed top-20 left-1/2 transform -translate-x-1/2 w-full max-w-2xl bg-white rounded-lg shadow-2xl z-50">
-                {/* Search Input */}
-                <div className="flex items-center gap-3 p-4 border-b border-gray-200">
-                    <Search className="w-5 h-5 text-gray-400" />
-                    <input
-                        ref={inputRef}
-                        type="text"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Search PO, DC, Invoice by number, party name..."
-                        className="flex-1 outline-none text-gray-900"
-                    />
-                    <button onClick={() => setIsOpen(false)}>
-                        <X className="w-5 h-5 text-gray-400 hover:text-gray-600" />
-                    </button>
-                </div>
+            <div className="fixed top-20 left-1/2 transform -translate-x-1/2 w-full max-w-xl z-50">
+                <div className="bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl rounded-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    <div className="flex items-center gap-3 p-4 border-b border-slate-200/50">
+                        <Search className="w-5 h-5 text-slate-400" />
+                        <input
+                            ref={inputRef}
+                            type="text"
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                            placeholder="Type to search POs, DCs, Invoices..."
+                            className="flex-1 bg-transparent outline-none text-slate-900 text-lg placeholder:text-slate-400"
+                        />
+                        <button onClick={() => setIsOpen(false)}>
+                            <X className="w-5 h-5 text-slate-400 hover:text-slate-600" />
+                        </button>
+                    </div>
 
-                {/* Results */}
-                <div className="max-h-96 overflow-y-auto">
-                    {loading && (
-                        <div className="p-8 text-center text-gray-500">Searching...</div>
-                    )}
+                    <div className="max-h-[60vh] overflow-y-auto">
+                        {loading && <div className="p-8 text-center text-slate-400 text-sm">Searching...</div>}
 
-                    {!loading && query.length >= 2 && results.length === 0 && (
-                        <div className="p-8 text-center text-gray-500">No results found</div>
-                    )}
+                        {!loading && query.length >= 2 && results.length === 0 && (
+                            <div className="p-8 text-center text-slate-500 text-sm">No results found.</div>
+                        )}
 
-                    {!loading && results.length > 0 && (
-                        <div className="py-2">
-                            {results.map((result, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => handleResultClick(result)}
-                                    className="w-full px-4 py-3 hover:bg-gray-50 flex items-center justify-between text-left transition-colors"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <span className={`px - 2 py - 1 text - xs font - medium rounded ${getTypeBadgeColor(result.type)} `}>
-                                            {result.type}
-                                        </span>
-                                        <div>
-                                            <div className="font-medium text-gray-900">{result.number}</div>
-                                            <div className="text-sm text-gray-500">{result.party || "-"}</div>
+                        {!loading && results.length > 0 && (
+                            <div className="py-1">
+                                {results.map((result, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => handleResultClick(result)}
+                                        className="w-full px-4 py-3 hover:bg-slate-100/50 flex items-center justify-between text-left transition-colors border-b border-transparent hover:border-slate-100 last:border-0"
+                                    >
+                                        <div className="flex items-center gap-3">
+                                            <div className={cn(
+                                                "p-2 rounded-lg flex items-center justify-center",
+                                                result.type === 'PO' ? "bg-blue-50 text-blue-600" :
+                                                    result.type === 'DC' ? "bg-purple-50 text-purple-600" :
+                                                        "bg-emerald-50 text-emerald-600"
+                                            )}>
+                                                {result.type === 'PO' ? <FileText className="w-4 h-4" /> :
+                                                    result.type === 'DC' ? <Truck className="w-4 h-4" /> :
+                                                        <Receipt className="w-4 h-4" />}
+                                            </div>
+                                            <div>
+                                                <div className="font-semibold text-slate-800 text-sm">{result.number}</div>
+                                                <div className="text-xs text-slate-500">{result.party || "Unknown Party"}</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <div className="text-right">
-                                        {result.amount && (
-                                            <div className="font-medium text-gray-900">₹{result.amount.toLocaleString()}</div>
-                                        )}
-                                        <div className="text-sm text-gray-500">{result.date}</div>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
+                                        <div className="text-right">
+                                            <div className="font-mono text-sm font-medium text-slate-700">
+                                                {result.amount ? `₹${result.amount.toLocaleString()}` : ''}
+                                            </div>
+                                            <StatusBadge status={result.status || 'Active'} variant="neutral" className="scale-75 origin-right" />
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
 
-                {/* Footer */}
-                <div className="px-4 py-2 border-t border-gray-200 bg-gray-50 text-xs text-gray-500 flex items-center justify-between">
-                    <span>Press <kbd className="px-1.5 py-0.5 bg-white border border-gray-300 rounded">ESC</kbd> to close</span>
-                    <span>{results.length} results</span>
+                    <div className="px-4 py-2 border-t border-slate-200/50 bg-slate-50/50 text-[10px] text-slate-400 flex justify-between uppercase tracking-wider font-medium">
+                        <span>SenstoSales Search</span>
+                        <span>{results.length} Matches</span>
+                    </div>
                 </div>
             </div>
         </>
