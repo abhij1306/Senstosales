@@ -5,6 +5,22 @@ All notable changes to SenstoSales ERP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2025-12-25
+
+### Changed
+- **Major UI/UX Overhaul**: Replaced legacy card designs with a unified "Glassmorphism" aesthetic across all pages.
+- **Global Typography**:
+  - Removed `font-mono` from all numeric/date fields for a cleaner look.
+  - Standardized font weights to `font-medium` (Slate-700) for optimal readability/contrast in both List and Edit modes.
+  - Consistent header sizing and spacing.
+- **Layout Refactoring**:
+  - Converted `Invoice View` and `PO View` to a standardized 2-Column layout (Sidebar + Main Content).
+  - Applied consistent Gradient Backgrounds (`slate-50` to `purple-50/30`) globally.
+- **Performance**: Added database indexes for Dashboard queries (`created_at`, `po_status`, etc.) to improve load times.
+
+### Added
+- **Global Font Weight Check**: Audited and corrected font weight discrepancies between List and View pages.
+
 ## [2.2.0] - 2025-12-25
 
 ### Added

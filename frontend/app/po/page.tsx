@@ -147,11 +147,7 @@ export default function POPage() {
             }
 
             if (isCancelled.current) {
-                toast({
-                    title: "Upload Cancelled",
-                    description: `Processed ${processedCount} of ${totalFiles} files.`,
-                    className: "bg-amber-500 text-white border-none"
-                });
+                toast("Upload Cancelled", `Processed ${processedCount} of ${totalFiles} files.`);
             } else {
                 success(`Processed ${totalFiles} files. Successful: ${successful}, Failed: ${failed}`);
             }
@@ -208,22 +204,22 @@ export default function POPage() {
             header: "Date",
             accessorKey: "po_date",
             enableSorting: true,
-            cell: (po: POListItem) => <span className="text-slate-500">{formatDate(po.po_date)}</span>
+            cell: (po: POListItem) => <span className="text-slate-600 font-medium text-xs">{formatDate(po.po_date)}</span>
         },
         {
             header: "Ord",
             accessorKey: "total_ordered_quantity",
             enableSorting: true,
-            className: "text-right w-[80px] text-slate-600 font-medium border-l border-slate-100",
+            className: "text-right w-[80px] text-slate-700 font-medium border-l border-slate-100",
             cell: (po: POListItem) => po.total_ordered_quantity?.toFixed(0) || '-'
         },
         {
             header: "Del",
             accessorKey: "total_dispatched_quantity",
             enableSorting: true,
-            className: "text-right w-[80px] text-slate-600 border-l border-slate-100",
+            className: "text-right w-[80px] text-slate-700 border-l border-slate-100",
             cell: (po: POListItem) => (
-                <span className={(po.total_dispatched_quantity || 0) > 0 ? "text-slate-800 font-medium" : "text-slate-400"}>
+                <span className={(po.total_dispatched_quantity || 0) > 0 ? "text-slate-700 font-medium" : "text-slate-400 font-normal"}>
                     {po.total_dispatched_quantity?.toFixed(0) || '0'}
                 </span>
             )
@@ -234,7 +230,7 @@ export default function POPage() {
             enableSorting: true,
             className: "text-right w-[80px] border-l border-slate-100",
             cell: (po: POListItem) => (
-                <span className={(po.total_received_quantity || 0) > 0 ? "text-emerald-600 font-bold" : "text-slate-400"}>
+                <span className={(po.total_received_quantity || 0) > 0 ? "text-emerald-600 font-medium" : "text-slate-400 font-normal"}>
                     {po.total_received_quantity?.toFixed(0) || '0'}
                 </span>
             )
@@ -245,7 +241,7 @@ export default function POPage() {
             enableSorting: true,
             className: "text-right w-[80px] border-l border-slate-100 border-r-2 border-r-transparent",
             cell: (po: POListItem) => (
-                <span className={(po.total_rejected_quantity || 0) > 0 ? "text-red-600 font-bold" : "text-slate-300"}>
+                <span className={(po.total_rejected_quantity || 0) > 0 ? "text-red-600 font-medium" : "text-slate-300 font-normal"}>
                     {po.total_rejected_quantity?.toFixed(0) || '0'}
                 </span>
             )
@@ -264,7 +260,7 @@ export default function POPage() {
     ];
 
     if (loading) return (
-        <div className="flex justify-center items-center h-[50vh]">
+        <div className="flex justify-center items-center h-[50vh] bg-gradient-to-br from-slate-50 via-white to-purple-50/30">
             <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
         </div>
     );
@@ -274,7 +270,7 @@ export default function POPage() {
         const matchesSearch =
             po.po_number.toString().includes(searchQuery) ||
             (po.supplier_name && po.supplier_name.toLowerCase().includes(searchQuery.toLowerCase()));
-        const status = po.po_status || 'New';
+        const status = po.status || 'New';
         const matchesStatus = statusFilter === 'All Statuses' || status === statusFilter;
         return matchesSearch && matchesStatus;
     });
@@ -306,11 +302,11 @@ export default function POPage() {
     );
 
     return (
-        <div className="space-y-6">
+        <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-purple-50/30 p-4 md:p-6 space-y-6 pb-24">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-[20px] font-semibold text-slate-900 tracking-tight">Purchase Orders</h1>
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Purchase Orders</h1>
                     <p className="text-xs text-slate-500 mt-0.5">Procurement tracking and management</p>
                 </div>
                 <div className="flex gap-2">

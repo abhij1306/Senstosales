@@ -32,6 +32,68 @@ export interface POStats {
     total_value_change: number;
 }
 
+export interface DCListItem {
+    dc_number: string;
+    dc_date: string;
+    po_number: number;
+    consignee_name: string;
+    total_value: number;
+    status: string;
+}
+
+export interface DCStats {
+    total_challans: number;
+    pending_delivery: number;
+    completed_delivery: number;
+}
+
+export interface InvoiceListItem {
+    invoice_number: string;
+    invoice_date: string;
+    linked_dc_numbers: string; // Comma separated
+    customer_gstin: string;
+    total_invoice_value: number;
+    status?: string; // Optional if not always present
+    [key: string]: any;
+}
+
+export interface InvoiceStats {
+    total_invoiced: number;
+    total_invoiced_change: number;
+    gst_collected: number;
+    gst_collected_change: number;
+    pending_payments: number;
+    pending_payments_count: number;
+}
+
+export interface PONote {
+    id: number;
+    title: string;
+    content: string;
+    updated_at: string;
+}
+
+export interface DashboardSummary {
+    total_sales_month: number;
+    sales_growth: number | string;
+    pending_pos: number;
+    new_pos_today: number;
+    active_challans: number;
+    total_po_value: number;
+    po_value_growth: number | string;
+    total_ordered?: number;
+    total_delivered?: number;
+    total_received?: number;
+}
+
+export interface ActivityItem {
+    type: 'PO' | 'DC' | 'Invoice';
+    number: string | number;
+    date: string;
+    amount?: number;
+    status: string;
+}
+
 type FetchOptions = RequestInit & {
     retries?: number;
     timeout?: number;
@@ -173,17 +235,17 @@ export const api = {
     },
 
     // DELIVERY CHALLANS
-    listDCs: () => apiFetch<any[]>('/api/dc/'),
-    getDCStats: () => apiFetch<any>('/api/dc/stats'),
-    createDC: (data: any, items: any[]) => apiFetch('/api/dc/', { method: 'POST', body: JSON.stringify({ ...data, items }) }),
-    updateDC: (dcNumber: string, data: any, items: any[]) => apiFetch(`/api/dc/${dcNumber}`, { method: 'PUT', body: JSON.stringify({ ...data, items }) }),
+    listDCs: () => apiFetch<DCListItem[]>('/api/dc/'),
+    getDCStats: () => apiFetch<DCStats>('/api/dc/stats'),
+    createDC: (data: any, items: any[]) => apiFetch('/api/dc/', { method: 'POST', body: JSON.stringify({ dc: data, items }) }),
+    updateDC: (dcNumber: string, data: any, items: any[]) => apiFetch(`/api/dc/${dcNumber}`, { method: 'PUT', body: JSON.stringify({ dc: data, items }) }),
     getDC: (dcNumber: string) => apiFetch<any>(`/api/dc/${dcNumber}`),
     getDCDetail: (dcNumber: string | null) => apiFetch<any>(`/api/dc/${dcNumber}`), // Alias for UI
     checkDCHasInvoice: (dcNumber: string | null) => apiFetch<any>(`/api/dc/${dcNumber}/invoice`),
 
     // INVOICES
-    listInvoices: () => apiFetch<any[]>('/api/invoice/'),
-    getInvoiceStats: () => apiFetch<any>('/api/invoice/stats'),
+    listInvoices: () => apiFetch<InvoiceListItem[]>('/api/invoice/'),
+    getInvoiceStats: () => apiFetch<InvoiceStats>('/api/invoice/stats'),
     createInvoice: (data: any) => apiFetch('/api/invoice/', { method: 'POST', body: JSON.stringify(data) }),
     getInvoiceDetail: (invoiceNumber: string) => apiFetch<any>(`/api/invoice/${invoiceNumber}`),
 
@@ -213,8 +275,8 @@ export const api = {
     listPONotes: (poId: string) => apiFetch<any[]>(`/api/po-notes/${poId}`), // Warning: Backend treats {id} as template_id fetch, so this might need adjustment if used for PO-specific notes.
 
     // REPORTS (RECONCILIATION)
-    getReconciliation: (poNumber: number) => apiFetch<any[]>(`/api/reports/reconciliation/${poNumber}`),
-    getReconciliationLots: (poNumber: number) => apiFetch<any>(`/api/reports/reconciliation/${poNumber}/lots`),
+    getReconciliation: (poNumber: number) => apiFetch<any[]>(`/api/reconciliation/po/${poNumber}`),
+    getReconciliationLots: (poNumber: number) => apiFetch<any>(`/api/reconciliation/po/${poNumber}/lots`),
 
     // REPORTS
     getReport: (type: string, dateParams: string) => apiFetch<any[]>(`/api/reports/${type}?${dateParams}`),

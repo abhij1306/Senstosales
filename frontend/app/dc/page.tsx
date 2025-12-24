@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Search, Filter, Truck, CheckCircle, Clock } from "lucide-react";
 import { api, DCListItem, DCStats } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
-import GlassCard from "@/components/ui/GlassCard";
+import { Card } from "@/components/ui/Card";
 import StatusBadge from "@/components/ui/StatusBadge";
 import { DenseTable } from "@/components/ui/DenseTable";
 
@@ -54,23 +54,23 @@ export default function DCListPage() {
       header: "DC Number",
       accessorKey: "dc_number" as keyof DCListItem,
       cell: (dc: DCListItem) => (
-        <div className="font-medium text-purple-600">{dc.dc_number}</div>
+        <div className="font-medium text-purple-600 hover:text-purple-800 transition-colors">{dc.dc_number}</div>
       )
     },
     {
       header: "Date",
       accessorKey: "dc_date" as keyof DCListItem,
-      cell: (dc: DCListItem) => <span className="text-slate-500">{formatDate(dc.dc_date)}</span>
+      cell: (dc: DCListItem) => <span className="text-slate-600 font-medium text-xs">{formatDate(dc.dc_date)}</span>
     },
     {
       header: "Consignee",
       accessorKey: "consignee_name" as keyof DCListItem,
       cell: (dc: DCListItem) => (
         <div className="flex items-center gap-2 max-w-[200px] truncate">
-          <div className="w-5 h-5 rounded bg-indigo-50 flex items-center justify-center text-indigo-700 font-bold border border-indigo-100 uppercase shrink-0">
+          <div className="w-5 h-5 rounded bg-indigo-50 flex items-center justify-center text-indigo-700 font-bold border border-indigo-100 uppercase shrink-0 text-[10px]">
             {dc.consignee_name ? dc.consignee_name.substring(0, 2) : 'CN'}
           </div>
-          <span className="text-slate-700 truncate">{dc.consignee_name}</span>
+          <span className="text-slate-700 truncate text-xs">{dc.consignee_name}</span>
         </div>
       )
     },
@@ -78,7 +78,7 @@ export default function DCListPage() {
       header: "PO Ref",
       accessorKey: "po_number" as keyof DCListItem,
       cell: (dc: DCListItem) => (
-        <span className="text-xs font-medium text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
+        <span className="text-[10px] font-medium text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
           PO-{dc.po_number}
         </span>
       )
@@ -86,7 +86,7 @@ export default function DCListPage() {
     {
       header: "Value",
       accessorKey: "total_value" as keyof DCListItem,
-      className: "text-right font-medium",
+      className: "text-right font-medium text-slate-700",
       cell: (dc: DCListItem) => dc.total_value > 0 ? `₹${dc.total_value.toLocaleString('en-IN')}` : '-'
     },
     {
@@ -99,26 +99,26 @@ export default function DCListPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[50vh] text-slate-400 font-medium animate-pulse">
+      <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-purple-50/30 p-4 md:p-6 flex items-center justify-center text-slate-400 font-medium animate-pulse">
         Loading Dispatches...
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-purple-50/30 p-4 md:p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-[20px] font-semibold text-slate-900 tracking-tight">Delivery Challans</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Outbound delivery management</p>
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Delivery Challans</h1>
+          <p className="text-xs text-slate-500 mt-1">Outbound delivery management</p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => router.push("/dc/create")}
-            className="flex items-center gap-2 px-3 py-1.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all shadow-sm shadow-purple-500/20 text-xs font-semibold"
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all shadow-sm shadow-purple-500/20 text-xs font-semibold"
           >
-            <Plus className="w-3.5 h-3.5" />
+            <Plus className="w-4 h-4" />
             Create Challan
           </button>
         </div>
@@ -127,7 +127,7 @@ export default function DCListPage() {
       {/* KPI Cards */}
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <GlassCard className="flex flex-col justify-between h-[90px] p-4">
+          <Card variant="glass" padding="none" className="flex flex-col justify-between h-[90px] p-4">
             <div className="flex justify-between items-start">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Dispatched</span>
               <Truck className="w-4 h-4 text-purple-500" />
@@ -136,17 +136,17 @@ export default function DCListPage() {
               <div className="text-[28px] font-bold text-slate-800">{stats.total_challans}</div>
               <div className="text-[10px] text-emerald-600 font-medium">+5% vs last month</div>
             </div>
-          </GlassCard>
+          </Card>
 
-          <GlassCard className="flex flex-col justify-between h-[90px] p-4">
+          <Card variant="glass" padding="none" className="flex flex-col justify-between h-[90px] p-4">
             <div className="flex justify-between items-start">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">In Transit</span>
               <Clock className="w-4 h-4 text-amber-500" />
             </div>
             <div className="text-[28px] font-bold text-slate-800">{stats.pending_delivery}</div>
-          </GlassCard>
+          </Card>
 
-          <GlassCard className="flex flex-col justify-between h-[90px] p-4">
+          <Card variant="glass" padding="none" className="flex flex-col justify-between h-[90px] p-4">
             <div className="flex justify-between items-start">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Completed</span>
               <CheckCircle className="w-4 h-4 text-emerald-500" />
@@ -155,12 +155,12 @@ export default function DCListPage() {
               <div className="text-[28px] font-bold text-slate-800">{stats.completed_delivery}</div>
               <div className="text-[10px] text-emerald-600 font-medium">98% delivery success</div>
             </div>
-          </GlassCard>
+          </Card>
         </div>
       )}
 
       {/* Filters */}
-      <div className="flex gap-2 items-center">
+      <Card variant="glass" padding="sm" className="flex gap-2 items-center sticky top-2 z-10">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
           <input
@@ -183,14 +183,14 @@ export default function DCListPage() {
           </select>
           <Filter className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
         </div>
-      </div>
+      </Card>
 
       <DenseTable
         loading={loading}
         data={filteredDCs}
         columns={columns}
         onRowClick={(dc) => router.push(`/dc/view?id=${dc.dc_number}`)}
-        className="bg-white/60 shadow-sm backdrop-blur-sm min-h-[500px]"
+        className="bg-white/40 shadow-sm backdrop-blur-sm min-h-[500px] border border-white/20 rounded-xl"
       />
     </div>
   );

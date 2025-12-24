@@ -47,17 +47,20 @@ def get_dashboard_summary(db: sqlite3.Connection = Depends(get_db)):
         total_po_value = value_row[0] if value_row and value_row[0] else 0.0
 
         # 6. Global Reconciliation Snapshot
-        recon_row = db.execute("""
-            SELECT 
-                SUM(ordered_quantity), 
-                SUM(total_delivered_qty), 
-                SUM(total_received_qty) 
-            FROM reconciliation_ledger
-        """).fetchone()
+        # 6. Global Reconciliation Snapshot (Optimized)
+        # Query tables directly instead of heavy view join
         
-        total_order = recon_row[0] or 0.0
-        total_deliv = recon_row[1] or 0.0
-        total_recvd = recon_row[2] or 0.0
+        # Total Ordered
+        ord_row = db.execute("SELECT SUM(ord_qty) FROM purchase_order_items").fetchone()
+        total_order = ord_row[0] if ord_row and ord_row[0] else 0.0
+        
+        # Total Delivered (from DC Items)
+        deliv_row = db.execute("SELECT SUM(dispatch_qty) FROM delivery_challan_items").fetchone()
+        total_deliv = deliv_row[0] if deliv_row and deliv_row[0] else 0.0
+        
+        # Total Received (from SRV Items)
+        recvd_row = db.execute("SELECT SUM(received_qty) FROM srv_items").fetchone()
+        total_recvd = recvd_row[0] if recvd_row and recvd_row[0] else 0.0
 
         return {
             "total_sales_month": total_sales,

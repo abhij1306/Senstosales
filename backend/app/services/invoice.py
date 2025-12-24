@@ -286,30 +286,29 @@ def create_invoice(invoice_data: dict, db: sqlite3.Connection) -> ServiceResult[
         db.execute("""
             INSERT INTO gst_invoices (
                 invoice_number, invoice_date,
-                linked_dc_numbers, po_numbers,
-                buyer_name, buyer_address, buyer_gstin, buyer_state, buyer_state_code,
+                linked_dc_numbers, po_numbers, po_date,
                 customer_gstin, place_of_supply,
-                buyers_order_no, buyers_order_date,
                 vehicle_no, lr_no, transporter, destination, terms_of_delivery,
                 gemc_number, mode_of_payment, payment_terms,
                 despatch_doc_no, srv_no, srv_date,
                 taxable_value, cgst, sgst, igst, total_invoice_value,
-                remarks
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                remarks, buyer_state, buyer_state_code
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             invoice_number, invoice_data["invoice_date"],
-            dc_number, str(dc_dict.get('po_number', '')),
-            invoice_data["buyer_name"], invoice_data.get("buyer_address"), invoice_data.get("buyer_gstin"),
-            invoice_data.get("buyer_state"), invoice_data.get("buyer_state_code"),
-            invoice_data.get("buyer_gstin"),  # customer_gstin (legacy field)
+            dc_number, 
+            # Use Buyer's Order No as the PO Number if provided, else fall back to DC's linked PO
+            str(invoice_data.get("buyers_order_no") or dc_dict.get('po_number', '')),
+            invoice_data.get("buyers_order_date"), # Maps to po_date column
+            invoice_data.get("buyer_gstin"), 
             invoice_data.get("place_of_supply"),
-            invoice_data.get("buyers_order_no"), invoice_data.get("buyers_order_date"),
             invoice_data.get("vehicle_no"), invoice_data.get("lr_no"), invoice_data.get("transporter"),
             invoice_data.get("destination"), invoice_data.get("terms_of_delivery"),
             invoice_data.get("gemc_number"), invoice_data.get("mode_of_payment"), invoice_data.get("payment_terms", "45 Days"),
             invoice_data.get("despatch_doc_no"), invoice_data.get("srv_no"), invoice_data.get("srv_date"),
             total_taxable, total_cgst, total_sgst, 0.0, total_amount,
-            invoice_data.get("remarks")
+            invoice_data.get("remarks"),
+            invoice_data.get("buyer_state"), invoice_data.get("buyer_state_code")
         ))
         
         # Insert invoice items

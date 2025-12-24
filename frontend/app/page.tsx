@@ -75,12 +75,12 @@ export default function DashboardPage() {
       header: "Date",
       accessorKey: "date" as keyof ActivityItem,
       className: "w-32",
-      cell: (item: ActivityItem) => <span className="text-slate-500">{formatDate(item.date)}</span>
+      cell: (item: ActivityItem) => <span className="text-slate-600 font-medium text-xs">{formatDate(item.date)}</span>
     },
     {
       header: "Amount",
       accessorKey: "amount" as keyof ActivityItem,
-      className: "text-right font-mono",
+      className: "text-right font-medium text-slate-700",
       cell: (item: ActivityItem) => item.amount ? `₹${item.amount.toLocaleString()}` : '-'
     },
     {
@@ -92,11 +92,11 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-purple-50/30 p-4 md:p-6 space-y-6">
       {/* Header & Welcome */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-[20px] font-semibold tracking-tight text-slate-900">Financial Overview</h1>
+          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Financial Overview</h1>
           <p className="text-slate-500 text-xs mt-0.5">
             Snapshot for {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>

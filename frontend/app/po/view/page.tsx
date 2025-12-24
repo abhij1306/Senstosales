@@ -2,12 +2,14 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Edit2, Save, X, ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { ArrowLeft, Edit2, Save, X, ChevronDown, ChevronUp, Plus, FileText, ShoppingCart, Calendar, Info, Loader2, AlertCircle, Phone, Mail, FileCheck, Landmark } from "lucide-react";
 
 import { api, API_BASE_URL } from '@/lib/api';
 import { formatDate } from '@/lib/utils';
 import { PODetail, POItem, PODelivery, SRVListItem } from "@/types";
 import DownloadButton from "@/components/DownloadButton";
+import { Card } from "@/components/ui/Card";
+import StatusBadge from "@/components/ui/StatusBadge";
 
 
 function PODetailContent() {
@@ -21,7 +23,7 @@ function PODetailContent() {
     const [hasDC, setHasDC] = useState(false);
     const [dcId, setDCId] = useState<string | null>(null);
     const [srvs, setSrvs] = useState<SRVListItem[]>([]);
-    const [activeTab, setActiveTab] = useState("basic");
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!poId) return;
@@ -45,10 +47,6 @@ function PODetailContent() {
                         setHasDC(true);
                         setDCId(dcCheck.dc_id || null);
                     }
-                    if (dcCheck && dcCheck.has_dc) {
-                        setHasDC(true);
-                        setDCId(dcCheck.dc_id || null);
-                    }
                 } catch {
                     // Ignore error if check fails (e.g. 404)
                 }
@@ -62,6 +60,7 @@ function PODetailContent() {
                 }
             } catch (err) {
                 console.error("Failed to load PO:", err);
+                setError(err instanceof Error ? err.message : "Failed to load PO information");
             } finally {
                 setLoading(false);
             }
@@ -141,16 +140,27 @@ function PODetailContent() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-full">
-                <div className="text-primary font-medium">Loading...</div>
+            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50/30">
+                <div className="text-purple-600 font-medium animate-pulse flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" /> Loading PO Details...
+                </div>
             </div>
         );
     }
 
     if (!data || !data.header) {
         return (
-            <div className="flex items-center justify-center h-full">
-                <div className="text-text-secondary">PO not found</div>
+            <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50/30 gap-4">
+                <div className="bg-red-50 p-4 rounded-full border border-red-100">
+                    <AlertCircle className="w-8 h-8 text-red-500" />
+                </div>
+                <h2 className="text-xl font-bold text-slate-800">Purchase Order Not Found</h2>
+                <button
+                    onClick={() => router.push('/po')}
+                    className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors shadow-sm text-sm font-medium"
+                >
+                    Back to List
+                </button>
             </div>
         );
     }
@@ -165,12 +175,11 @@ function PODetailContent() {
     }
 
     const Field = ({ label, value, field, readonly = false }: FieldProps) => {
-        // Don't hide fields - always show them
         const isReadonly = readonly || field === 'po_number' || field === 'po_date';
 
         return (
-            <div className="flex flex-col gap-1">
-                <label className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider">{label}</label>
+            <div className="space-y-1">
+                <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-400">{label}</label>
                 {editMode && !isReadonly ? (
                     <input
                         type="text"
@@ -183,57 +192,52 @@ function PODetailContent() {
                                 });
                             }
                         }}
-                        className="w-full px-2 py-1.5 text-sm border border-border rounded focus:ring-1 focus:ring-primary focus:border-primary text-text-primary bg-white transition-all"
+                        className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded focus:ring-1 focus:ring-purple-500 focus:border-purple-500 text-slate-800 bg-white transition-all shadow-sm"
                     />
                 ) : (
-                    <div className="text-[14px] font-medium text-text-primary truncate min-h-[20px]" title={value?.toString()}>{value || '-'}</div>
+                    <div className="text-xs font-medium text-slate-800 truncate min-h-[20px]" title={value?.toString()}>
+                        {value || <span className="text-slate-300 italic">-</span>}
+                    </div>
                 )}
             </div>
         );
     };
 
     return (
-        <div className="space-y-6">
+        <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-purple-50/30 p-4 md:p-6 space-y-6 pb-24">
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => router.back()}
-                        className="text-text-secondary hover:text-text-primary transition-colors p-1"
-                    >
+                    <button onClick={() => router.back()} className="text-slate-400 hover:text-slate-800 transition-colors p-1.5 rounded-full hover:bg-white/50">
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div>
-                        <h1 className="text-[20px] font-semibold text-text-primary flex items-center gap-3 tracking-tight">
+                        <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3 tracking-tight">
                             Purchase Order {header.po_number}
-                            <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-primary border border-blue-100 uppercase tracking-wide">
-                                {header.po_status || "Active"}
-                            </span>
+                            <StatusBadge status={header.po_status || "Active"} />
                         </h1>
-                        <p className="text-[13px] text-text-secondary mt-0.5 font-medium">
+                        <p className="text-xs text-slate-500 mt-1 font-medium flex items-center gap-2">
+                            <Calendar className="w-3.5 h-3.5" />
                             Created on {formatDate(header.po_date)}
                         </p>
                     </div>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex gap-2.5">
                     {editMode ? (
                         <>
                             <button
                                 onClick={() => setEditMode(false)}
-                                className="px-3 py-1.5 text-xs font-medium text-text-secondary bg-white border border-border rounded hover:bg-gray-50 transition-colors"
+                                className="px-4 py-2 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors flex items-center gap-2"
                             >
-                                <X className="w-3 h-3 inline mr-1" />
-                                Cancel
+                                <X className="w-4 h-4" /> Cancel
                             </button>
                             <button
                                 onClick={() => {
-                                    // TODO: Implement save functionality
                                     alert('Save functionality coming in Phase 2');
                                 }}
-                                className="px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm"
+                                className="px-4 py-2 text-xs font-semibold bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2 shadow-sm shadow-purple-500/20"
                             >
-                                <Save className="w-3 h-3 inline mr-1" />
-                                Save Changes
+                                <Save className="w-4 h-4" /> Save Changes
                             </button>
                         </>
                     ) : (
@@ -241,7 +245,7 @@ function PODetailContent() {
                             <DownloadButton
                                 url={`${API_BASE_URL}/api/po/${header.po_number}/download`}
                                 filename={`PO_${header.po_number}.xlsx`}
-                                label="Download Excel"
+                                label="Download PO"
                             />
                             <button
                                 onClick={() => {
@@ -251,379 +255,314 @@ function PODetailContent() {
                                         router.push(`/dc/create?po=${header.po_number}`);
                                     }
                                 }}
-                                className={`px-4 py-2 text-sm font-bold text-white rounded-lg shadow-sm hover:shadow-md transition-all flex items-center gap-2 ${hasDC
-                                    ? 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
-                                    : 'bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800'
+                                className={`px-4 py-2 text-xs font-semibold text-white rounded-lg shadow-sm flex items-center gap-2 transition-all ${hasDC
+                                    ? 'bg-blue-600 hover:bg-blue-700 shadow-blue-500/20'
+                                    : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-500/20'
                                     }`}
                             >
-                                <Plus className="w-4 h-4" />
+                                <FileText className="w-4 h-4" />
                                 {hasDC ? 'View Challan' : 'Create Challan'}
                             </button>
                             <button
                                 onClick={() => setEditMode(true)}
-                                className="px-4 py-2 text-sm font-medium bg-white border border-border text-text-secondary rounded hover:text-text-primary hover:bg-gray-50 transition-colors flex items-center gap-2"
+                                className="px-4 py-2 text-xs font-semibold bg-white text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 transition-colors"
                             >
-                                <Edit2 className="w-3 h-3" />
-                                Edit PO
+                                <Edit2 className="w-4 h-4" /> Edit
                             </button>
                         </>
                     )}
                 </div>
             </div >
 
-            {/* Tabs & Content */}
-            < div className="glass-card overflow-hidden" >
-                <div className="border-b border-border bg-gray-50/30">
-                    <div className="flex px-4 pt-2">
-                        {[
-                            { id: 'basic', label: 'Basic Info' },
-                            { id: 'references', label: 'References' },
-                            { id: 'financial', label: 'Financial & Tax' },
-                            { id: 'issuer', label: 'Issuer & Inspection' },
-                            { id: 'srvs', label: `SRVs (${srvs.length})` },
-                        ].map(tab => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveTab(tab.id)}
-                                className={`px-4 py-3 text-[13px] font-semibold transition-all relative top-[1px] border-b-2 mr-4 ${activeTab === tab.id
-                                    ? 'border-primary text-primary bg-transparent'
-                                    : 'border-transparent text-text-secondary hover:text-text-primary'
-                                    }`}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
-                    </div>
+            {error && (
+                <div className="bg-red-50 border border-red-100 rounded-lg p-4 flex items-start gap-3 text-red-600">
+                    <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                    <p className="text-sm font-medium">{error}</p>
                 </div>
+            )}
 
-                <div className="p-6">
-                    {activeTab === 'basic' && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-8">
-                            <Field label="PO Number" value={header.po_number} field="po_number" readonly />
-                            <Field label="PO Date" value={header.po_date} field="po_date" readonly />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Left Side: Supplier, Financials, Remarks */}
+                <div className="md:col-span-1 space-y-6">
+                    <Card variant="glass" padding="none" className="overflow-hidden">
+                        <div className="flex items-center gap-2 px-4 py-3 border-b border-white/20 bg-white/40">
+                            <Info className="w-4 h-4 text-purple-600" />
+                            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Supplier & Order Info</h3>
+                        </div>
+                        <div className="p-4 space-y-4">
                             <Field label="Supplier Name" value={header.supplier_name} field="supplier_name" />
-                            <Field label="Supplier Code" value={header.supplier_code} field="supplier_code" />
-                            <Field label="Phone" value={header.supplier_phone} field="supplier_phone" />
-                            <Field label="Fax" value={header.supplier_fax} field="supplier_fax" />
+                            <div className="grid grid-cols-2 gap-4">
+                                <Field label="Code" value={header.supplier_code} field="supplier_code" />
+                                <Field label="Dept (DVN)" value={header.department_no} field="department_no" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <Field label="Phone" value={header.supplier_phone} field="supplier_phone" />
+                                <Field label="Fax" value={header.supplier_fax} field="supplier_fax" />
+                            </div>
                             <Field label="Email" value={header.supplier_email} field="supplier_email" />
-                            <Field label="Department No (DVN)" value={header.department_no} field="department_no" />
-                        </div>
-                    )}
-
-                    {activeTab === 'references' && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-8">
-                            <Field label="Enquiry No" value={header.enquiry_no} field="enquiry_no" />
-                            <Field label="Enquiry Date" value={header.enquiry_date} field="enquiry_date" />
+                            <div className="h-px bg-slate-100/80 my-2" />
+                            <div className="grid grid-cols-2 gap-4">
+                                <Field label="Enquiry No" value={header.enquiry_no} field="enquiry_no" />
+                                <Field label="Order Type" value={header.order_type} field="order_type" />
+                            </div>
                             <Field label="Quotation Ref" value={header.quotation_ref} field="quotation_ref" />
-                            <Field label="Quotation Date" value={header.quotation_date} field="quotation_date" />
-                            <Field label="RC No" value={header.rc_no} field="rc_no" />
-                            <Field label="Order Type" value={header.order_type} field="order_type" />
-                            <Field label="PO Status" value={header.po_status} field="po_status" />
-                            <Field label="Amendment No" value={header.amend_no} field="amend_no" />
                         </div>
-                    )}
+                    </Card>
 
-                    {activeTab === 'financial' && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-8">
-                            <Field label="PO Value" value={header.po_value ? `₹${header.po_value.toLocaleString()}` : null} field="po_value" />
-                            <Field label="FOB Value" value={header.fob_value ? `₹${header.fob_value.toLocaleString()}` : null} field="fob_value" />
-                            <Field label="Net PO Value" value={header.net_po_value ? `₹${header.net_po_value.toLocaleString()}` : null} field="net_po_value" />
+                    <Card variant="glass" padding="none" className="overflow-hidden">
+                        <div className="flex items-center gap-2 px-4 py-3 border-b border-white/20 bg-white/40">
+                            <Landmark className="w-4 h-4 text-emerald-600" />
+                            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Financials & Terms</h3>
+                        </div>
+                        <div className="p-4 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <Field label="PO Value" value={header.po_value ? `₹${header.po_value.toLocaleString()}` : null} field="po_value" />
+                                <Field label="Net Value" value={header.net_po_value ? `₹${header.net_po_value.toLocaleString()}` : null} field="net_po_value" />
+                            </div>
                             <Field label="TIN No" value={header.tin_no} field="tin_no" />
                             <Field label="ECC No" value={header.ecc_no} field="ecc_no" />
-                            <Field label="MPCT No" value={header.mpct_no} field="mpct_no" />
                         </div>
-                    )}
+                    </Card>
 
-                    {activeTab === 'issuer' && (
-                        <div>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-y-6 gap-x-8">
-                                <Field label="Inspection By" value={header.inspection_by} field="inspection_by" />
-                                <Field label="Issuer Name" value={header.issuer_name} field="issuer_name" />
-                                <Field label="Issuer Designation" value={header.issuer_designation} field="issuer_designation" />
-                                <Field label="Issuer Phone" value={header.issuer_phone} field="issuer_phone" />
-                            </div>
-                            {(header.remarks || editMode) && (
-                                <div className="mt-6 pt-6 border-t border-border">
-                                    <label className="block text-[11px] uppercase tracking-wider font-semibold text-text-secondary mb-2">Remarks</label>
-                                    {editMode ? (
-                                        <textarea
-                                            value={header.remarks || ''}
-                                            onChange={(e) => setData({
-                                                ...data,
-                                                header: { ...data.header, remarks: e.target.value }
-                                            })}
-                                            rows={3}
-                                            className="w-full px-3 py-2 text-sm border border-border rounded focus:ring-1 focus:ring-primary text-text-primary bg-white transition-all"
-                                        />
-                                    ) : (
-                                        <div className="text-sm text-text-primary whitespace-pre-wrap bg-gray-50/50 p-3 rounded-lg border border-border/50">{header.remarks}</div>
-                                    )}
+                    <Card variant="glass" padding="none" className="overflow-hidden">
+                        <div className="flex items-center gap-2 px-4 py-3 border-b border-white/20 bg-white/40">
+                            <FileText className="w-4 h-4 text-slate-500" />
+                            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Remarks</h3>
+                        </div>
+                        <div className="p-4">
+                            {editMode ? (
+                                <textarea
+                                    value={header.remarks || ''}
+                                    onChange={(e) => setData({
+                                        ...data,
+                                        header: { ...data.header, remarks: e.target.value }
+                                    })}
+                                    rows={4}
+                                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:ring-1 focus:ring-purple-500 text-slate-700 bg-white transition-all resize-none shadow-sm"
+                                    placeholder="Add remarks here..."
+                                />
+                            ) : (
+                                <div className="text-xs text-slate-800 whitespace-pre-wrap bg-slate-50/50 p-3 rounded-lg border border-dashed border-slate-200/60 leading-relaxed">
+                                    {header.remarks || "No remarks provided."}
                                 </div>
                             )}
-
-
                         </div>
-                    )}
+                    </Card>
+                </div>
 
-                    {activeTab === 'srvs' && (
-                        <div>
+                {/* Right Side: Items & SRVs */}
+                <div className="md:col-span-2 space-y-6">
+                    <Card variant="glass" padding="none" className="overflow-visible">
+                        <div className="flex items-center justify-between p-4 border-b border-white/20 bg-slate-50/50">
+                            <div className="flex items-center gap-2">
+                                <ShoppingCart className="w-4 h-4 text-purple-600" />
+                                <h3 className="text-[14px] font-bold text-slate-800">Order Items & Delivery Schedule</h3>
+                            </div>
+                            {editMode && (
+                                <button
+                                    onClick={addItem}
+                                    className="bg-purple-50 hover:bg-purple-100 text-purple-700 px-3 py-1.5 rounded-md text-xs font-bold border border-purple-200 flex items-center gap-1 transition-colors"
+                                >
+                                    <Plus className="w-3.5 h-3.5" /> Add Item
+                                </button>
+                            )}
+                        </div>
+
+                        {items && items.length > 0 ? (
+                            <div className="divide-y divide-slate-100">
+                                {items.map((item: POItem, idx: number) => (
+                                    <div key={item.po_item_no || idx} className="group transition-colors bg-white/40">
+                                        {/* Item Header Row */}
+                                        <div className="p-4 flex flex-wrap gap-4 items-start">
+                                            <div className="w-12 pt-1">
+                                                <div className="h-8 w-8 rounded-lg bg-slate-100 text-slate-600 flex items-center justify-center font-bold text-xs border border-slate-200">
+                                                    {item.po_item_no}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex-1 min-w-[200px]">
+                                                <div className="mb-1">
+                                                    {editMode ? (
+                                                        <input
+                                                            className="w-full text-xs font-bold text-slate-800 border-b border-slate-200 focus:border-purple-500 outline-none bg-transparent"
+                                                            value={item.material_description}
+                                                            onChange={e => {
+                                                                const newItems = [...items];
+                                                                newItems[idx] = { ...newItems[idx], material_description: e.target.value };
+                                                                setData({ ...data, items: newItems });
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <h4 className="text-xs font-semibold text-slate-800 leading-tight">{item.material_description}</h4>
+                                                    )}
+                                                </div>
+                                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                                    <span className="bg-slate-100 px-1.5 py-0.5 rounded text-[10px] font-medium border border-slate-200">{item.material_code}</span>
+                                                    {item.unit && <span>• {item.unit}</span>}
+                                                </div>
+                                            </div>
+
+                                            <div className="flex gap-6 text-right text-xs">
+                                                <div>
+                                                    <span className="block text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-0.5">Ordered</span>
+                                                    {editMode ? (
+                                                        <input type="number" className="w-20 text-right bg-slate-50 border rounded px-1" value={item.ordered_quantity}
+                                                            onChange={e => {
+                                                                const newItems = [...items];
+                                                                newItems[idx] = { ...newItems[idx], ordered_quantity: parseFloat(e.target.value) };
+                                                                setData({ ...data, items: newItems });
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <span className="font-medium text-slate-700 text-xs">{item.ordered_quantity}</span>
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <span className="block text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-0.5">Delivered</span>
+                                                    <span className="font-medium text-blue-600 text-xs">{item.delivered_quantity || 0}</span>
+                                                </div>
+                                                <div>
+                                                    <span className="block text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-0.5">Received</span>
+                                                    <span className="font-medium text-emerald-600 text-xs">{item.received_quantity || 0}</span>
+                                                </div>
+                                                {/* <div>
+                                                    <span className="block text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-0.5">Rejected</span>
+                                                    <span className="font-bold text-red-500 text-sm">{item.rejected_quantity || 0}</span>
+                                                </div> */}
+                                                <div>
+                                                    <span className="block text-[10px] text-slate-400 uppercase font-bold tracking-wider mb-0.5">Rate</span>
+                                                    <span className="font-semibold text-slate-700">₹{item.po_rate}</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex flex-col items-end gap-2 ml-2">
+                                                <div className="flex gap-2">
+                                                    {editMode && (
+                                                        <button onClick={() => removeItem(item.po_item_no)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors">
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
+                                                    {item.deliveries && item.deliveries.length > 0 && (
+                                                        <button onClick={() => toggleItem(item.po_item_no)} className="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors">
+                                                            {expandedItems.has(item.po_item_no) ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Delivery Schedule */}
+                                        {expandedItems.has(item.po_item_no) && item.deliveries && item.deliveries.length > 0 && (
+                                            <div className="px-4 pb-4 pl-16">
+                                                <div className="bg-slate-50/80 rounded-lg border border-slate-200/60 overflow-hidden">
+                                                    <div className="flex items-center justify-between px-3 py-2 bg-slate-100/50 border-b border-slate-200/60">
+                                                        <h5 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-1.5">
+                                                            <span className="w-1 h-1 rounded-full bg-slate-400"></span> Delivery Schedule
+                                                        </h5>
+                                                        {editMode && (
+                                                            <button onClick={() => addDelivery(item.po_item_no)} className="text-[10px] font-bold text-blue-600 hover:text-blue-800">
+                                                                + ADD SCHEDULE
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <table className="w-full text-left text-xs">
+                                                        <thead className="text-slate-400 font-medium border-b border-slate-200/60">
+                                                            <tr>
+                                                                <th className="px-3 py-2 w-16">Lot #</th>
+                                                                <th className="px-3 py-2 text-right">Qty</th>
+                                                                <th className="px-3 py-2">Delivery Date</th>
+                                                                <th className="px-3 py-2">Entry Allowed</th>
+                                                                <th className="px-3 py-2">Dest. Code</th>
+                                                                <th className="px-3 py-2"></th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="divide-y divide-slate-200/40">
+                                                            {item.deliveries.map((delivery, dIdx) => (
+                                                                <tr key={dIdx} className="hover:bg-white transition-colors">
+                                                                    <td className="px-3 py-2 text-slate-700 text-xs font-medium">{delivery.lot_no}</td>
+                                                                    <td className="px-3 py-2 text-right font-semibold text-slate-700">{delivery.delivered_quantity}</td>
+                                                                    <td className="px-3 py-2 text-slate-600">{formatDate(delivery.dely_date)}</td>
+                                                                    <td className="px-3 py-2 text-slate-600">{formatDate(delivery.entry_allow_date)}</td>
+                                                                    <td className="px-3 py-2 text-slate-600">{delivery.dest_code || '-'}</td>
+                                                                    <td className="px-3 py-2 text-right">
+                                                                        {editMode && (
+                                                                            <button onClick={() => removeDelivery(item.po_item_no, dIdx)} className="text-slate-400 hover:text-red-500 transition-colors">
+                                                                                <X className="w-3 h-3" />
+                                                                            </button>
+                                                                        )}
+                                                                    </td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-12 text-slate-400 bg-white/40">
+                                <ShoppingCart className="w-8 h-8 opacity-20 mb-2" />
+                                <p className="text-sm font-medium">No items found in this purchase order.</p>
+                                {editMode && <button onClick={addItem} className="mt-4 text-xs font-bold text-purple-600 hover:underline">+ Add First Item</button>}
+                            </div>
+                        )}
+                    </Card>
+
+                    <Card variant="glass" padding="none" className="overflow-visible">
+                        <div className="flex items-center justify-between px-4 py-3 border-b border-white/20 bg-slate-50/50">
+                            <div className="flex items-center gap-2">
+                                <FileCheck className="w-4 h-4 text-blue-600" />
+                                <h3 className="text-[14px] font-bold text-slate-800">Versions & SRVs</h3>
+                            </div>
+                            <span className="text-xs font-bold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">{srvs.length} Found</span>
+                        </div>
+                        <div className="p-4">
                             {srvs.length > 0 ? (
-                                <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     {srvs.map((srv) => (
-                                        <div key={srv.srv_number} className="border border-border rounded-lg p-4 bg-white flex items-center justify-between hover:shadow-sm transition-shadow">
-                                            <div>
-                                                <div className="flex items-center gap-2 mb-1">
-                                                    <span className="font-semibold text-text-primary text-sm">SRV {srv.srv_number}</span>
-                                                    <span className="text-xs text-text-secondary bg-gray-100 px-2 py-0.5 rounded-full">{formatDate(srv.srv_date)}</span>
+                                        <div key={srv.srv_number} className="group border border-slate-200 rounded-xl p-4 bg-white/60 hover:bg-white hover:shadow-md transition-all duration-200 cursor-pointer" onClick={() => router.push(`/srv/${srv.srv_number}`)}>
+                                            <div className="flex justify-between items-start mb-2">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="h-8 w-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs ring-2 ring-blue-100">SRV</div>
+                                                    <div>
+                                                        <span className="font-bold text-slate-800 text-sm block">#{srv.srv_number}</span>
+                                                        <span className="text-[10px] text-slate-400 font-medium uppercase tracking-wide">Ref: {header.po_number}</span>
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <span className="text-xs font-bold text-slate-600 block">{formatDate(srv.srv_date)}</span>
                                                     {!srv.po_found && (
-                                                        <span className="text-[10px] bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                                            ⚠️ PO Link Missing
+                                                        <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 font-bold inline-block mt-1">
+                                                            UNLINKED
                                                         </span>
                                                     )}
                                                 </div>
-                                                <div className="flex gap-4 text-xs text-text-secondary">
-                                                    <div>Received: <span className="font-medium text-green-600">{srv.total_received_qty.toFixed(2)}</span></div>
-                                                    <div>Rejected: <span className="font-medium text-red-600">{srv.total_rejected_qty.toFixed(2)}</span></div>
+                                            </div>
+
+                                            <div className="mt-3 pt-3 border-t border-slate-100 grid grid-cols-2 gap-2 text-xs">
+                                                <div className="flex flex-col">
+                                                    <span className="text-slate-400 font-medium">Received</span>
+                                                    <span className="font-bold text-emerald-600 text-sm">{srv.total_received_qty.toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex flex-col text-right">
+                                                    <span className="text-slate-400 font-medium">Rejected</span>
+                                                    <span className="font-bold text-red-600 text-sm">{srv.total_rejected_qty.toFixed(2)}</span>
                                                 </div>
                                             </div>
-                                            <a
-                                                href={`/srv/${srv.srv_number}`}
-                                                className="px-3 py-1.5 text-xs font-medium text-primary bg-primary/5 rounded hover:bg-primary/10 transition-colors"
-                                            >
-                                                View Details
-                                            </a>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="text-center py-8 text-text-secondary">
-                                    <p>No SRVs found for this PO.</p>
+                                <div className="text-center py-8 text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                                    <p className="text-xs font-medium">No Store Receipt Vouchers (SRVs) found linked to this PO.</p>
                                 </div>
                             )}
                         </div>
-                    )}
+                    </Card>
                 </div>
-            </div >
-
-            {/* Items & Deliveries */}
-            < div className="glass-card p-6" >
-                <div className="flex items-center justify-between mb-6">
-                    <h2 className="text-[16px] font-semibold text-text-primary">Order Items & Delivery Schedule</h2>
-                    {editMode && (
-                        <button
-                            onClick={addItem}
-                            className="px-3 py-1.5 bg-emerald-50 text-emerald-600 text-xs font-medium rounded border border-emerald-200 hover:bg-emerald-100 flex items-center gap-1 transition-colors"
-                        >
-                            <Plus className="w-3 h-3" /> Add Item
-                        </button>
-                    )}
-                </div>
-                {
-                    items && items.length > 0 ? (
-                        <div className="space-y-4">
-                            {items.map((item: POItem) => (
-                                <div key={item.po_item_no} className="border border-border rounded-lg overflow-hidden bg-white">
-                                    {/* Item Header */}
-                                    <div className="bg-gray-50/50 px-4 py-3 border-b border-border/50">
-                                        <div className="flex items-start justify-between">
-                                            <div className="grid grid-cols-12 gap-x-4 gap-y-2 flex-1 text-sm">
-                                                <div className="col-span-1">
-                                                    <span className="text-[10px] uppercase font-bold text-text-secondary block mb-1">Item #</span>
-                                                    <div className="font-semibold text-text-primary">{item.po_item_no}</div>
-                                                </div>
-                                                <div className="col-span-2">
-                                                    <span className="text-[10px] uppercase font-bold text-text-secondary block mb-1">Code</span>
-                                                    {editMode ? (
-                                                        <input
-                                                            type="text"
-                                                            value={item.material_code || ''}
-                                                            onChange={(e) => {
-                                                                const newItems = [...items];
-                                                                const idx = newItems.findIndex(i => i.po_item_no === item.po_item_no);
-                                                                if (idx !== -1) {
-                                                                    newItems[idx] = { ...newItems[idx], material_code: e.target.value };
-                                                                    setData({ ...data, items: newItems });
-                                                                }
-                                                            }}
-                                                            className="w-full px-2 py-1 text-xs border border-border rounded"
-                                                        />
-                                                    ) : (
-                                                        <div className="text-text-primary font-medium">{item.material_code}</div>
-                                                    )}
-                                                </div>
-                                                <div className="col-span-2">
-                                                    <span className="text-[10px] uppercase font-bold text-text-secondary block mb-1">Description</span>
-                                                    {editMode ? (
-                                                        <input
-                                                            type="text"
-                                                            value={item.material_description || ''}
-                                                            onChange={(e) => {
-                                                                const newItems = [...items];
-                                                                const idx = newItems.findIndex(i => i.po_item_no === item.po_item_no);
-                                                                if (idx !== -1) {
-                                                                    newItems[idx] = { ...newItems[idx], material_description: e.target.value };
-                                                                    setData({ ...data, items: newItems });
-                                                                }
-                                                            }}
-                                                            className="w-full px-2 py-1 text-xs border border-border rounded"
-                                                        />
-                                                    ) : (
-                                                        <div className="truncate text-text-primary font-medium text-xs" title={item.material_description}>{item.material_description}</div>
-                                                    )}
-                                                </div>
-                                                <div className="col-span-1 text-right">
-                                                    <span className="text-[10px] uppercase font-bold text-text-secondary block mb-1">Ordered</span>
-                                                    {editMode ? (
-                                                        <input
-                                                            type="number"
-                                                            value={item.ordered_quantity || ''}
-                                                            onChange={(e) => {
-                                                                const newItems = [...items];
-                                                                const idx = newItems.findIndex(i => i.po_item_no === item.po_item_no);
-                                                                if (idx !== -1) {
-                                                                    newItems[idx] = { ...newItems[idx], ordered_quantity: parseFloat(e.target.value) };
-                                                                    setData({ ...data, items: newItems });
-                                                                }
-                                                            }}
-                                                            className="w-full px-2 py-1 text-xs border border-border rounded text-right"
-                                                        />
-                                                    ) : (
-                                                        <div className="text-text-primary font-bold">{item.ordered_quantity || 0}</div>
-                                                    )}
-                                                </div>
-                                                <div className="col-span-1 text-right">
-                                                    <span className="text-[10px] uppercase font-bold text-blue-600 block mb-1">Delivered</span>
-                                                    <div className="text-blue-600 font-bold">{item.delivered_quantity || 0}</div>
-                                                </div>
-                                                <div className="col-span-1 text-right">
-                                                    <span className="text-[10px] uppercase font-bold text-green-600 block mb-1">Received</span>
-                                                    <div className="text-green-600 font-bold">{item.received_quantity || 0}</div>
-                                                </div>
-                                                <div className="col-span-1 text-right">
-                                                    <span className="text-[10px] uppercase font-bold text-red-600 block mb-1">Rejected</span>
-                                                    <div className="text-red-600 font-bold">
-                                                        {item.rejected_quantity || 0}
-                                                        {(item.rejected_quantity || 0) > 0 && (
-                                                            <div className="text-[9px] mt-0.5 bg-red-100 px-1 py-0.5 rounded inline-block ml-1">
-                                                                {(((item.rejected_quantity || 0) / ((item.received_quantity || 0) + (item.rejected_quantity || 0))) * 100).toFixed(1)}%
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                <div className="col-span-1 text-right">
-                                                    <span className="text-[10px] uppercase font-bold text-text-secondary block mb-1">Rate</span>
-                                                    {editMode ? (
-                                                        <input
-                                                            type="number"
-                                                            value={item.po_rate || ''}
-                                                            onChange={(e) => {
-                                                                const newItems = [...items];
-                                                                const idx = newItems.findIndex(i => i.po_item_no === item.po_item_no);
-                                                                if (idx !== -1) {
-                                                                    newItems[idx] = { ...newItems[idx], po_rate: parseFloat(e.target.value) };
-                                                                    setData({ ...data, items: newItems });
-                                                                }
-                                                            }}
-                                                            className="w-full px-2 py-1 text-xs border border-border rounded text-right"
-                                                        />
-                                                    ) : (
-                                                        <div className="text-text-primary text-xs">₹{item.po_rate}</div>
-                                                    )}
-                                                </div>
-                                                <div className="col-span-2 text-right">
-                                                    <span className="text-[10px] uppercase font-bold text-text-secondary block mb-1">Value</span>
-                                                    <div className="text-text-primary font-bold text-xs">₹{item.item_value?.toLocaleString()}</div>
-                                                </div>
-
-                                            </div>
-                                            <div className="flex items-center gap-2 ml-4 mt-1">
-                                                {editMode && (
-                                                    <button
-                                                        onClick={() => removeItem(item.po_item_no)}
-                                                        className="p-1 bg-danger/10 text-danger rounded hover:bg-danger/20 transition-colors"
-                                                        title="Delete Item"
-                                                    >
-                                                        <X className="w-3 h-3" />
-                                                    </button>
-                                                )}
-                                                {item.deliveries && item.deliveries.length > 0 && (
-                                                    <button
-                                                        onClick={() => toggleItem(item.po_item_no)}
-                                                        className="text-text-secondary hover:text-text-primary transition-colors p-1"
-                                                    >
-                                                        {expandedItems.has(item.po_item_no) ? (
-                                                            <ChevronUp className="w-4 h-4" />
-                                                        ) : (
-                                                            <ChevronDown className="w-4 h-4" />
-                                                        )}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Delivery Schedule Table */}
-                                    {expandedItems.has(item.po_item_no) && item.deliveries && item.deliveries.length > 0 && (
-                                        <div className="px-4 py-3 bg-white border-t border-border/50">
-                                            <div className="flex items-center justify-between mb-3">
-                                                <h4 className="text-[12px] font-semibold text-text-secondary uppercase tracking-wider flex items-center gap-2">
-                                                    <span className="w-1.5 h-1.5 rounded-full bg-primary/50"></span>
-                                                    Delivery Schedule
-                                                </h4>
-                                                {editMode && (
-                                                    <button
-                                                        onClick={() => addDelivery(item.po_item_no)}
-                                                        className="px-2 py-1 bg-blue-50 text-primary text-[10px] font-medium rounded hover:bg-blue-100 transition-colors"
-                                                    >
-                                                        + Delivery
-                                                    </button>
-                                                )}
-                                            </div>
-                                            <table className="w-full text-sm">
-                                                <thead>
-                                                    <tr className="border-b border-border/50">
-                                                        <th className="px-3 py-2 text-left text-[10px] uppercase font-semibold text-text-secondary bg-gray-50/30 first:rounded-tl-md">Lot No</th>
-                                                        <th className="px-3 py-2 text-right text-[10px] uppercase font-semibold text-text-secondary bg-gray-50/30">Delivery Qty</th>
-                                                        <th className="px-3 py-2 text-left text-[10px] uppercase font-semibold text-text-secondary bg-gray-50/30">Delivery Date</th>
-                                                        <th className="px-3 py-2 text-left text-[10px] uppercase font-semibold text-text-secondary bg-gray-50/30">Entry Allow Date</th>
-                                                        <th className="px-3 py-2 text-left text-[10px] uppercase font-semibold text-text-secondary bg-gray-50/30 last:rounded-tr-md">Dest Code</th>
-                                                        {editMode && <th className="px-3 py-2 text-left text-[10px] uppercase font-semibold text-text-secondary bg-gray-50/30"></th>}
-                                                    </tr>
-                                                </thead>
-                                                <tbody className="divide-y divide-border/30">
-                                                    {item.deliveries.map((delivery: PODelivery, idx: number) => (
-                                                        <tr key={idx} className="hover:bg-gray-50/30 transition-colors">
-                                                            <td className="px-3 py-2 text-text-primary font-medium">{delivery.lot_no}</td>
-                                                            <td className="px-3 py-2 text-text-primary text-right font-medium">{delivery.delivered_quantity}</td>
-                                                            <td className="px-3 py-2 text-text-secondary text-[13px]">{formatDate(delivery.dely_date)}</td>
-                                                            <td className="px-3 py-2 text-text-secondary text-[13px]">{formatDate(delivery.entry_allow_date)}</td>
-                                                            <td className="px-3 py-2 text-text-secondary text-[13px]">{delivery.dest_code}</td>
-                                                            {editMode && (
-                                                                <td className="px-3 py-2 text-right">
-                                                                    <button
-                                                                        onClick={() => removeDelivery(item.po_item_no, idx)}
-                                                                        className="text-text-secondary hover:text-danger p-1 transition-colors"
-                                                                    >
-                                                                        <X className="w-3 h-3" />
-                                                                    </button>
-                                                                </td>
-                                                            )}
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="text-center py-12 text-text-secondary bg-gray-50/30 rounded-lg border border-dashed border-border">
-                            <p className="text-sm font-medium">No items found in this purchase order.</p>
-                        </div>
-                    )
-                }
-            </div >
+            </div>
         </div >
     );
 }
@@ -632,8 +571,10 @@ function PODetailContent() {
 export default function PODetailPage() {
     return (
         <Suspense fallback={
-            <div className="flex items-center justify-center h-full">
-                <div className="text-primary font-medium">Loading...</div>
+            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50/30">
+                <div className="text-purple-600 font-medium animate-pulse flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" /> Loading...
+                </div>
             </div>
         }>
             <PODetailContent />

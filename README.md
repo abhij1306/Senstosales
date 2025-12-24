@@ -1,8 +1,8 @@
 # SenstoSales ERP - Supplier Management System
 
-**Version**: 1.0.0  
+**Version**: 3.0.0  
 **Status**: Production Ready  
-**Last Updated**: December 24, 2025
+**Last Updated**: December 25, 2025
 
 ## Overview
 
@@ -44,8 +44,8 @@ Sens toSales is an internal supplier-side ERP system designed for Senstographic 
 ### Frontend
 - **Framework**: Next.js 16.0.10 (App Router)
 - **Language**: TypeScript 5.x
-- **Styling**: Tailwind CSS 3.x
-- **UI Components**: Custom glassmorphism design system
+- **Styling**: Tailwind CSS 3.x (Glassmorphism Design System)
+- **UI Components**: Consistent "Glass Card" architecture & standardized typography
 - **State Management**: React hooks
 - **HTTP Client**: Native fetch API
 
@@ -205,11 +205,19 @@ SELECT COUNT(*) FROM table  # Race condition risk
 
 ## SenstoSales ERP
 
-**Version 2.1.0** | *Last Updated: 2025-12-24*
+**Version 3.0.0** | *Last Updated: 2025-12-25*
 
 A local-first ERP system for managing Purchase Orders, Delivery Challans, Invoices, and Service Receipt Vouchers (SRVs) for BHEL supplier operations.
 
-## Recent Fixes (v2.1.0)
+## Recent Updates (v3.0.0)
+
+### Major UI Overhaul
+- **Glassmorphism Design**: Implemented a unified "Glass & Gradient" design language across the entire application (Dashboard, Lists, Views, Forms).
+- **Typography Standardization**: Enforced a consistent type scale. Removed `font-mono` from numeric fields for better legibility. Standardized font weights (Medium/Slate-700) for high contrast and readability.
+- **Layout Consistency**: Refactored "View" pages (PO, Invoice) to match the 2-column "Create/Edit" layout standard.
+- **Visual Polish**: Added consistent gradient backgrounds, refined spacing, and polished component interactions.
+
+## Recent Fixes (v2.x)
 
 ### Critical Bug Fixes
 - **PO Date Scraper**: Fixed regex pattern to match exactly "PO DATE" (not any field ending with "DATE")

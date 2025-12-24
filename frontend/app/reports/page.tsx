@@ -139,10 +139,10 @@ export default function ReportsPage() {
 
 
     return (
-        <div className="space-y-6">
+        <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-purple-50/30 p-4 md:p-6 space-y-6 pb-24">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-[20px] font-semibold text-slate-900 tracking-tight">System Reports</h1>
+                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">System Reports</h1>
                     <p className="text-xs text-slate-500 mt-0.5">Deterministic ledger analysis and registers</p>
                 </div>
                 <button
@@ -214,7 +214,7 @@ export default function ReportsPage() {
                                 <span>Updating...</span>
                             </div>
                         )}
-                        <span className="text-xs text-slate-400 font-mono">
+                        <span className="text-xs text-slate-400 font-medium">
                             {data.length} records found
                         </span>
                     </div>
