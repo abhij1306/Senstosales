@@ -42,6 +42,18 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         }, 4000);
     }, []);
 
+    // Listen for global API errors
+    React.useEffect(() => {
+        const handleApiError = (event: Event) => {
+            const customEvent = event as CustomEvent;
+            const detail = customEvent.detail || {};
+            addToast(detail.title || 'Error', detail.message || 'Something went wrong', detail.type || 'error');
+        };
+
+        window.addEventListener('api-error', handleApiError);
+        return () => window.removeEventListener('api-error', handleApiError);
+    }, [addToast]);
+
     const removeToast = useCallback((id: string) => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
     }, []);

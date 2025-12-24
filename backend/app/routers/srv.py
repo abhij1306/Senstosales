@@ -37,8 +37,26 @@ async def upload_batch_srvs(
                 })
                 continue
             
-            po_match = re.search(r'SRV_(\d+)\.html', file.filename, re.IGNORECASE)
-            po_from_filename = po_match.group(1) if po_match else None
+            # Try to extract PO number from filename with various patterns
+            # Priority 1: Explicit PO_ prefix
+            po_match = re.search(r'PO_?(\d+)', file.filename, re.IGNORECASE)
+            
+            # Priority 2: SRV_ prefix (User legacy format)
+            if not po_match:
+                po_match = re.search(r'SRV_(\d+)', file.filename, re.IGNORECASE)
+            
+            # Priority 3: Just digits (User said "file name IS the po number")
+            if not po_match:
+                po_match = re.search(r'(\d+)', file.filename)
+                
+            if po_match:
+                # Normalize to integer string to remove leading zeros (matches srv_scraper behavior)
+                try:
+                    po_from_filename = str(int(po_match.group(1)))
+                except ValueError:
+                    po_from_filename = po_match.group(1)
+            else:
+                po_from_filename = None
             
             content = await file.read()
             success, messages = process_srv_file(content, file.filename, db, po_from_filename)

@@ -142,10 +142,13 @@ from fastapi.responses import HTMLResponse
 
 # Mount static files if directory exists (PROD mode)
 # In development, we don't need this as we run separate frontend
+# CRITICAL: Static mounts must NOT interfere with /api routes
 base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 static_dir = os.path.join(base_dir, "static")
 
-if os.path.exists(static_dir):
+# DISABLED: Static file serving interferes with API routes in development
+# This should only be enabled in production standalone mode
+if False and os.path.exists(static_dir):
     logger.info(f"Serving static files from {static_dir}")
     
     # Mount _next separately to ensure it is handled correctly

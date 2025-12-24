@@ -1,43 +1,50 @@
 import sys
+import os
 import logging
+import functools
+
+# Set environment variable BEFORE any multipart imports
+os.environ['MULTIPART_MAX_FILES'] = '5000'
+os.environ['MULTIPART_MAX_FIELDS'] = '5000'
 
 logger = logging.getLogger("app.core.multipart_fix")
 
 def apply_multipart_fix():
     """
-    Patch python-multipart and starlette to increase file upload limits.
-    Must be called before FastAPI app initialization.
+    Patch starlette's MultiPartParser to increase file upload limits.
+    The limit is set as a default parameter in __init__, so we need to wrap the init method.
     """
+    print("🔧 Applying multipart fix...")  # Debug: print before logging is configured
     try:
-        # 1. Patch python-multipart
-        # Note: The package is 'python-multipart' but module is 'multipart'
-        import multipart
-        from multipart.multipart import MultipartParser
+        # Patch Starlette's MultiPartParser
+        from starlette.formparsers import MultiPartParser
         
-        # Default is 1000, verify current
-        old_limit = getattr(MultipartParser, 'max_files', 'unknown')
+        # Get the original __init__ method
+        original_init = MultiPartParser.__init__
         
-        # Set new limits
-        MultipartParser.max_files = 10000
-        MultipartParser.max_fields = 10000
+        # Create a wrapper that changes the default max_files parameter
+        @functools.wraps(original_init)
+        def patched_init(self, headers, stream, max_files=5000, max_fields=5000):
+            # Call original init with our new defaults
+            return original_init(self, headers, stream, max_files=max_files, max_fields=max_fields)
         
-        logger.info(f"✅ patched python-multipart: max_files {old_limit} -> 10000")
+        # Replace the __init__ method
+        MultiPartParser.__init__ = patched_init
         
-        # 2. Patch Starlette (if it has its own reference)
-        try:
-            from starlette import formparsers
-            # Check if it uses the same class or a wrapper
-            if hasattr(formparsers, 'MultiPartParser'):
-                formparsers.MultiPartParser.max_files = 10000
-                formparsers.MultiPartParser.max_fields = 10000
-                logger.info("✅ patched starlette.formparsers matches")
-        except ImportError:
-            pass
+        print(f"✅ Patched starlette.formparsers.MultiPartParser: max_files default 1000 -> 5000")
+        logger.info(f"✅ patched starlette.formparsers.MultiPartParser: max_files default 1000 -> 5000")
             
-    except ImportError:
-        logger.warning("⚠️ Could not import 'multipart'. Is python-multipart installed?")
+    except ImportError as e:
+        print(f"⚠️ Could not import starlette: {e}")
+        logger.warning(f"⚠️ Could not import starlette: {e}")
     except Exception as e:
+        print(f"⚠️ Error applying multipart fix: {e}")
+        import traceback
+        traceback.print_exc()
         logger.warning(f"⚠️ Error applying multipart fix: {e}")
 
 # Apply immediately on import
+print("🚀 multipart_fix.py module loaded")  # Debug: confirm module is loaded
 apply_multipart_fix()
+print("✨ multipart_fix.py completed")  # Debug: confirm function ran
+

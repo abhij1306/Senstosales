@@ -197,6 +197,48 @@ class POIngestionService:
             
             # Remove commit/rollback, controlled by caller
             warnings.insert(0, f"✅ Successfully ingested PO {po_number} with {len(items_grouped)} unique items and {len(po_items)} delivery schedules")
+            
+            # --- Retroactive Linkage: Check for Orphan SRVs ---
+            # If SRVs were uploaded BEFORE the PO, they will have po_found=0.
+            # We need to find them, link them, and update the PO item quantities.
+            
+            # 1. Activate Linkage
+            cursor = db.execute(
+                "UPDATE srvs SET po_found = 1 WHERE po_number = ? AND po_found = 0",
+                (str(po_number),) # Ensure string format for consistency
+            )
+            linked_count = cursor.rowcount
+            
+            if linked_count > 0:
+                warnings.append(f"🔗 Linked {linked_count} existing SRV(s) to this new PO")
+                
+                # 2. Recalculate Quantities for this PO's items
+                for po_item_no in items_grouped.keys():
+                    srv_totals = db.execute("""
+                        SELECT 
+                            COALESCE(SUM(si.received_qty), 0) as total_received,
+                            COALESCE(SUM(si.rejected_qty), 0) as total_rejected
+                        FROM srv_items si
+                        JOIN srvs s ON si.srv_number = s.srv_number
+                        WHERE s.po_number = ? AND si.po_item_no = ? AND s.is_active = 1
+                    """, (str(po_number), po_item_no)).fetchone()
+                    
+                    if srv_totals and (srv_totals[0] > 0 or srv_totals[1] > 0):
+                        db.execute("""
+                            UPDATE purchase_order_items
+                            SET 
+                                rcd_qty = ?,
+                                rejected_qty = ?,
+                                updated_at = CURRENT_TIMESTAMP
+                            WHERE po_number = ? AND po_item_no = ?
+                        """, (
+                            float(srv_totals[0]),
+                            float(srv_totals[1]),
+                            po_number,
+                            po_item_no
+                        ))
+                warnings.append("📊 Updated PO item quantities from linked SRVs")
+
             return True, warnings
             
         except Exception as e:

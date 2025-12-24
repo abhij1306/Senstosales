@@ -187,6 +187,39 @@ def extract_po_header(soup):
     # ---- date normalization ----
     for k in ["PO DATE", "QUOT-DATE", "ENQ DATE"]:
         header[k] = normalize_date(header.get(k))
+    
+    # NUCLEAR FALLBACK: If PO DATE is still empty/whitespace, scan near "PO DATE" label
+    # This handles BHEL format where table-based extraction fails
+    if not header.get("PO DATE") or not header["PO DATE"].strip():
+        # Strategy: Find "PO DATE" label in text, then look for date within next 200 chars
+        text_content = soup.get_text(" ", strip=True)
+        po_date_match = re.search(r'PO\s+DATE', text_content, re.IGNORECASE)
+        
+        if po_date_match:
+            # Search for date pattern within 200 chars after "PO DATE" label
+            search_window = text_content[po_date_match.end():po_date_match.end() + 200]
+            date_match = re.search(r'(\d{1,2}/\d{1,2}/\d{4})', search_window)
+            if date_match:
+                header["PO DATE"] = normalize_date(date_match.group(1))
+        
+        # Ultimate fallback: if still empty, try all tables for date in row below "PO DATE"
+        if not header.get("PO DATE") or not header["PO DATE"].strip():
+            tables = soup.find_all("table")
+            for table in tables:
+                rows = table.find_all("tr")
+                for r_idx, row in enumerate(rows):
+                    # Check if this row contains "PO DATE"
+                    row_text = clean(row.get_text())
+                    if re.search(r'PO\s+DATE', row_text, re.IGNORECASE):
+                        # Check next row for date
+                        if r_idx + 1 < len(rows):
+                            next_row_text = rows[r_idx + 1].get_text()
+                            date_match = re.search(r'(\d{1,2}/\d{1,2}/\d{4})', next_row_text)
+                            if date_match:
+                                header["PO DATE"] = normalize_date(date_match.group(1))
+                                break
+                    if header.get("PO DATE"):
+                        break
 
     return header
 

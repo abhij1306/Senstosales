@@ -46,6 +46,8 @@ class POHeader(BaseModel):
     issuer_designation: Optional[str] = None
     issuer_phone: Optional[str] = None
     remarks: Optional[str] = None
+    consignee_name: Optional[str] = None
+    consignee_address: Optional[str] = None
 
 class PODelivery(BaseModel):
     """Purchase Order Delivery Schedule"""
@@ -86,6 +88,8 @@ class POListItem(BaseModel):
     linked_dc_numbers: Optional[str] = None
     total_ordered_quantity: float = 0.0
     total_dispatched_quantity: float = 0.0
+    total_received_quantity: float = 0.0
+    total_rejected_quantity: float = 0.0
     total_pending_quantity: float = 0.0
     created_at: Optional[str] = None
 

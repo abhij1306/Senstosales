@@ -11,7 +11,7 @@ interface StatusBadgeProps {
 const getVariant = (status: string, explicitVariant?: string) => {
     if (explicitVariant) return explicitVariant;
 
-    const lower = status.toLowerCase();
+    const lower = (status || '').toLowerCase();
 
     if (['received', 'completed', 'delivered', 'paid', 'approved', 'valid'].includes(lower)) return 'success';
     if (['pending', 'processing', 'open', 'partial'].includes(lower)) return 'warning';

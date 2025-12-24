@@ -83,6 +83,17 @@ class POService:
             dc_nums = [r['dc_number'] for r in dc_rows]
             linked_dcs_str = ", ".join(dc_nums) if dc_nums else None
 
+            # Calculate Total Received & Rejected (from SRVs)
+            srv_agg_res = db.execute("""
+                SELECT 
+                    COALESCE(SUM(received_qty), 0),
+                    COALESCE(SUM(rejected_qty), 0)
+                FROM srv_items
+                WHERE po_number = ?
+            """, (po_num,)).fetchone()
+            total_received = srv_agg_res[0] if srv_agg_res else 0.0
+            total_rejected = srv_agg_res[1] if srv_agg_res else 0.0
+
             results.append(POListItem(
                 po_number=row["po_number"],
                 po_date=row["po_date"],
@@ -93,6 +104,8 @@ class POService:
                 linked_dc_numbers=linked_dcs_str,
                 total_ordered_quantity=total_ordered,
                 total_dispatched_quantity=total_dispatched,
+                total_received_quantity=total_received,
+                total_rejected_quantity=total_rejected,
                 total_pending_quantity=total_pending,
                 created_at=row["created_at"]
             ))
@@ -112,7 +125,14 @@ class POService:
         if not header_row:
             raise not_found(f"Purchase Order {po_number} not found", "PO")
         
-        header = POHeader(**dict(header_row))
+        header_dict = dict(header_row)
+        
+        # Inject Consignee Details (Derived)
+        # BHEL is the standard client, so we default to it if not explicit
+        header_dict['consignee_name'] = "BHEL, Bhopal" 
+        header_dict['consignee_address'] = header_dict.get('inspection_at') or "Piplani, Bhopal, Madhya Pradesh 462022"
+        
+        header = POHeader(**header_dict)
         
         # Get items with SRV aggregated data
         item_rows = db.execute("""

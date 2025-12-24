@@ -279,7 +279,6 @@ function PODetailContent() {
                             { id: 'basic', label: 'Basic Info' },
                             { id: 'references', label: 'References' },
                             { id: 'financial', label: 'Financial & Tax' },
-                            { id: 'financial', label: 'Financial & Tax' },
                             { id: 'issuer', label: 'Issuer & Inspection' },
                             { id: 'srvs', label: `SRVs (${srvs.length})` },
                         ].map(tab => (

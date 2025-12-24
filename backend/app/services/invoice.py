@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 def generate_invoice_number(db: sqlite3.Connection) -> str:
     """
     Generate collision-safe invoice number: INV/{FY}/{XXX}
-    MUST be called inside BEGIN IMMEDIATE transaction
+    Uses atomic counter from document_sequences table
     """
     today = datetime.now()
     
@@ -32,25 +32,30 @@ def generate_invoice_number(db: sqlite3.Connection) -> str:
     else:
         fy = f"{today.year - 1}-{str(today.year)[2:]}"
     
-    # Get last invoice number for this FY
-    last_row = db.execute("""
-        SELECT invoice_number 
-        FROM gst_invoices 
-        WHERE invoice_number LIKE ? 
-        ORDER BY invoice_number DESC 
-        LIMIT 1
-    """, (f"INV/{fy}/%",)).fetchone()
+    seq_key = f"INVOICE_{fy}"
+    prefix = f"INV/{fy}/"
     
-    if last_row:
-        try:
-            last_num = int(last_row[0].split('/')[-1])
-            new_num = last_num + 1
-        except (ValueError, IndexError):
-            new_num = 1
-    else:
-        new_num = 1
-    
-    return f"INV/{fy}/{new_num:03d}"
+    try:
+        # Ensure sequence exists
+        db.execute(
+            "INSERT OR IGNORE INTO document_sequences (seq_key, current_val, prefix) VALUES (?, 0, ?)", 
+            (seq_key, prefix)
+        )
+        
+        # Atomic Increment
+        db.execute("UPDATE document_sequences SET current_val = current_val + 1 WHERE seq_key = ?", (seq_key,))
+        
+        row = db.execute("SELECT current_val FROM document_sequences WHERE seq_key = ?", (seq_key,)).fetchone()
+        if not row:
+             raise Exception("Failed to retrieve sequence")
+             
+        new_num = row[0]
+        return f"{prefix}{new_num:03d}"
+        
+    except Exception as e:
+        logger.error(f"Failed to generate Invoice number: {e}")
+        # Fallback to random to avoid blocking transaction but marks it clearly
+        return f"{prefix}ERR-{uuid.uuid4().hex[:4].upper()}"
 
 
 def calculate_tax(taxable_value: float, cgst_rate: float = 9.0, sgst_rate: float = 9.0) -> dict:

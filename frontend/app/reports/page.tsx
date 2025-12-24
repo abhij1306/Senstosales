@@ -28,8 +28,8 @@ const reconciliationColumns = [
 const salesColumns = [
     { header: "Month", accessorKey: "month", className: "font-medium text-slate-700" },
     { header: "Invoices", accessorKey: "invoice_count", className: "text-center" },
-    { header: "Taxable Value", accessorKey: "total_taxable", className: "text-right text-slate-600 font-medium", cell: (row: any) => row.total_taxable.toLocaleString('en-IN') },
-    { header: "Total Value", accessorKey: "total_value", className: "text-right font-medium text-emerald-700", cell: (row: any) => row.total_value.toLocaleString('en-IN', { style: 'currency', currency: 'INR' }) },
+    { header: "Taxable Value", accessorKey: "total_taxable", className: "text-right text-slate-600 font-medium", cell: (row: any) => (row.total_taxable || 0).toLocaleString('en-IN') },
+    { header: "Total Value", accessorKey: "total_value", className: "text-right font-medium text-emerald-700", cell: (row: any) => (row.total_value || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR' }) },
 ];
 
 const dcColumns = [

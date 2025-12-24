@@ -92,47 +92,71 @@ export default function PONotesPage() {
 
             {/* Form Modal */}
             {showForm && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                    <div className="glass-card-no-hover w-full max-w-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in duration-200">
-                        <div className="p-4 border-b border-border bg-gray-50/50 flex items-center justify-between">
-                            <h2 className="text-[16px] font-semibold text-text-primary">
-                                {editingId ? "Edit Template" : "New Template"}
-                            </h2>
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    {/* Backdrop */}
+                    <div
+                        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity"
+                        onClick={() => setShowForm(false)}
+                    />
+
+                    {/* Modal Content */}
+                    <div className="relative w-full max-w-lg bg-white/90 backdrop-blur-xl border border-white/20 shadow-2xl rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        {/* Header */}
+                        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white/50">
+                            <div>
+                                <h2 className="text-lg font-semibold text-slate-800 tracking-tight">
+                                    {editingId ? "Edit Template" : "New Template"}
+                                </h2>
+                                <p className="text-[11px] text-slate-500 font-medium">
+                                    {editingId ? "Update existing note template" : "Create a new reusable note"}
+                                </p>
+                            </div>
                             <button
                                 onClick={() => setShowForm(false)}
-                                className="text-text-secondary hover:text-text-primary p-1"
+                                className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
                             >
                                 <X className="w-4 h-4" />
                             </button>
                         </div>
-                        <form onSubmit={handleSubmit} className="p-6">
-                            <div className="mb-4">
-                                <label className="block text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-2">
+
+                        {/* Form */}
+                        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                                     Template Title
                                 </label>
                                 <input
                                     type="text"
                                     value={formData.title}
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    className="w-full px-3 py-2 border border-border rounded-lg focus:ring-1 focus:ring-primary focus:border-primary text-text-primary bg-white text-sm"
+                                    className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all shadow-sm"
                                     placeholder="e.g., Standard Warranty Terms"
+                                    autoFocus
                                     required
                                 />
                             </div>
-                            <div className="mb-6">
-                                <label className="block text-[11px] font-semibold text-text-secondary uppercase tracking-wider mb-2">
+
+                            <div className="space-y-1.5">
+                                <label className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                                     Template Content
                                 </label>
-                                <textarea
-                                    value={formData.content}
-                                    onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                                    rows={6}
-                                    className="w-full px-3 py-2 border border-border rounded-lg focus:ring-1 focus:ring-primary focus:border-primary text-text-primary bg-white text-sm"
-                                    placeholder="Enter the template text here..."
-                                    required
-                                />
+                                <div className="relative">
+                                    <textarea
+                                        value={formData.content}
+                                        onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                                        rows={6}
+                                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all shadow-sm resize-none"
+                                        placeholder="Enter text..."
+                                        required
+                                    />
+                                    <div className="absolute bottom-3 right-3 text-[10px] text-slate-300 font-medium pointer-events-none">
+                                        {formData.content.length} chars
+                                    </div>
+                                </div>
                             </div>
-                            <div className="flex gap-3 justify-end pt-4 border-t border-border">
+
+                            {/* Footer Actions */}
+                            <div className="flex gap-3 justify-end pt-2">
                                 <button
                                     type="button"
                                     onClick={() => {
@@ -140,13 +164,13 @@ export default function PONotesPage() {
                                         setEditingId(null);
                                         setFormData({ title: "", content: "" });
                                     }}
-                                    className="px-4 py-2 text-sm font-medium text-text-secondary bg-white border border-border rounded-lg hover:bg-gray-50 transition-colors"
+                                    className="px-4 py-2 text-sm font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 text-sm font-medium bg-primary text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                                    className="px-6 py-2 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:shadow-lg hover:shadow-blue-500/30 transition-all active:scale-[0.98]"
                                 >
                                     {editingId ? "Update Template" : "Create Template"}
                                 </button>

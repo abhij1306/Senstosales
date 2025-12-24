@@ -21,30 +21,36 @@ logger = logging.getLogger(__name__)
 
 def generate_dc_number(po_number: str, db: sqlite3.Connection) -> str:
     """
-    Generate next DC number deterministically based on PO number
+    Generate next DC number deterministically using atomic counter
     Format: {po_number}-DC-{seq}
     Example: PO123-DC-01, PO123-DC-02
     """
-    # Find last DC for this PO
-    last_dc = db.execute("""
-        SELECT dc_number FROM delivery_challans 
-        WHERE po_number = ? 
-        ORDER BY created_at DESC, dc_number DESC 
-        LIMIT 1
-    """, (po_number,)).fetchone()
+    seq_key = f"DC_{po_number}"
     
-    if not last_dc:
-        return f"{po_number}-DC-01"
-    
-    last_val = last_dc[0]
-    parts = last_val.split("-DC-")
-    
-    if len(parts) == 2 and parts[1].isdigit():
-        seq = int(parts[1]) + 1
+    try:
+        # Ensure sequence exists
+        db.execute(
+            "INSERT OR IGNORE INTO document_sequences (seq_key, current_val, prefix) VALUES (?, 0, 'DC')", 
+            (seq_key,)
+        )
+        
+        # Atomic Increment (SQLite 3.35+ supports RETURNING, but fallback to lock-based read is safe with WAL)
+        # We are inside a transaction (dependency injection ensures this), so this is safe.
+        db.execute("UPDATE document_sequences SET current_val = current_val + 1 WHERE seq_key = ?", (seq_key,))
+        
+        row = db.execute("SELECT current_val FROM document_sequences WHERE seq_key = ?", (seq_key,)).fetchone()
+        if not row:
+            # Should never happen if insert/update worked
+            raise Exception("Failed to retrieve sequence")
+            
+        seq = row[0]
         return f"{po_number}-DC-{seq:02d}"
-    
-    # Fallback if format is weird
-    return f"{po_number}-DC-{uuid.uuid4().hex[:4].upper()}"
+        
+    except Exception as e:
+        logger.error(f"Failed to generate DC number: {e}")
+        # Fallback to random to prevent blocking, effectively 'failing safe' but non-sequential
+        return f"{po_number}-DC-{uuid.uuid4().hex[:4].upper()}"
+
 
 
 

@@ -33,14 +33,8 @@ def validate_srv_data(srv_data: Dict, db: sqlite3.Connection) -> Tuple[bool, str
         return False, "Missing required field: SRV date", False
     
     
-    # Check if SRV number already exists (Strict Hard Error)
-    existing_srv = db.execute(
-        "SELECT srv_number FROM srvs WHERE srv_number = :srv_number",
-        {"srv_number": header['srv_number']}
-    ).fetchone()
-    
-    if existing_srv:
-        return False, f"Job aborted: SRV number {header['srv_number']} already exists. To re-upload, you must delete the existing SRV first.", False
+    # Remove existence check here as we handle overwrite in process_srv_file
+    # existing_srv = db.execute(...)
     
     # Check if PO exists - WARNING instead of ERROR
     po_exists = db.execute(
@@ -205,7 +199,7 @@ def ingest_srv_to_db(srv_data: Dict, db: sqlite3.Connection, po_found: bool = Tr
                         COALESCE(SUM(rejected_qty), 0) as total_rejected
                     FROM srv_items si
                     JOIN srvs s ON si.srv_number = s.srv_number
-                    WHERE po_number = :po_number AND po_item_no = :po_item_no AND s.is_active = 1
+                    WHERE s.po_number = :po_number AND si.po_item_no = :po_item_no AND s.is_active = 1
                 """, {
                     "po_number": header['po_number'],
                     "po_item_no": item['po_item_no']
@@ -290,19 +284,18 @@ def process_srv_file(contents: bytes, filename: str, db: sqlite3.Connection, po_
             header['file_hash'] = file_hash # Inject hash
             
             # Check for exact duplicate file upload (Idempotency)
-            # If same SRV number AND same file hash exists -> Skip
-            existing_hash = db.execute(
-                "SELECT file_hash FROM srvs WHERE srv_number = :srv_number AND is_active = 1",
+            # User requested Overwrite instead of Skip.
+            # So we check if SRV exists, and if so, delete it before re-ingesting.
+            
+            existing_srv = db.execute(
+                "SELECT 1 FROM srvs WHERE srv_number = :srv_number",
                 {"srv_number": header.get('srv_number')}
             ).fetchone()
             
-            if existing_hash and existing_hash[0] == file_hash:
-                results.append({
-                    "success": True,
-                    "srv_number": header.get('srv_number'),
-                    "warnings": ["Skipped (Duplicate Upload)"]
-                })
-                continue
+            if existing_srv:
+                # Delete existing SRV to allow overwrite
+                # This handles rollback of quantities from PO items implicitly in delete_srv
+                delete_srv(header.get('srv_number'), db)
 
             # If PO extraction failed from HTML, try filename fallback
             if not header.get('po_number') and po_from_filename:

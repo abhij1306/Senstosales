@@ -60,17 +60,62 @@ class ExcelService:
         )
 
     @staticmethod
+    def generate_po_excel(header: Dict, items: List[Dict], deliveries: List[Dict]) -> StreamingResponse:
+        """
+        Generate Excel export for PO
+        """
+        # Flatten structure: Header + Item + Delivery
+        flat_data = []
+        
+        # If no items, just dump header
+        if not items:
+            flat_data.append(header.dict())
+        else:
+            for item in items:
+                # Find deliveries for this item
+                # Note: 'deliveries' arg is currently all deliveries flat, need to associate or use item.deliveries
+                # But po.py passes item.deliveries inside items if we look at get_po_detail implementation?
+                # Actually po.py:190 flattens deliveries separately. Let's just use the item's data + header.
+                
+                # Base row with header info
+                base_row = header.dict() if hasattr(header, 'dict') else header
+                
+                item_data = item.dict() if hasattr(item, 'dict') else item
+                # Remove nested list from flat export
+                if 'deliveries' in item_data:
+                    del item_data['deliveries']
+                
+                # Merge
+                base_row.update(item_data)
+                
+                # If we want to show deliveries, we might need multiple rows per item
+                # For now, let's keep it one row per item for simplicity, 
+                # or just dump the flattened version if provided.
+                
+                flat_data.append(base_row)
+                
+        return ExcelService.generate_response(flat_data, f"PO_{header.po_number if hasattr(header, 'po_number') else header.get('po_number')}")
+
+    @staticmethod
     def generate_dc_excel(header: Dict, items: List[Dict]) -> StreamingResponse:
         """
         Generate strict Delivery Challan format
         """
-        # Implementation for DC print format... 
-        # Reusing the generic logic for now but specific DC formatting can go here.
-        # Merging header info + items table.
-        
         flat_data = []
         for item in items:
             row = {**header, **item} # Flatten
             flat_data.append(row)
             
         return ExcelService.generate_response(flat_data, f"DC_{header.get('dc_number')}")
+
+    @staticmethod
+    def generate_invoice_excel(header: Dict, items: List[Dict]) -> StreamingResponse:
+        """
+        Generate strict Invoice format
+        """
+        flat_data = []
+        for item in items:
+            row = {**header, **item}
+            flat_data.append(row)
+            
+        return ExcelService.generate_response(flat_data, f"Invoice_{header.get('invoice_number')}")

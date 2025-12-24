@@ -5,6 +5,21 @@ All notable changes to SenstoSales ERP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2025-12-25
+
+### Added
+- **UI Customization**: 
+  - Standardized column alignment across all tables (Left for text, Right for numbers).
+  - Updated `DenseTable` to automatically align headers based on content class.
+  - **PO Table**: Split "Reconciliation" into 4 sortable columns (Ord, Del, Recd, Rej) with color coding. Added "Value" column.
+- **SRV Upload**: Enhanced batch upload with chunking, progress bar, and failed file tracking.
+- **PO-SRV Linkage**: Implemented retroactive linkage for orphan SRVs and normalized PO number matching.
+
+### Fixed
+- **Pagination**: Restored "Rows per page" label visibility.
+- **Linkage**: Fixed ambiguous column error in SRV ingestion.
+- **Linting**: Resolved typescript errors in `api.ts` and `POPage.tsx` mostly related to `POStats` interface.
+
 ## [2.1.0] - 2025-12-24
 
 ### Fixed
