@@ -5,6 +5,29 @@ All notable changes to SenstoSales ERP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.0] - 2025-12-25
+
+### Added
+- **Database Robustness**: Foreign Key verification on every connection with failure detection
+- **Unique Constraints**: Migration 015 - Added unique indexes on PO/DC/Invoice/SRV numbers
+- **Reset Database Feature**: Admin endpoint `/api/system/reset-db` with two-step UI confirmation
+- **System Router**: New router for administrative operations (database reset, maintenance)
+- **Reset Database Component**: Frontend component with danger warnings and FK-safe deletion
+
+### Fixed
+- **Foreign Key Enforcement**: Added runtime verification to ensure FK pragma succeeds
+- **Reset Database Safety**: FK disabled during deletion, re-enabled after with verification
+- **Invoice View Description**: Reformatted to prevent text wrapping in long descriptions  
+- **DC Completed Items**: Disabled dispatch input for items with 0 remaining quantity
+- **Invoice Download**: Fixed route ordering - download endpoint before catch-all path parameter
+- **URL Encoding**: Applied `encodeURIComponent` to invoice numbers with slashes throughout frontend
+
+### Security
+- **Pre-Release Audit**: Comprehensive system audit completed - 0 critical issues found
+- **Quantity Math Validation**: Verified 0 violations of ordered ≥ delivered ≥ received invariants
+- **Transaction Safety**: Confirmed all DB writes are atomic with proper rollback
+- **Database Integrity**: WAL mode + Foreign Keys enabled, unique constraints applied, 0 duplicate data
+
 ## [3.0.0] - 2025-12-25
 
 ### Changed

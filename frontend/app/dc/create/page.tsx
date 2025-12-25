@@ -75,8 +75,23 @@ function CreateDCPageContent() {
         if (initialPoNumber) {
             handleLoadItems(initialPoNumber);
             fetchPOData(initialPoNumber);
+            // Pre-fill DC number
+            fetchDCNumber(initialPoNumber);
         }
     }, [initialPoNumber]);
+
+    const fetchDCNumber = async (po: string) => {
+        try {
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/dc/preview-number/${po}`);
+            if (response.ok) {
+                const data = await response.json();
+                setFormData(prev => ({ ...prev, dc_number: data.dc_number }));
+            }
+        } catch (err) {
+            console.error("Failed to fetch DC number:", err);
+            // Non-critical, user can enter manually
+        }
+    };
 
     const fetchPOData = async (po: string) => {
         try {
@@ -174,8 +189,8 @@ function CreateDCPageContent() {
         setError(null);
         setIsSubmitting(true);
 
-        if (!formData.dc_number || !formData.dc_date) {
-            setError("DC number and date are required");
+        if (!formData.dc_date) {
+            setError("DC date is required");
             setIsSubmitting(false);
             return;
         }
@@ -214,8 +229,10 @@ function CreateDCPageContent() {
                 hsn_rate: null
             }));
 
-            await api.createDC(dcPayload, itemsPayload);
-            router.push(`/dc/view?id=${formData.dc_number}`);
+            const response = await api.createDC(dcPayload, itemsPayload) as any;
+            // Use the auto-generated DC number from response
+            const dcNumber = response.dc_number || formData.dc_number;
+            router.push(`/dc/view?id=${dcNumber}`);
         } catch (err) {
             console.error("Failed to create DC", err);
             setError(err instanceof Error ? err.message : "Failed to create DC");
@@ -315,7 +332,7 @@ function CreateDCPageContent() {
                             </button>
                         </div>
                         <div className="p-6 space-y-4">
-                            <Field label="DC Number" value={formData.dc_number} onChange={(e: any) => setFormData({ ...formData, dc_number: e.target.value })} required placeholder="e.g. DC-001" />
+                            <Field label="DC Number" value={formData.dc_number} onChange={(e: any) => setFormData({ ...formData, dc_number: e.target.value })} placeholder="Auto-generated if blank" />
                             <Field label="Date" type="date" value={formData.dc_date} onChange={(e: any) => setFormData({ ...formData, dc_date: e.target.value })} required />
 
                             <div className="h-px bg-slate-100 my-2" />
@@ -437,8 +454,8 @@ function CreateDCPageContent() {
                                                 />
                                             </td>
                                             <td className="px-3 py-2 text-right font-medium text-slate-600">{item.ordered_quantity?.toLocaleString('en-IN') || 0}</td>
-                                            <td className={`px-3 py-2 text-right font-medium ${(item.remaining_quantity || 0) > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
-                                                {(item.remaining_quantity || 0).toLocaleString('en-IN')}
+                                            <td className={`px-3 py-2 text-right font-medium ${(item.remaining_post_dc || 0) > 0 ? 'text-amber-600' : 'text-slate-400'}`}>
+                                                {(item.remaining_post_dc || 0).toLocaleString('en-IN')}
                                             </td>
                                             <td className="px-4 py-3">
                                                 <input
@@ -446,7 +463,11 @@ function CreateDCPageContent() {
                                                     value={item.dispatch_quantity || ''}
                                                     onChange={(e) => handleItemChange(item.id, 'dispatch_quantity', parseFloat(e.target.value) || 0)}
                                                     placeholder="0"
-                                                    className="w-full border border-purple-300 rounded px-2 py-1 font-bold text-purple-700 text-sm text-right bg-purple-50 focus:ring-1 focus:ring-purple-500 shadow-sm"
+                                                    disabled={(item.remaining_post_dc || 0) <= 0}
+                                                    className={`w-full border rounded px-2 py-1 font-bold text-sm text-right shadow-sm ${(item.remaining_post_dc || 0) <= 0
+                                                            ? 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'
+                                                            : 'border-purple-300 text-purple-700 bg-purple-50 focus:ring-1 focus:ring-purple-500'
+                                                        }`}
                                                 />
                                             </td>
                                             <td className="px-4 py-3 text-center">

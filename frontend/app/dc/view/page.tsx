@@ -269,12 +269,18 @@ function DCDetailContent() {
                             <DownloadButton
                                 url={`${API_BASE_URL}/api/dc/${formData.dc_number}/download`}
                                 filename={`DC_${formData.dc_number}.xlsx`}
-                                label="Download Challan"
+                                label="Download DC"
+                            />
+                            <DownloadButton
+                                url={`${API_BASE_URL}/api/reports/guarantee-certificate?dc_number=${formData.dc_number}`}
+                                filename={`GC_${formData.dc_number}.xlsx`}
+                                label="Download GC"
+                                variant="outline"
                             />
                             <button
                                 onClick={() => {
                                     if (hasInvoice && invoiceNumber) {
-                                        router.push(`/invoice/view?id=${invoiceNumber}`);
+                                        router.push(`/invoice/view?id=${encodeURIComponent(invoiceNumber)}`);
                                     } else {
                                         router.push(`/invoice/create?dc=${dcId}`);
                                     }

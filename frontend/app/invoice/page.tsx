@@ -77,9 +77,26 @@ export default function InvoicePage() {
         },
         {
             header: "Status",
-            accessorKey: "invoice_number" as keyof InvoiceListItem, // Mock status
+            accessorKey: "invoice_number" as keyof InvoiceListItem,
             className: "text-right",
             cell: () => <StatusBadge status="Issued" variant="success" className="ml-auto scale-90" />
+        },
+        {
+            header: "",
+            accessorKey: "invoice_number" as keyof InvoiceListItem,
+            className: "w-10",
+            cell: (inv: InvoiceListItem) => (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        window.open(`${api.baseUrl}/api/invoice/${inv.invoice_number}/download`, '_blank');
+                    }}
+                    className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-all"
+                    title="Download Invoice Excel"
+                >
+                    <Download className="w-3.5 h-3.5" />
+                </button>
+            )
         }
     ];
 
@@ -168,7 +185,7 @@ export default function InvoicePage() {
                 data={filteredInvoices}
                 columns={columns}
                 className="bg-white/40 shadow-sm backdrop-blur-sm min-h-[500px] border border-white/20 rounded-xl"
-                onRowClick={(inv) => router.push(`/invoice/view?id=${inv.invoice_number}`)}
+                onRowClick={(inv) => router.push(`/invoice/view?id=${encodeURIComponent(inv.invoice_number)}`)}
             />
         </div>
     );

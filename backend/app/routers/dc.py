@@ -167,6 +167,22 @@ def get_dc_detail(dc_number: str, db: sqlite3.Connection = Depends(get_db)):
     }
 
 
+
+@router.get("/preview-number/{po_number}")
+def preview_dc_number(po_number: int, db: sqlite3.Connection = Depends(get_db)):
+    """
+    Preview the next auto-generated DC number for a given PO
+    Returns: {"dc_number": "PO123-DC-01"}
+    """
+    from app.services.dc import generate_dc_number
+    try:
+        next_number = generate_dc_number(str(po_number), db)
+        return {"dc_number": next_number}
+    except Exception as e:
+        logger.error(f"Failed to preview DC number: {e}")
+        raise internal_error("Failed to generate DC number", e)
+
+
 @router.post("/")
 def create_dc(dc: DCCreate, items: List[dict], db: sqlite3.Connection = Depends(get_db)):
     """
@@ -282,26 +298,20 @@ def update_dc(dc_number: str, dc: DCCreate, items: List[dict], db: sqlite3.Conne
 def download_dc_excel(dc_number: str, db: sqlite3.Connection = Depends(get_db)):
     """Download DC as Excel"""
     try:
+        logger.info(f"Downloading DC Excel: {dc_number}")
         # Get full detail logic
         dc_data = get_dc_detail(dc_number, db)
+        logger.info(f"DC data fetched successfully for {dc_number}")
         
         from app.services.excel_service import ExcelService
         from fastapi.responses import StreamingResponse
         
-        excel_file = ExcelService.generate_dc_excel(dc_data['header'], dc_data['items'])
-        
-        filename = f"DC_{dc_number}.xlsx"
-        headers = {
-            'Content-Disposition': f'attachment; filename="{filename}"'
-        }
-        
-        return StreamingResponse(
-            excel_file, 
-            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            headers=headers
-        )
+        # Use exact generator
+        return ExcelService.generate_exact_dc_excel(dc_data['header'], dc_data['items'], db)
+
     except Exception as e:
         raise internal_error(f"Failed to generate Excel: {str(e)}", e)
+
 
 
 @router.delete("/{dc_number}")

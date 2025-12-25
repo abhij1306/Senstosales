@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, Printer, FileText, Package, Truck, Lock, Calculator, User, Building, MapPin } from "lucide-react";
 
@@ -167,7 +167,7 @@ function InvoiceDetailContent() {
                 </div>
                 <div className="flex gap-2">
                     <DownloadButton
-                        url={`${API_BASE_URL}/api/invoice/${header.invoice_number}/download`}
+                        url={`${API_BASE_URL}/api/invoice/${encodeURIComponent(header.invoice_number)}/download`}
                         filename={`Invoice_${header.invoice_number}.xlsx`}
                         label="Download Excel"
                     />
@@ -277,19 +277,28 @@ function InvoiceDetailContent() {
                                 </thead>
                                 <tbody className="divide-y divide-slate-100/50">
                                     {items.map((item: any, idx: number) => (
-                                        <tr key={idx} className="hover:bg-white/60 transition-colors bg-white/20">
-                                            <td className="px-4 py-3 text-xs text-slate-700 font-bold">{item.po_sl_no}</td>
-                                            <td className="px-4 py-3 text-xs text-slate-700 font-medium">{item.description}</td>
-                                            <td className="px-4 py-3 text-xs text-slate-700 text-right">{item.quantity?.toLocaleString('en-IN')}</td>
-                                            <td className="px-4 py-3 text-xs text-slate-500">{item.unit}</td>
-                                            <td className="px-4 py-3 text-xs text-slate-700 flex items-center justify-end gap-0.5">
-                                                <span className="text-slate-400">₹</span>{item.rate?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                            </td>
-                                            <td className="px-4 py-3 text-xs text-slate-700 text-right font-medium">₹{item.taxable_value?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                            <td className="px-4 py-3 text-xs text-slate-500 text-right">₹{item.cgst_amount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                            <td className="px-4 py-3 text-xs text-slate-500 text-right">₹{item.sgst_amount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                            <td className="px-4 py-3 text-xs text-slate-800 text-right font-bold">₹{item.total_amount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                        </tr>
+                                        <React.Fragment key={idx}>
+                                            {/* Description Header Row */}
+                                            <tr className="bg-slate-50">
+                                                <td colSpan={9} className="px-4 py-2 text-xs font-semibold text-slate-700 border-b border-slate-200">
+                                                    {item.description}
+                                                </td>
+                                            </tr>
+                                            {/* Data Row */}
+                                            <tr className="hover:bg-white/60 transition-colors bg-white/20">
+                                                <td className="px-4 py-3 text-xs text-slate-700 font-bold">{item.po_sl_no}</td>
+                                                <td className="px-4 py-3 text-xs text-slate-700 font-medium"></td>
+                                                <td className="px-4 py-3 text-xs text-slate-700 text-right">{item.quantity?.toLocaleString('en-IN')}</td>
+                                                <td className="px-4 py-3 text-xs text-slate-500">{item.unit}</td>
+                                                <td className="px-4 py-3 text-xs text-slate-700 text-right">
+                                                    ₹{item.rate?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                </td>
+                                                <td className="px-4 py-3 text-xs text-slate-700 text-right font-medium">₹{item.taxable_value?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                <td className="px-4 py-3 text-xs text-slate-500 text-right">₹{item.cgst_amount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                <td className="px-4 py-3 text-xs text-slate-500 text-right">₹{item.sgst_amount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                <td className="px-4 py-3 text-xs text-slate-800 text-right font-bold">₹{item.total_amount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                            </tr>
+                                        </React.Fragment>
                                     ))}
                                 </tbody>
                             </table>

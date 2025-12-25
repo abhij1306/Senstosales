@@ -110,7 +110,7 @@ export default function ReportsPage() {
     };
 
     const handleExport = () => {
-        const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const baseUrl = api.baseUrl || 'http://localhost:8000';
         let endpoint = '';
         const dateParams = `start_date=${startDate}&end_date=${endDate}`;
 
@@ -124,6 +124,11 @@ export default function ReportsPage() {
 
         window.open(`${baseUrl}${endpoint}?export=true&${dateParams}`, '_blank');
         toast("Export Started", "Your Excel file is downloading...");
+    };
+
+    const downloadDailySummary = () => {
+        const date = new Date().toISOString().split('T')[0];
+        window.open(`${api.baseUrl}/api/reports/daily-dispatch?date=${date}&export=true`, '_blank');
     };
 
     const activeColumns = (() => {
@@ -145,13 +150,22 @@ export default function ReportsPage() {
                     <h1 className="text-2xl font-bold text-slate-800 tracking-tight">System Reports</h1>
                     <p className="text-xs text-slate-500 mt-0.5">Deterministic ledger analysis and registers</p>
                 </div>
-                <button
-                    onClick={handleExport}
-                    className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
-                >
-                    <Download className="w-4 h-4" />
-                    Export Excel
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={downloadDailySummary}
+                        className="flex items-center gap-2 px-4 py-2 bg-amber-500 text-white text-xs font-semibold rounded-lg hover:bg-amber-600 transition-colors shadow-sm"
+                    >
+                        <FileText className="w-4 h-4" />
+                        Daily Dispatch Summary
+                    </button>
+                    <button
+                        onClick={handleExport}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-semibold rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
+                    >
+                        <Download className="w-4 h-4" />
+                        Export Excel
+                    </button>
+                </div>
             </div>
 
             <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
@@ -215,7 +229,7 @@ export default function ReportsPage() {
                             </div>
                         )}
                         <span className="text-xs text-slate-400 font-medium">
-                            {data.length} records found
+                            {data?.length || 0} records found
                         </span>
                     </div>
                 </div>

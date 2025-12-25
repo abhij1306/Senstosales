@@ -247,7 +247,7 @@ export const api = {
     listInvoices: () => apiFetch<InvoiceListItem[]>('/api/invoice/'),
     getInvoiceStats: () => apiFetch<InvoiceStats>('/api/invoice/stats'),
     createInvoice: (data: any) => apiFetch('/api/invoice/', { method: 'POST', body: JSON.stringify(data) }),
-    getInvoiceDetail: (invoiceNumber: string) => apiFetch<any>(`/api/invoice/${invoiceNumber}`),
+    getInvoiceDetail: (invoiceNumber: string) => apiFetch<any>(`/api/invoice/${encodeURIComponent(invoiceNumber)}`),
 
     // SRVS
     listSRVs: (poId?: number) => apiFetch<any[]>(poId ? `/api/srv/po/${poId}/srvs` : '/api/srv/'),
@@ -282,5 +282,6 @@ export const api = {
     getReport: (type: string, dateParams: string) => apiFetch<any[]>(`/api/reports/${type}?${dateParams}`),
     exportReport: (type: string, id: string) => {
         window.open(`${API_BASE_URL}/api/reports/export/${type}/${id}`, '_blank');
-    }
+    },
+    baseUrl: API_BASE_URL
 };

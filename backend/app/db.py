@@ -57,7 +57,9 @@ def init_db(conn: sqlite3.Connection):
         "add_indexes.sql",
         "add_constraints.sql",
         "012_add_rejected_qty_to_poi.sql",
-        "013_add_document_sequences.sql"
+        "013_add_document_sequences.sql",
+        "014_add_settings.sql",
+        "015_add_unique_constraints.sql"
     ]
     
     cursor = conn.cursor()
@@ -103,8 +105,18 @@ def get_connection() -> sqlite3.Connection:
     try:
         conn = sqlite3.connect(str(DATABASE_PATH), check_same_thread=False)
         conn.row_factory = sqlite3.Row
+        
+        # CRITICAL: Enable Foreign Keys and WAL mode
         conn.execute("PRAGMA foreign_keys = ON")
         conn.execute("PRAGMA journal_mode = WAL")
+        
+        # Verify Foreign Keys are actually enabled
+        fk_status = conn.execute("PRAGMA foreign_keys").fetchone()[0]
+        if fk_status != 1:
+            logger.error(f"CRITICAL: Foreign Keys failed to enable! Status: {fk_status}")
+            raise RuntimeError("Foreign Key enforcement failed - database integrity at risk")
+        
+        logger.debug(f"Connection established: FK={fk_status}, WAL=enabled")
         return conn
     except sqlite3.Error as e:
         logger.error(f"Failed to connect to database: {e}")

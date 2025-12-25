@@ -57,7 +57,7 @@ export default function GlobalSearch() {
         setQuery("");
         if (result.type === "PO") router.push(`/po/view?id=${result.number}`);
         else if (result.type === "DC") router.push(`/dc/view?id=${result.number}`);
-        else if (result.type === "Invoice") router.push(`/invoice/view?id=${result.number}`);
+        else if (result.type === "Invoice") router.push(`/invoice/view?id=${encodeURIComponent(result.number)}`);
     };
 
     if (!isOpen) {

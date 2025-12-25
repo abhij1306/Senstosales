@@ -11,7 +11,8 @@ import {
     BarChart3,
     StickyNote,
     Package,
-    FileCheck
+    FileCheck,
+    UserCircle
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +44,7 @@ function NavRailComponent() {
                     label: "Reports",
                 },
                 { href: "/po-notes", icon: StickyNote, label: "Templates" },
+                { href: "/settings/my-details", icon: UserCircle, label: "My Details" },
             ]
         }
     ];

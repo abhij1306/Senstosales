@@ -137,7 +137,41 @@ def list_invoices(
     return [InvoiceListItem(**dict(row)) for row in rows]
 
 
-@router.get("/{invoice_number}")
+# IMPORTANT: Specific routes must come before parameterized routes
+@router.get("/preview-number")
+def preview_invoice_number(db: sqlite3.Connection = Depends(get_db)):
+    """
+    Preview the next auto-generated Invoice number
+    Returns: {"invoice_number": "INV/2024-25/001"}
+    """
+    from app.services.invoice import generate_invoice_number
+    try:
+        next_number = generate_invoice_number(db)
+        return {"invoice_number": next_number}
+    except Exception as e:
+        logger.error(f"Failed to preview Invoice number: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate invoice number: {str(e)}")
+
+
+@router.get("/{invoice_number:path}/download")
+def download_invoice_excel(invoice_number: str, db: sqlite3.Connection = Depends(get_db)):
+    """Download Invoice as Excel"""
+    try:
+        logger.info(f"Downloading Invoice Excel: {invoice_number}")
+        data = get_invoice_detail(invoice_number, db)
+        logger.info(f"Invoice data fetched successfully for {invoice_number}")
+        
+        from app.services.excel_service import ExcelService
+        from fastapi.responses import StreamingResponse
+        
+        # Use exact generator
+        return ExcelService.generate_exact_invoice_excel(data['header'], data['items'], db)
+        
+    except Exception as e:
+        raise internal_error(f"Failed to generate Excel: {str(e)}", e)
+
+
+@router.get("/{invoice_number:path}")
 def get_invoice_detail(invoice_number: str, db: sqlite3.Connection = Depends(get_db)):
     """Get Invoice detail with items and linked DCs"""
     
@@ -166,6 +200,10 @@ def get_invoice_detail(invoice_number: str, db: sqlite3.Connection = Depends(get
         "items": [dict(item) for item in items],
         "linked_dcs": [dict(dc) for dc in dc_links]
     }
+
+
+
+
 
 
 @router.post("/")
@@ -223,26 +261,3 @@ def create_invoice(request: EnhancedInvoiceCreate, db: sqlite3.Connection = Depe
         raise internal_error(f"Database integrity error: {str(e)}", e)
 
 
-@router.get("/{invoice_number}/download")
-def download_invoice_excel(invoice_number: str, db: sqlite3.Connection = Depends(get_db)):
-    """Download Invoice as Excel"""
-    try:
-        data = get_invoice_detail(invoice_number, db)
-        
-        from app.services.excel_service import ExcelService
-        from fastapi.responses import StreamingResponse
-        
-        excel_file = ExcelService.generate_invoice_excel(data['header'], data['items'])
-        
-        filename = f"Invoice_{invoice_number}.xlsx"
-        headers = {
-            'Content-Disposition': f'attachment; filename="{filename}"'
-        }
-        
-        return StreamingResponse(
-            excel_file, 
-            media_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            headers=headers
-        )
-    except Exception as e:
-        raise internal_error(f"Failed to generate Excel: {str(e)}", e)

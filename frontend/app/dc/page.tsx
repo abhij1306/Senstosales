@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Filter, Truck, CheckCircle, Clock } from "lucide-react";
+import { Plus, Search, Filter, Truck, CheckCircle, Clock, Download } from "lucide-react";
 import { api, DCListItem, DCStats } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import { Card } from "@/components/ui/Card";
@@ -94,6 +94,23 @@ export default function DCListPage() {
       accessorKey: "status" as keyof DCListItem,
       className: "text-right",
       cell: (dc: DCListItem) => <StatusBadge status={dc.status} className="ml-auto" />
+    },
+    {
+      header: "",
+      accessorKey: "dc_number" as keyof DCListItem,
+      className: "w-10",
+      cell: (dc: DCListItem) => (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            window.open(`${api.baseUrl}/api/dc/${dc.dc_number}/download`, '_blank');
+          }}
+          className="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-all"
+          title="Download DC Excel"
+        >
+          <Download className="w-3.5 h-3.5" />
+        </button>
+      )
     }
   ];
 

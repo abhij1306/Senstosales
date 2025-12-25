@@ -233,6 +233,16 @@ export default function DashboardPage() {
               color="indigo"
               onClick={() => router.push("/srv")}
             />
+            <ActionTile
+              title="Daily Summary"
+              desc="Download dispatch report"
+              icon={FileText}
+              color="amber"
+              onClick={() => {
+                const date = new Date().toISOString().split('T')[0];
+                window.open(`${api.baseUrl}/api/reports/daily-dispatch?date=${date}&export=true`, '_blank');
+              }}
+            />
           </div>
         </div>
       </div>

@@ -57,7 +57,7 @@ export default function PODateSummary({ data }: PODateSummaryProps) {
                     PO Summary ({data.period.start} to {data.period.end})
                 </h3>
                 <DownloadButton
-                    url={`${API_BASE_URL}/api/smart-reports/date-summary/export?entity=po&start_date=${data.period.start}&end_date=${data.period.end}`}
+                    url={`${API_BASE_URL}/api/reports/register/po?export=true&start_date=${data.period.start}&end_date=${data.period.end}`}
                     filename={`PO_Summary_${data.period.start}_to_${data.period.end}.xlsx`}
                     label="Export"
                     size="sm"

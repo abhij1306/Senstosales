@@ -78,6 +78,7 @@ def validate_invoice_header(invoice_data: dict) -> None:
     """
     Validate invoice header fields
     Raises ValidationError if validation fails
+    Note: Invoice number is auto-generated, so not validated here
     """
     if not invoice_data.get("dc_number") or invoice_data["dc_number"].strip() == "":
         raise ValidationError("DC number is required")
@@ -87,9 +88,6 @@ def validate_invoice_header(invoice_data: dict) -> None:
     
     if not invoice_data.get("buyer_name") or invoice_data["buyer_name"].strip() == "":
         raise ValidationError("Buyer name is required")
-    
-    if not invoice_data.get("invoice_number") or invoice_data["invoice_number"].strip() == "":
-        raise ValidationError("Invoice number is required")
 
 
 def check_dc_already_invoiced(dc_number: str, db: sqlite3.Connection) -> Optional[str]:
@@ -165,7 +163,13 @@ def create_invoice(invoice_data: dict, db: sqlite3.Connection) -> ServiceResult[
     """
     try:
         dc_number = invoice_data["dc_number"]
-        invoice_number = invoice_data["invoice_number"]
+        
+        # AUTO-GENERATE Invoice number if not provided
+        if not invoice_data.get("invoice_number") or invoice_data["invoice_number"].strip() == "":
+            invoice_number = generate_invoice_number(db)
+            logger.info(f"Auto-generated invoice number: {invoice_number}")
+        else:
+            invoice_number = invoice_data["invoice_number"]
         
         # Validate header
         validate_invoice_header(invoice_data)
@@ -181,14 +185,18 @@ def create_invoice(invoice_data: dict, db: sqlite3.Connection) -> ServiceResult[
         dc_dict = dict(dc_row)
         
         # INVARIANT: DC-2 - Check if DC already has invoice (1-DC-1-Invoice constraint)
+        # This is CRITICAL - a DC can only be invoiced ONCE
         existing_invoice = check_dc_already_invoiced(dc_number, db)
         if existing_invoice:
+            error_msg = f"Cannot create invoice: Delivery Challan {dc_number} has already been invoiced (Invoice Number: {existing_invoice}). Each DC can only be linked to one invoice."
+            logger.warning(f"Duplicate invoice attempt blocked: {error_msg}")
             raise ConflictError(
-                f"DC {dc_number} is already linked to invoice {existing_invoice}",
+                error_msg,
                 details={
                     "dc_number": dc_number,
-                    "existing_invoice": existing_invoice,
-                    "invariant": "DC-2"
+                    "existing_invoice_number": existing_invoice,
+                    "invariant": "DC-2 (One DC → One Invoice)",
+                    "action": "Please use a different DC or modify the existing invoice"
                 }
             )
         

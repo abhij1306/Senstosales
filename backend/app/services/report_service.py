@@ -118,8 +118,9 @@ def get_invoice_register(start_date: str, end_date: str, db: sqlite3.Connection)
     SELECT 
         invoice_number,
         invoice_date,
-        buyer_name,
-        buyer_gstin,
+        linked_dc_numbers,
+        po_numbers,
+        customer_gstin,
         taxable_value,
         cgst,
         sgst,
@@ -135,6 +136,7 @@ def get_invoice_register(start_date: str, end_date: str, db: sqlite3.Connection)
     except Exception as e:
          print(f"Error generating Invoice Register: {e}")
          return pd.DataFrame()
+
 
 def get_pending_po_items(db: sqlite3.Connection) -> pd.DataFrame:
     """
@@ -158,3 +160,33 @@ def get_pending_po_items(db: sqlite3.Connection) -> pd.DataFrame:
     except Exception as e:
          print(f"Error generating Pending PO Items report: {e}")
          return pd.DataFrame()
+
+def get_po_register(start_date: str, end_date: str, db: sqlite3.Connection) -> pd.DataFrame:
+    """
+    Summary of POs with totals.
+    """
+    query = """
+    SELECT 
+        po.po_number,
+        po.po_date,
+        SUM(poi.ord_qty) as total_ordered,
+        COALESCE(SUM(dci.dispatch_qty), 0) as total_dispatched,
+        SUM(poi.pending_qty) as pending_qty,
+        CASE 
+            WHEN SUM(poi.pending_qty) <= 0 THEN 'Completed'
+            WHEN COALESCE(SUM(dci.dispatch_qty), 0) > 0 THEN 'In Progress'
+            ELSE 'Pending'
+        END as status
+    FROM purchase_orders po
+    JOIN purchase_order_items poi ON po.po_number = poi.po_number
+    LEFT JOIN delivery_challan_items dci ON poi.id = dci.po_item_id
+    WHERE po.po_date BETWEEN ? AND ?
+    GROUP BY po.po_number, po.po_date
+    ORDER BY po.po_date DESC;
+    """
+    try:
+        df = pd.read_sql_query(query, db, params=[start_date, end_date])
+        return df
+    except Exception as e:
+        print(f"Error generating PO Register: {e}")
+        return pd.DataFrame()

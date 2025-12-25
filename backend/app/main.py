@@ -9,7 +9,8 @@ from app.core.exceptions import AppException
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import dashboard, po, dc, invoice, reports, search, alerts, reconciliation, po_notes, health, srv
+from app.routers import dashboard, po, dc, invoice, reports, search, alerts, reconciliation, po_notes, health, srv, system
+from app.routers import settings as settings_router
 from app.middleware import RequestLoggingMiddleware
 from app.core.logging_config import setup_logging
 from app.db import validate_database_path
@@ -50,10 +51,12 @@ app.include_router(dc.router, prefix="/api/dc", tags=["Delivery Challans"])
 app.include_router(invoice.router, prefix="/api/invoice", tags=["Invoices"])
 app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
 app.include_router(search.router, prefix="/api/search", tags=["Search"])
+app.include_router(settings_router.router, prefix="/api/settings", tags=["settings"])
 app.include_router(alerts.router, prefix="/api/alerts", tags=["Alerts"])
 app.include_router(reconciliation.router, prefix="/api/reconciliation", tags=["Reconciliation"])
 app.include_router(po_notes.router, prefix="/api/po-notes", tags=["PO Notes"])
 app.include_router(srv.router, prefix="/api/srv", tags=["SRV"])
+app.include_router(system.router, prefix="/api/system", tags=["System"])
 
 @app.exception_handler(AppException)
 async def app_exception_handler(request: Request, exc: AppException):

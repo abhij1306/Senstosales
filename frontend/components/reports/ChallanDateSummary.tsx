@@ -54,7 +54,7 @@ export default function ChallanDateSummary({ data }: ChallanDateSummaryProps) {
                     Challan Summary ({data.period.start} to {data.period.end})
                 </h3>
                 <DownloadButton
-                    url={`${API_BASE_URL}/api/smart-reports/date-summary/export?entity=challan&start_date=${data.period.start}&end_date=${data.period.end}`}
+                    url={`${API_BASE_URL}/api/reports/register/dc?export=true&start_date=${data.period.start}&end_date=${data.period.end}`}
                     filename={`Challan_Summary_${data.period.start}_to_${data.period.end}.xlsx`}
                     label="Export"
                     size="sm"
@@ -87,6 +87,7 @@ export default function ChallanDateSummary({ data }: ChallanDateSummaryProps) {
                             <th className="text-left py-3 px-4 text-xs font-semibold text-text-secondary uppercase">Linked PO</th>
                             <th className="text-right py-3 px-4 text-xs font-semibold text-text-secondary uppercase">Dispatched Qty</th>
                             <th className="text-left py-3 px-4 text-xs font-semibold text-text-secondary uppercase">Invoice Status</th>
+                            <th className="text-center py-3 px-4 text-xs font-semibold text-text-secondary uppercase">Quick Export</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -101,6 +102,24 @@ export default function ChallanDateSummary({ data }: ChallanDateSummaryProps) {
                                         }`}>
                                         {row.invoice_status}
                                     </span>
+                                </td>
+                                <td className="py-3 px-4 text-center">
+                                    <div className="flex justify-center gap-1">
+                                        <DownloadButton
+                                            url={`${API_BASE_URL}/api/dc/${row.dc_number}/download`}
+                                            filename={`DC_${row.dc_number}.xlsx`}
+                                            label="DC"
+                                            size="sm"
+                                            variant="ghost"
+                                        />
+                                        <DownloadButton
+                                            url={`${API_BASE_URL}/api/reports/guarantee-certificate?dc_number=${row.dc_number}`}
+                                            filename={`GC_${row.dc_number}.xlsx`}
+                                            label="GC"
+                                            size="sm"
+                                            variant="outline"
+                                        />
+                                    </div>
                                 </td>
                             </tr>
                         ))}

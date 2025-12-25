@@ -58,10 +58,8 @@ def validate_dc_header(dc: DCCreate) -> None:
     """
     Validate DC header fields
     Raises ValidationError if validation fails
+    Note: DC number is auto-generated, so not validated here
     """
-    if not dc.dc_number or dc.dc_number.strip() == "":
-        raise ValidationError("DC number is required")
-    
     if not dc.dc_date or dc.dc_date.strip() == "":
         raise ValidationError("DC date is required")
 
@@ -221,13 +219,31 @@ def create_dc(dc: DCCreate, items: List[dict], db: sqlite3.Connection) -> Servic
         ServiceResult with success status and dc_number
     """
     try:
+        # AUTO-GENERATE DC NUMBER to prevent duplicates
+        auto_dc_number = generate_dc_number(dc.po_number, db)
+        logger.info(f"Auto-generated DC number: {auto_dc_number}")
+        
+        # Check for duplicate DC number (if user provided a custom number)
+        if dc.dc_number and dc.dc_number.strip():
+            existing = db.execute("SELECT 1 FROM delivery_challans WHERE dc_number = ?", (dc.dc_number,)).fetchone()
+            if existing:
+                raise ConflictError(
+                    f"DC number {dc.dc_number} already exists. Please use a different number or leave blank for auto-generation.",
+                    details={"dc_number": dc.dc_number, "action": "Use auto-generation or choose unique number"}
+                )
+            # Use user's custom number if provided
+            final_dc_number = dc.dc_number
+        else:
+            # Use auto-generated number
+            final_dc_number = auto_dc_number
+        
         # Validate
         validate_dc_header(dc)
         validate_dc_items(items, db, exclude_dc=None)
         
-        logger.debug(f"Creating DC {dc.dc_number} with {len(items)} items")
+        logger.debug(f"Creating DC {final_dc_number} with {len(items)} items")
         
-        # Insert DC header
+        # Insert DC header with finalized number
         db.execute("""
             INSERT INTO delivery_challans
             (dc_number, dc_date, po_number, department_no, consignee_name, consignee_gstin,
@@ -235,7 +251,7 @@ def create_dc(dc: DCCreate, items: List[dict], db: sqlite3.Connection) -> Servic
              transporter, mode_of_transport, remarks)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
-            dc.dc_number, dc.dc_date, dc.po_number, dc.department_no, dc.consignee_name,
+            final_dc_number, dc.dc_date, dc.po_number, dc.department_no, dc.consignee_name,
             dc.consignee_gstin, dc.consignee_address, dc.inspection_company, dc.eway_bill_no,
             dc.vehicle_no, dc.lr_no, dc.transporter, dc.mode_of_transport, dc.remarks
         ))
@@ -249,7 +265,7 @@ def create_dc(dc: DCCreate, items: List[dict], db: sqlite3.Connection) -> Servic
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             """, (
                 item_id,
-                dc.dc_number,
+                final_dc_number,
                 item["po_item_id"],
                 item.get("lot_no"),
                 item["dispatch_qty"],
@@ -257,8 +273,8 @@ def create_dc(dc: DCCreate, items: List[dict], db: sqlite3.Connection) -> Servic
                 item.get("hsn_rate")
             ))
         
-        logger.info(f"Successfully created DC {dc.dc_number} with {len(items)} items")
-        return ServiceResult.ok({"success": True, "dc_number": dc.dc_number})
+        logger.info(f"Successfully created DC {final_dc_number} with {len(items)} items")
+        return ServiceResult.ok({"success": True, "dc_number": final_dc_number})
     
     except (ValidationError, ResourceNotFoundError, BusinessRuleViolation) as e:
         # Domain errors - let them propagate

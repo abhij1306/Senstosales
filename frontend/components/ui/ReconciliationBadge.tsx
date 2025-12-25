@@ -26,7 +26,7 @@ const ReconciliationBadge = ({ ordered, delivered, received, size = 'md', classN
                 {/* Ordered */}
                 <div className="flex items-center gap-1 text-slate-400">
                     <Package size={iconSize} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">{ordered}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">{ordered.toLocaleString('en-IN')}</span>
                 </div>
 
                 <div className="h-px w-4 bg-slate-200" />
@@ -37,7 +37,7 @@ const ReconciliationBadge = ({ ordered, delivered, received, size = 'md', classN
                     isOverDelivered ? "text-red-500" : isDeliverPending ? "text-blue-500" : "text-emerald-500"
                 )}>
                     <Truck size={iconSize} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">{delivered}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">{delivered.toLocaleString('en-IN')}</span>
                 </div>
 
                 <div className="h-px w-4 bg-slate-200" />
@@ -48,7 +48,7 @@ const ReconciliationBadge = ({ ordered, delivered, received, size = 'md', classN
                     isReceivePending ? "text-amber-500" : "text-emerald-500"
                 )}>
                     <CheckCircle2 size={iconSize} />
-                    <span className="text-[10px] font-bold uppercase tracking-wider">{received}</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">{received.toLocaleString('en-IN')}</span>
                 </div>
             </div>
 

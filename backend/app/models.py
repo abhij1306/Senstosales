@@ -271,3 +271,29 @@ class SRVStats(BaseModel):
     rejection_rate: float  # Percentage
     missing_po_count: int  # Count of SRVs with PO not found
 
+# ============================================================
+# SETTINGS MODELS
+# ============================================================
+
+class Settings(BaseModel):
+    """Business Settings"""
+    supplier_name: Optional[str] = None
+    supplier_description: Optional[str] = None
+    supplier_address: Optional[str] = None
+    supplier_gstin: Optional[str] = None
+    supplier_contact: Optional[str] = None
+    supplier_state: Optional[str] = None
+    supplier_state_code: Optional[str] = None
+    
+    buyer_name: Optional[str] = None
+    buyer_address: Optional[str] = None
+    buyer_gstin: Optional[str] = None
+    buyer_state: Optional[str] = None
+    buyer_state_code: Optional[str] = None
+    buyer_place_of_supply: Optional[str] = None
+    buyer_designation: Optional[str] = None
+
+class SettingsUpdate(BaseModel):
+    """Partial Update of Settings"""
+    key: str
+    value: str

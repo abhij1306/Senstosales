@@ -31,7 +31,15 @@ export default function DownloadButton({
             });
 
             if (!response.ok) {
-                throw new Error("Download failed");
+                let errorMessage = "Download failed";
+                try {
+                    const errorData = await response.json();
+                    // Handle both standard FastAPI detail and our structured AppException
+                    errorMessage = errorData.message || errorData.detail?.message || errorData.detail || errorMessage;
+                } catch (e) {
+                    // Not JSON or other parsing error
+                }
+                throw new Error(errorMessage);
             }
 
             const blob = await response.blob();
@@ -43,9 +51,9 @@ export default function DownloadButton({
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(downloadUrl);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Download Error:", error);
-            alert("Failed to download file. Please try again.");
+            alert(`Failed: ${error.message}`);
         } finally {
             setIsLoading(false);
         }
