@@ -91,6 +91,7 @@ class POListItem(BaseModel):
     total_received_quantity: float = 0.0
     total_rejected_quantity: float = 0.0
     total_pending_quantity: float = 0.0
+    total_items_count: int = 0  # NEW: Total line items count
     created_at: Optional[str] = None
 
 class POStats(BaseModel):

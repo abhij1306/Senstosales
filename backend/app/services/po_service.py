@@ -74,9 +74,13 @@ class POService:
             """, (po_num,)).fetchone()
             total_dispatched = dispatched_row[0] if dispatched_row and dispatched_row[0] else 0.0
 
-            # Calculate Pending (Derived)
+            # Calculate Total pending (Derived)
             # Rule 3: pending_quantity is derived only, never persisted.
             total_pending = max(0, total_ordered - total_dispatched)
+            
+            # Calculate Total Items Count
+            items_count_row = db.execute("SELECT COUNT(*) FROM purchase_order_items WHERE po_number = ?", (po_num,)).fetchone()
+            total_items = items_count_row[0] if items_count_row else 0
 
             # Fetch linked DC numbers for reference
             dc_rows = db.execute("SELECT dc_number FROM delivery_challans WHERE po_number = ?", (po_num,)).fetchall()
@@ -107,6 +111,7 @@ class POService:
                 total_received_quantity=total_received,
                 total_rejected_quantity=total_rejected,
                 total_pending_quantity=total_pending,
+                total_items_count=total_items,
                 created_at=row["created_at"]
             ))
         

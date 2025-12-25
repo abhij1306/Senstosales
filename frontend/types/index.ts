@@ -164,6 +164,10 @@ export interface POHeader {
     issuer_designation?: string;
     issuer_phone?: string;
     remarks?: string;
+    project_name?: string;
+    consignee_name?: string;
+    consignee_address?: string;
+    status?: string;
 }
 
 export interface PODetail {

@@ -5,6 +5,36 @@ All notable changes to SenstoSales ERP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.1] - 2025-12-25
+
+### Fixed
+- **Total Items Column**: Fixed data not appearing in PO list - required backend restart to load updated Pydantic model
+- **Column Positioning**: Moved "Items" column to appear before "Ord" column as requested
+- **Sidebar Flickering**: Resolved layout shifts by adding transparent borders to `.nav-link` while preserving translateX animations
+- **Batch Upload Stop Button**: Fixed Stop button to immediately cancel upload without getting stuck
+
+### Added
+- **Batch Upload Animation**: Enhanced upload progress display with:
+  - Large animated progress bar with gradient and shimmer effect
+  - Real-time percentage display
+  - Grid of processed files with staggered fade-in animations
+  - Working cancel button for instant upload termination
+
+### Documentation
+- **DESIGN_GUIDE.md**: Created comprehensive design system documentation covering:
+  - Global color palette and typography standards
+  - Component library patterns (buttons, inputs, cards, tabs, tables)
+  - Page layout templates and best practices
+  - Animation guidelines and spacing system
+  - Complete example feature implementation
+- **README.md**: Rewritten for clarity with prominent references to DESIGN_GUIDE.md
+- **Cleanup**: Removed archive folder with old temp files and test scripts
+
+### Verified
+- Manual DC/Invoice number input working with FY-wise duplicate checking (backend logic confirmed)
+- Database contains items for all POs (e.g., PO #1115002 has 1 item)
+- API correctly returns `total_items_count` field after server restart
+
 ## [3.1.0] - 2025-12-25
 
 ### Added

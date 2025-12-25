@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Filter, Truck, CheckCircle, Clock, Download } from "lucide-react";
+import { Plus, Search, Truck, CheckCircle, Clock, Download, ArrowRight, Activity, Layers } from "lucide-react";
 import { api, DCListItem, DCStats } from "@/lib/api";
-import { formatDate } from "@/lib/utils";
-import { Card } from "@/components/ui/Card";
-import StatusBadge from "@/components/ui/StatusBadge";
+import { formatDate, formatIndianCurrency } from "@/lib/utils";
+import GlassCard from "@/components/ui/GlassCard";
 import { DenseTable } from "@/components/ui/DenseTable";
 
 export default function DCListPage() {
@@ -14,86 +13,86 @@ export default function DCListPage() {
   const [dcs, setDCs] = useState<DCListItem[]>([]);
   const [stats, setStats] = useState<DCStats | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Filters
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All Status");
 
   useEffect(() => {
     const loadData = async () => {
+      setLoading(true);
       try {
         const [dcData, statsData] = await Promise.all([
           api.listDCs(),
           api.getDCStats()
         ]);
-        setDCs(dcData);
+        setDCs(dcData || []);
         setStats(statsData);
-        setLoading(false);
       } catch (err) {
-        console.error("Failed to load DC data:", err);
+        console.error("DC Load Error:", err);
+      } finally {
         setLoading(false);
       }
     };
-
     loadData();
   }, []);
 
-  const filteredDCs = dcs.filter(dc => {
-    const matchesSearch =
-      dc.dc_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (dc.po_number?.toString() || "").includes(searchQuery) ||
-      (dc.consignee_name && dc.consignee_name.toLowerCase().includes(searchQuery.toLowerCase()));
-
-    const matchesStatus = statusFilter === "All Status" || dc.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
-  });
+  const filteredDCs = dcs.filter(dc =>
+    dc.dc_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (dc.po_number?.toString() || "").includes(searchQuery) ||
+    (dc.consignee_name && dc.consignee_name.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   const columns = [
     {
-      header: "DC Number",
+      header: "Dispatch ID",
       accessorKey: "dc_number" as keyof DCListItem,
       cell: (dc: DCListItem) => (
-        <div className="font-medium text-purple-600 hover:text-purple-800 transition-colors">{dc.dc_number}</div>
+        <div onClick={() => router.push(`/dc/view?id=${dc.dc_number}`)} className="link font-bold text-sm">{dc.dc_number}</div>
       )
     },
     {
-      header: "Date",
+      header: "Movement Date",
       accessorKey: "dc_date" as keyof DCListItem,
-      cell: (dc: DCListItem) => <span className="text-slate-600 font-medium text-xs">{formatDate(dc.dc_date)}</span>
+      cell: (dc: DCListItem) => <span className="text-meta font-bold uppercase">{formatDate(dc.dc_date)}</span>
     },
     {
       header: "Consignee",
       accessorKey: "consignee_name" as keyof DCListItem,
       cell: (dc: DCListItem) => (
-        <div className="flex items-center gap-2 max-w-[200px] truncate">
-          <div className="w-5 h-5 rounded bg-indigo-50 flex items-center justify-center text-indigo-700 font-bold border border-indigo-100 uppercase shrink-0 text-[10px]">
+        <div className="flex items-center gap-3 max-w-[250px] truncate">
+          <div className="w-8 h-8 rounded-lg bg-indigo-50/50 flex items-center justify-center text-indigo-700 font-black border border-indigo-100 uppercase shrink-0 text-[10px]">
             {dc.consignee_name ? dc.consignee_name.substring(0, 2) : 'CN'}
           </div>
-          <span className="text-slate-700 truncate text-xs">{dc.consignee_name}</span>
+          <span className="text-slate-700 truncate text-xs font-semibold">{dc.consignee_name}</span>
         </div>
       )
     },
     {
-      header: "PO Ref",
+      header: "PO Reference",
       accessorKey: "po_number" as keyof DCListItem,
       cell: (dc: DCListItem) => (
-        <span className="text-[10px] font-medium text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
-          PO-{dc.po_number}
+        <span className="badge-premium badge-blue">
+          {dc.po_number}
         </span>
       )
     },
     {
-      header: "Value",
+      header: "Consignment Value",
       accessorKey: "total_value" as keyof DCListItem,
-      className: "text-right font-medium text-slate-700 tabular-nums",
-      cell: (dc: DCListItem) => dc.total_value > 0 ? `₹${dc.total_value.toLocaleString('en-IN')}` : '-'
+      className: "text-right",
+      cell: (dc: DCListItem) => (
+        <span className="text-accounting font-bold text-slate-800">
+          {dc.total_value > 0 ? formatIndianCurrency(dc.total_value) : 'NO VALUE'}
+        </span>
+      )
     },
     {
-      header: "Status",
+      header: "Logistics Status",
       accessorKey: "status" as keyof DCListItem,
       className: "text-right",
-      cell: (dc: DCListItem) => <StatusBadge status={dc.status} className="ml-auto" />
+      cell: (dc: DCListItem) => (
+        <span className={`badge-premium ${dc.status === 'Completed' ? 'badge-emerald' : 'badge-amber'}`}>
+          {dc.status.toUpperCase()}
+        </span>
+      )
     },
     {
       header: "",
@@ -105,110 +104,88 @@ export default function DCListPage() {
             e.stopPropagation();
             window.open(`${api.baseUrl}/api/dc/${dc.dc_number}/download`, '_blank');
           }}
-          className="p-1.5 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-md transition-all"
-          title="Download DC Excel"
+          className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
+          title="Export Ledger"
         >
-          <Download className="w-3.5 h-3.5" />
+          <Download className="w-4 h-4" />
         </button>
       )
     }
   ];
 
-  if (loading) {
-    return (
-      <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-purple-50/30 p-4 md:p-6 flex items-center justify-center text-slate-400 font-medium animate-pulse">
-        Loading Dispatches...
-      </div>
-    );
-  }
+  if (loading) return <div className="p-32 text-center animate-pulse text-purple-500 font-bold uppercase tracking-widest text-xs">Initializing Logistics Hub...</div>;
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-purple-50/30 p-4 md:p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-purple-50/20 p-6 space-y-6 pb-24 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Delivery Challans</h1>
-          <p className="text-xs text-slate-500 mt-1">Outbound delivery management</p>
+          <h1 className="heading-xl flex items-center gap-4">
+            <Truck className="w-8 h-8 text-purple-600" />
+            Delivery Challan
+          </h1>
+          <p className="text-sm text-slate-500 mt-1 font-medium italic">Manage outbound dispatches</p>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => router.push("/dc/create")}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all shadow-sm shadow-purple-500/20 text-xs font-semibold"
-          >
-            <Plus className="w-4 h-4" />
-            Create Challan
-          </button>
-        </div>
+        <button
+          onClick={() => router.push("/dc/create")}
+          className="btn-premium btn-primary shadow-xl bg-gradient-to-r from-purple-600 to-indigo-600"
+        >
+          <Plus className="w-4 h-4" />
+          Create DC
+        </button>
       </div>
 
-      {/* KPI Cards */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card variant="glass" padding="none" className="flex flex-col justify-between h-[90px] p-4">
-            <div className="flex justify-between items-start">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Dispatched</span>
-              <Truck className="w-4 h-4 text-purple-500" />
-            </div>
-            <div className="flex flex-col">
-              <div className="text-[28px] font-bold text-slate-800">{stats.total_challans.toLocaleString('en-IN')}</div>
-              <div className="text-[10px] text-emerald-600 font-medium">+5% vs last month</div>
-            </div>
-          </Card>
-
-          <Card variant="glass" padding="none" className="flex flex-col justify-between h-[90px] p-4">
-            <div className="flex justify-between items-start">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">In Transit</span>
-              <Clock className="w-4 h-4 text-amber-500" />
-            </div>
-            <div className="text-[28px] font-bold text-slate-800">{stats.pending_delivery.toLocaleString('en-IN')}</div>
-          </Card>
-
-          <Card variant="glass" padding="none" className="flex flex-col justify-between h-[90px] p-4">
-            <div className="flex justify-between items-start">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Completed</span>
-              <CheckCircle className="w-4 h-4 text-emerald-500" />
-            </div>
-            <div className="flex flex-col">
-              <div className="text-[28px] font-bold text-slate-800">{stats.completed_delivery.toLocaleString('en-IN')}</div>
-              <div className="text-[10px] text-emerald-600 font-medium">98% delivery success</div>
-            </div>
-          </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <KpiCard title="Total DC" value={stats.total_challans} icon={Layers} color="purple" trend="Total" />
+          <KpiCard title="Pending" value={stats.pending_delivery} icon={Clock} color="amber" trend="In Transit" />
+          <KpiCard title="Completed" value={stats.completed_delivery} icon={CheckCircle} color="emerald" trend="Delivered" />
         </div>
       )}
 
-      {/* Filters */}
-      <Card variant="glass" padding="sm" className="flex gap-2 items-center sticky top-2 z-10">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search by DC, PO or Consignee..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-4 py-1.5 bg-white/60 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none"
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-2">
+          <h2 className="heading-md uppercase tracking-wider text-slate-800">Delivery Challans</h2>
+          <div className="relative w-full md:w-80">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="input-premium pl-12 font-bold uppercase tracking-widest text-[10px]"
+            />
+          </div>
+        </div>
+
+        <div className="glass-panel overflow-hidden">
+          <DenseTable
+            loading={loading}
+            data={filteredDCs}
+            columns={columns}
+            onRowClick={(dc) => router.push(`/dc/view?id=${dc.dc_number}`)}
+            className="bg-transparent border-none rounded-none"
           />
         </div>
-        <div className="relative">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="appearance-none pl-8 pr-8 py-1.5 bg-white/60 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 outline-none text-slate-700 font-medium h-[34px]"
-          >
-            <option>All Status</option>
-            <option>Pending</option>
-            <option>Delivered</option>
-          </select>
-          <Filter className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-        </div>
-      </Card>
-
-      <DenseTable
-        loading={loading}
-        data={filteredDCs}
-        columns={columns}
-        onRowClick={(dc) => router.push(`/dc/view?id=${dc.dc_number}`)}
-        className="bg-white/40 shadow-sm backdrop-blur-sm min-h-[500px] border border-white/20 rounded-xl"
-      />
+      </div>
     </div>
+  );
+}
+
+function KpiCard({ title, value, icon: Icon, color, trend }: any) {
+  return (
+    <GlassCard className="p-6 h-[110px] flex flex-col justify-between group border-white/60">
+      <div className="flex justify-between items-start">
+        <div>
+          <span className="text-label uppercase opacity-60 m-0">{title}</span>
+          <div className="text-2xl font-black text-slate-800 tracking-tighter mt-1 group-hover:text-purple-600 transition-colors">{value.toLocaleString()}</div>
+        </div>
+        <div className={`p-2 rounded-xl bg-${color}-50/50 border border-${color}-100 group-hover:scale-110 transition-transform`}>
+          <Icon className={`w-4 h-4 text-${color}-600`} />
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase mt-2">
+        <Activity className="w-3 h-3" /> {trend}
+      </div>
+    </GlassCard>
   );
 }

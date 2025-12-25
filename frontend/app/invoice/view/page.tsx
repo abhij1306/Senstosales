@@ -2,76 +2,20 @@
 
 import React, { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, Printer, FileText, Package, Truck, Lock, Calculator, User, Building, MapPin } from "lucide-react";
-
+import { ArrowLeft, Printer, FileText, Package, Truck, Calculator, User, Building, MapPin, Activity, Sparkles, ShieldCheck, Edit2, Calendar } from "lucide-react";
 import { api, API_BASE_URL } from "@/lib/api";
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatIndianCurrency, amountInWords } from "@/lib/utils";
 import DownloadButton from "@/components/DownloadButton";
-import { Card } from "@/components/ui/Card";
-import StatusBadge from "@/components/ui/StatusBadge";
-import Link from 'next/link';
+import GlassCard from "@/components/ui/GlassCard";
+import Tabs from "@/components/ui/Tabs";
 
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
-
-function numberToWords(num: number): string {
-    if (num === 0) return 'Zero';
-
-    const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
-    const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-    const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
-
-    function convertLessThanThousand(n: number): string {
-        if (n === 0) return '';
-        if (n < 10) return ones[n];
-        if (n < 20) return teens[n - 10];
-        if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + ones[n % 10] : '');
-        return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 !== 0 ? ' and ' + convertLessThanThousand(n % 100) : '');
-    }
-
-    const crore = Math.floor(num / 10000000);
-    const lakh = Math.floor((num % 10000000) / 100000);
-    const thousand = Math.floor((num % 100000) / 1000);
-    const remainder = num % 1000;
-
-    let result = '';
-    if (crore > 0) result += convertLessThanThousand(crore) + ' Crore ';
-    if (lakh > 0) result += convertLessThanThousand(lakh) + ' Lakh ';
-    if (thousand > 0) result += convertLessThanThousand(thousand) + ' Thousand ';
-    if (remainder > 0) result += convertLessThanThousand(remainder);
-
-    return result.trim();
-}
-
-function amountInWords(amount: number): string {
-    const rupees = Math.floor(amount);
-    const paise = Math.round((amount - rupees) * 100);
-
-    let words = 'Rupees ' + numberToWords(rupees);
-    if (paise > 0) words += ' and Paise ' + numberToWords(paise);
-    words += ' Only';
-
-    return words;
-}
-
-// ============================================================================
-// COMPONENTS
-// ============================================================================
-
-interface FieldProps {
-    label: string;
-    value: string | number | null | undefined;
-    icon?: React.ReactNode;
-}
-
-const Field = ({ label, value, icon }: FieldProps) => (
-    <div className="space-y-1">
-        <label className="block text-[10px] uppercase tracking-wider font-bold text-slate-400 flex items-center gap-1.5">
+const Field = ({ label, value, icon }: { label: string; value: string | number | null | undefined; icon?: React.ReactNode }) => (
+    <div className="space-y-1 transition-all hover:translate-x-1">
+        <label className="text-label flex items-center gap-2 text-[10px] opacity-70">
             {icon} {label}
         </label>
-        <div className="text-sm font-semibold text-slate-700 truncate min-h-[20px]" title={value?.toString()}>
-            {value || <span className="text-slate-300 italic">-</span>}
+        <div className="text-sm font-medium text-slate-800 tracking-tight truncate" title={value?.toString()}>
+            {value || <span className="text-slate-300 font-normal italic">UNSPECIFIED</span>}
         </div>
     </div>
 );
@@ -82,280 +26,258 @@ function InvoiceDetailContent() {
     const invoiceId = searchParams.get('id');
     const [data, setData] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('buyer');
 
     useEffect(() => {
         if (!invoiceId) return;
-
         const loadData = async () => {
             try {
                 const invoiceData = await api.getInvoiceDetail(decodeURIComponent(invoiceId));
                 setData(invoiceData);
-                setLoading(false);
             } catch (err) {
-                console.error("Failed to load Invoice:", err);
+                console.error("Invoice Error:", err);
+            } finally {
                 setLoading(false);
             }
         };
-
         loadData();
     }, [invoiceId]);
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50/30">
-                <div className="text-purple-600 font-medium animate-pulse">Loading Invoice...</div>
-            </div>
-        );
-    }
+    if (loading) return <div className="p-32 text-center animate-pulse text-blue-600 font-bold uppercase tracking-widest text-xs">Loading Invoice Details...</div>;
 
-    if (!data || !data.header) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50/30 gap-4">
-                <div className="bg-red-50 p-4 rounded-full border border-red-100">
-                    <FileText className="w-8 h-8 text-red-500" />
-                </div>
-                <h2 className="text-xl font-bold text-slate-800">Invoice Not Found</h2>
-                <button
-                    onClick={() => router.push('/invoice')}
-                    className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors shadow-sm text-sm font-medium"
-                >
-                    Back to List
-                </button>
-            </div>
-        );
-    }
+    if (!data || !data.header) return (
+        <div className="p-32 flex flex-col items-center justify-center gap-6">
+            <ShieldCheck className="w-16 h-16 text-slate-200" />
+            <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest">Invoice Not Found</h2>
+            <button onClick={() => router.push('/invoice')} className="px-6 py-2 rounded-xl bg-slate-800 text-white font-bold text-sm hover:bg-slate-900 transition-all">Back to List</button>
+        </div>
+    );
 
     const { header, items = [], linked_dcs = [] } = data;
 
     return (
-        <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-purple-50/30 p-4 md:p-6 space-y-6 pb-24">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <button
-                        onClick={() => router.back()}
-                        className="text-slate-400 hover:text-slate-800 transition-colors p-1.5 rounded-full hover:bg-white/50"
-                    >
+        <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-blue-50/20 p-6 space-y-6 pb-32 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            {/* Page Header */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                <div className="flex items-center gap-6">
+                    <button onClick={() => router.back()} className="h-10 w-10 flex items-center justify-center rounded-xl bg-white/80 border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-white shadow-sm transition-all">
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div>
-                        <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3 tracking-tight">
-                            Invoice {header.invoice_number}
-                            <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-purple-100 text-purple-700 border border-purple-200 uppercase tracking-wide">
-                                Generated
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-[20px] font-semibold text-slate-800 tracking-tight uppercase">Invoice #{header.invoice_number}</h1>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 uppercase tracking-widest">
+                                ACTIVE
                             </span>
-                        </h1>
-                        <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-slate-500 font-medium flex items-center gap-1.5">
+                        </div>
+                        <div className="flex items-center gap-4 mt-1">
+                            <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
                                 <FileText className="w-3.5 h-3.5" />
-                                {formatDate(header.invoice_date)}
+                                DATE {formatDate(header.invoice_date)}
                             </span>
-                            {linked_dcs && linked_dcs.length > 0 && (
-                                <>
+                            {linked_dcs?.length > 0 && (
+                                <div className="flex items-center gap-2">
                                     <span className="text-slate-300">•</span>
-                                    <span className="text-[11px] font-bold text-slate-500 bg-white/60 px-2 py-0.5 rounded border border-slate-200 flex items-center gap-1">
-                                        Linked DCs: {linked_dcs.map((dc: any, i: number) => (
-                                            <span key={dc.dc_number} className="text-purple-600 cursor-pointer hover:underline hover:text-purple-800" onClick={() => router.push(`/dc/view?id=${dc.id || dc.dc_number}`)}>
-                                                {dc.dc_number}{i < linked_dcs.length - 1 ? ',' : ''}
-                                            </span>
+                                    <div className="flex gap-1.5">
+                                        {linked_dcs.map((dc: any) => (
+                                            <button
+                                                key={dc.dc_number}
+                                                onClick={() => router.push(`/dc/view?id=${dc.id || dc.dc_number}`)}
+                                                className="text-[10px] font-bold bg-slate-100 text-slate-500 hover:bg-slate-200 border border-slate-200 rounded px-1.5 py-0.5 transition-all uppercase"
+                                            >
+                                                DC #{dc.dc_number}
+                                            </button>
                                         ))}
-                                    </span>
-                                </>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     </div>
                 </div>
-                <div className="flex gap-2">
+
+                <div className="flex items-center gap-3">
                     <DownloadButton
                         url={`${API_BASE_URL}/api/invoice/${encodeURIComponent(header.invoice_number)}/download`}
-                        filename={`Invoice_${header.invoice_number}.xlsx`}
-                        label="Download Excel"
+                        filename={`INV_${header.invoice_number}.xlsx`}
+                        label="Download"
+                        className="btn-premium btn-ghost border-slate-200 h-11 px-6 shadow-sm"
                     />
+                    <button onClick={() => window.print()} className="btn-premium btn-ghost border-slate-200 h-11 px-6 shadow-sm">
+                        <Printer className="w-4 h-4" /> Print View
+                    </button>
                     <button
-                        onClick={() => window.print()}
-                        className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-2 transition-colors shadow-sm"
+                        onClick={() => router.push(`/invoice/edit?id=${encodeURIComponent(header.invoice_number)}`)}
+                        className="btn-premium btn-primary bg-slate-800 h-11 px-6"
                     >
-                        <Printer className="w-4 h-4" />
-                        Print Invoice
+                        <Edit2 className="w-4 h-4" /> Edit Invoice
                     </button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Left Column: Details & Financials (1/3) */}
-                <div className="md:col-span-1 space-y-6">
-                    {/* Basic Info Card */}
-                    <Card variant="glass" padding="none" className="overflow-hidden">
-                        <div className="flex items-center gap-2 px-4 py-3 border-b border-white/20 bg-white/40">
-                            <Building className="w-4 h-4 text-purple-600" />
-                            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Buyer Details</h3>
-                        </div>
-                        <div className="p-4 space-y-4">
-                            <Field
-                                label="Buyer Name"
-                                value={header.buyer_name}
-                                icon={<User className="w-3 h-3 text-slate-400" />}
-                            />
-                            <div className="grid grid-cols-2 gap-4">
-                                <Field label="GSTIN" value={header.buyer_gstin} />
-                                <Field label="State" value={header.buyer_state} />
-                            </div>
-                            <Field label="Place of Supply" value={header.place_of_supply} icon={<MapPin className="w-3 h-3 text-slate-400" />} />
-                        </div>
-                    </Card>
+            <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2">
+                <Tabs
+                    tabs={[
+                        { id: 'buyer', label: 'Buyer Info', icon: User },
+                        { id: 'references', label: 'Order References', icon: FileText },
+                        { id: 'logistics', label: 'Linked DC', icon: Truck }
+                    ]}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                    className="mb-0"
+                />
 
-                    {/* Reference Info Card */}
-                    <Card variant="glass" padding="none" className="overflow-hidden">
-                        <div className="flex items-center gap-2 px-4 py-3 border-b border-white/20 bg-white/40">
-                            <FileText className="w-4 h-4 text-blue-600" />
-                            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">References</h3>
+                <div className="min-h-fit">
+                    {activeTab === 'buyer' && (
+                        <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                            <GlassCard className="p-6 border-slate-200/60 flex flex-wrap gap-12 items-center">
+                                <div className="flex items-center gap-5 border-r border-slate-100 pr-12 min-w-[250px]">
+                                    <div className="h-10 w-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-[10px] shrink-0">BUYER</div>
+                                    <Field label="Full Name" value={header.buyer_name} icon={<User className="w-3.5 h-3.5 text-blue-500" />} />
+                                </div>
+                                <div className="grid grid-cols-2 gap-12">
+                                    <Field label="GSTIN" value={header.buyer_gstin} />
+                                    <Field label="Supply Place" value={header.place_of_supply} />
+                                </div>
+                                <div className="flex-1 space-y-1.5 min-w-[300px]">
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Billing Address</label>
+                                    <div className="text-sm font-medium text-slate-600 leading-relaxed">{header.buyer_address || 'N/A'}</div>
+                                </div>
+                            </GlassCard>
                         </div>
-                        <div className="p-4 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <Field label="Buyer Order No" value={header.buyers_order_no} />
-                                <Field label="Order Date" value={header.buyers_order_date} />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <Field label="Challan No" value={header.linked_dc_numbers} />
-                                <Field label="Challan Date" value={header.dc_date} />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <Field label="SRV No" value={header.srv_no} />
-                                <Field label="SRV Date" value={header.srv_date} />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <Field label="Despatch Doc No" value={header.despatch_doc_no} />
-                                <Field label="GEMC / E-way" value={header.gemc_number} />
-                            </div>
-                        </div>
-                    </Card>
+                    )}
 
-                    {/* Transport Info Card */}
-                    <Card variant="glass" padding="none" className="overflow-hidden">
-                        <div className="flex items-center gap-2 px-4 py-3 border-b border-white/20 bg-white/40">
-                            <Truck className="w-4 h-4 text-amber-600" />
-                            <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Transport Details</h3>
+                    {activeTab === 'references' && (
+                        <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                            <GlassCard className="p-6 border-slate-200/60 flex flex-wrap gap-12 items-center">
+                                <div className="flex items-center gap-5 border-r border-slate-100 pr-12">
+                                    <div className="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-[10px] shrink-0">REF</div>
+                                    <Field label="PO Number" value={header.buyers_order_no} />
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
+                                    <Field label="PO Date" value={formatDate(header.buyers_order_date)} />
+                                    <Field label="DC Reference" value={header.linked_dc_numbers} />
+                                    <Field label="GEMC No." value={header.gemc_number} />
+                                    <Field label="SRV/Gate No." value={header.srv_no || header.despatch_doc_no || 'N/A'} />
+                                </div>
+                            </GlassCard>
                         </div>
-                        <div className="p-4 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <Field label="Transporter" value={header.transporter} />
-                                <Field label="Vehicle No" value={header.vehicle_no} />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <Field label="LR No" value={header.lr_no} />
-                                <Field label="Destination" value={header.destination} />
-                            </div>
-                            <Field label="Terms of Delivery" value={header.terms_of_delivery} />
+                    )}
+
+                    {activeTab === 'logistics' && (
+                        <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+                            <GlassCard className="p-6 border-slate-200/60 flex flex-wrap gap-12 items-center">
+                                <div className="flex items-center gap-5 border-r border-slate-100 pr-12">
+                                    <div className="h-10 w-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-[10px] shrink-0">LOGS</div>
+                                    <Field label="Transporter" value={header.transporter} />
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-12">
+                                    <Field label="Vehicle No" value={header.vehicle_no} />
+                                    <Field label="LR No" value={header.lr_no} />
+                                    <Field label="Destination" value={header.destination} />
+                                    <Field label="Delivery Terms" value={header.terms_of_delivery || 'Standard'} />
+                                </div>
+                            </GlassCard>
                         </div>
-                    </Card>
+                    )}
                 </div>
 
-                {/* Right Column: Items & Tax Summary (2/3) */}
-                <div className="md:col-span-2 space-y-6">
-                    {/* Items Table Card */}
-                    <Card variant="glass" padding="none" className="overflow-hidden">
-                        <div className="p-4 border-b border-white/20 bg-slate-50/50 flex justify-between items-center">
-                            <h3 className="text-[14px] font-bold text-slate-800 flex items-center gap-2">
-                                <Package className="w-4 h-4 text-purple-600" /> Invoice Items
+                <div className="pt-2 grid grid-cols-1 lg:grid-cols-12 gap-8">
+                    <div className="lg:col-span-8 space-y-4">
+                        <div className="flex items-center justify-between px-2">
+                            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                <Package className="w-3.5 h-3.5" /> Invoice Items
                             </h3>
-                            <span className="text-xs font-bold text-slate-500 bg-white px-2 py-0.5 rounded border border-slate-200">{items.length} Items</span>
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-500 border border-slate-200 uppercase tracking-widest">
+                                {items.length} ITEMS
+                            </span>
                         </div>
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead className="bg-slate-50/50 text-slate-500 font-bold text-[10px] uppercase tracking-wider border-b border-slate-200">
-                                    <tr>
-                                        <th className="px-4 py-3">Lot No</th>
-                                        <th className="px-4 py-3">Description</th>
-                                        <th className="px-4 py-3 text-right">Qty</th>
-                                        <th className="px-4 py-3">Unit</th>
-                                        <th className="px-4 py-3 text-right">Rate</th>
-                                        <th className="px-4 py-3 text-right">Taxable</th>
-                                        <th className="px-4 py-3 text-right">CGST</th>
-                                        <th className="px-4 py-3 text-right">SGST</th>
-                                        <th className="px-4 py-3 text-right">Total</th>
+                        <div className="bg-white/60 backdrop-blur-md border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-slate-200/60 bg-slate-50/50">
+                                        <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider w-16 text-center">SL</th>
+                                        <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider">Material Description</th>
+                                        <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">Qty</th>
+                                        <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">Rate</th>
+                                        <th className="py-3.5 px-6 text-[11px] font-bold text-slate-400 uppercase tracking-wider text-right">Total</th>
                                     </tr>
                                 </thead>
-                                <tbody className="divide-y divide-slate-100/50">
+                                <tbody className="divide-y divide-slate-100">
                                     {items.map((item: any, idx: number) => (
-                                        <React.Fragment key={idx}>
-                                            {/* Description Header Row */}
-                                            <tr className="bg-slate-50">
-                                                <td colSpan={9} className="px-4 py-2 text-xs font-semibold text-slate-700 border-b border-slate-200">
-                                                    {item.description}
-                                                </td>
-                                            </tr>
-                                            {/* Data Row */}
-                                            <tr className="hover:bg-white/60 transition-colors bg-white/20">
-                                                <td className="px-4 py-3 text-xs text-slate-700 font-bold">{item.po_sl_no}</td>
-                                                <td className="px-4 py-3 text-xs text-slate-700 font-medium"></td>
-                                                <td className="px-4 py-3 text-xs text-slate-700 text-right">{item.quantity?.toLocaleString('en-IN')}</td>
-                                                <td className="px-4 py-3 text-xs text-slate-500">{item.unit}</td>
-                                                <td className="px-4 py-3 text-xs text-slate-700 text-right">
-                                                    ₹{item.rate?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                </td>
-                                                <td className="px-4 py-3 text-xs text-slate-700 text-right font-medium">₹{item.taxable_value?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                                <td className="px-4 py-3 text-xs text-slate-500 text-right">₹{item.cgst_amount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                                <td className="px-4 py-3 text-xs text-slate-500 text-right">₹{item.sgst_amount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                                <td className="px-4 py-3 text-xs text-slate-800 text-right font-bold">₹{item.total_amount?.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-                                            </tr>
-                                        </React.Fragment>
+                                        <tr key={idx} className="group hover:bg-slate-50/80 transition-all">
+                                            <td className="py-4 px-6 text-center text-xs font-bold text-slate-400">{item.po_sl_no || (idx + 1)}</td>
+                                            <td className="py-4 px-6">
+                                                <div className="text-sm font-semibold text-slate-800 uppercase group-hover:text-blue-600 transition-colors">{item.description}</div>
+                                                <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">HSN Code: {item.hsn_sac || 'N/A'}</div>
+                                            </td>
+                                            <td className="py-4 px-6 text-right">
+                                                <span className="text-sm font-bold text-slate-600 tabular-nums">{item.quantity}</span>
+                                                <span className="text-[10px] font-bold text-slate-400 ml-1.5 uppercase">{item.unit || 'NOS'}</span>
+                                            </td>
+                                            <td className="py-4 px-6 text-right font-medium text-slate-500 tabular-nums">
+                                                {formatIndianCurrency(item.rate)}
+                                            </td>
+                                            <td className="py-4 px-6 text-right">
+                                                <span className="text-sm font-bold text-slate-900 tabular-nums">
+                                                    {formatIndianCurrency(item.total_amount)}
+                                                </span>
+                                            </td>
+                                        </tr>
                                     ))}
                                 </tbody>
                             </table>
                         </div>
-                    </Card>
+                    </div>
 
-                    {/* Tax Summary Card */}
-                    <Card variant="glass" padding="none" className="overflow-hidden">
-                        <div className="p-4 border-b border-white/20 bg-slate-50/50 flex items-center gap-2">
-                            <Calculator className="w-4 h-4 text-emerald-600" />
-                            <h3 className="text-[14px] font-bold text-slate-800">Tax & Total Summary</h3>
-                        </div>
-                        <div className="p-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="lg:col-span-4 space-y-6">
+                        <GlassCard className="p-0 overflow-hidden border-blue-200/60 shadow-lg shadow-blue-500/5 transition-all">
+                            <div className="px-6 py-4 bg-slate-50/50 border-b border-slate-100 flex items-center gap-3">
+                                <Calculator className="w-4 h-4 text-blue-600" />
+                                <h3 className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Commercial Summary</h3>
+                            </div>
+                            <div className="p-8 space-y-6">
                                 <div className="space-y-4">
-                                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                                        <span className="text-sm text-slate-500 font-medium">Taxable Value</span>
-                                        <span className="text-sm font-bold text-slate-800">₹{header.taxable_value?.toFixed(2)}</span>
+                                    <div className="flex justify-between items-center text-xs group">
+                                        <span className="font-bold text-slate-400 uppercase tracking-widest group-hover:text-slate-600 transition-colors">Taxable Value</span>
+                                        <span className="font-bold text-slate-700 tabular-nums">{formatIndianCurrency(header.taxable_value)}</span>
                                     </div>
-                                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                                        <span className="text-sm text-slate-500 font-medium">CGST (9%)</span>
-                                        <span className="text-sm font-bold text-slate-800">₹{header.cgst?.toFixed(2)}</span>
+                                    <div className="flex justify-between items-center text-xs group">
+                                        <span className="font-bold text-slate-400 uppercase tracking-widest group-hover:text-slate-600 transition-colors">CGST (9%)</span>
+                                        <span className="font-bold text-slate-700 tabular-nums">{formatIndianCurrency(header.cgst)}</span>
                                     </div>
-                                    <div className="flex justify-between items-center pb-2 border-b border-slate-100">
-                                        <span className="text-sm text-slate-500 font-medium">SGST (9%)</span>
-                                        <span className="text-sm font-bold text-slate-800">₹{header.sgst?.toFixed(2)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center pt-2">
-                                        <span className="text-sm font-bold text-slate-800">Total Invoice Value</span>
-                                        <span className="text-lg font-bold text-purple-700 bg-purple-50 px-3 py-1 rounded-lg border border-purple-100 shadow-sm">
-                                            ₹{header.total_invoice_value?.toFixed(2)}
-                                        </span>
+                                    <div className="flex justify-between items-center text-xs group">
+                                        <span className="font-bold text-slate-400 uppercase tracking-widest group-hover:text-slate-600 transition-colors">SGST (9%)</span>
+                                        <span className="font-bold text-slate-700 tabular-nums">{formatIndianCurrency(header.sgst)}</span>
                                     </div>
                                 </div>
-
-                                <div className="space-y-4 bg-slate-50/80 p-5 rounded-xl border border-slate-200/60">
-                                    <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-                                        <FileText className="w-3 h-3" /> Amount in Words
-                                    </h4>
-                                    <div className="space-y-3">
-                                        <div className="text-xs text-slate-500">
-                                            <span className="font-semibold block mb-0.5 text-slate-400">CGST (in words):</span>
-                                            <div className="text-slate-800 font-medium font-serif italic">{amountInWords(header.cgst || 0)}</div>
-                                        </div>
-                                        <div className="text-xs text-slate-500">
-                                            <span className="font-semibold block mb-0.5 text-slate-400">SGST (in words):</span>
-                                            <div className="text-slate-800 font-medium font-serif italic">{amountInWords(header.sgst || 0)}</div>
-                                        </div>
-                                        <div className="text-xs text-slate-500">
-                                            <span className="font-semibold block mb-0.5 text-slate-400">Total (in words):</span>
-                                            <div className="text-slate-800 font-medium font-serif italic">{amountInWords(header.total_invoice_value || 0)}</div>
-                                        </div>
+                                <div className="h-px bg-slate-100/50" />
+                                <div className="space-y-2">
+                                    <span className="text-[10px] font-bold text-blue-600 uppercase tracking-[0.2em] block">Total Invoice Value</span>
+                                    <div className="text-4xl font-black text-slate-900 tracking-tighter tabular-nums drop-shadow-sm">
+                                        {formatIndianCurrency(header.total_invoice_value)}
                                     </div>
                                 </div>
                             </div>
+                            <div className="px-8 py-4 bg-blue-50/50 border-t border-blue-100/50">
+                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-tight leading-relaxed italic">
+                                    {amountInWords(header.total_invoice_value)}
+                                </p>
+                            </div>
+                        </GlassCard>
+
+                        <div className="p-6 rounded-2xl border border-slate-100 bg-white/40 backdrop-blur-md flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="h-10 w-10 rounded-xl bg-slate-50 text-slate-400 flex items-center justify-center border border-slate-100">
+                                    <ShieldCheck className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Authentication</div>
+                                    <div className="text-xs font-bold text-slate-600 mt-0.5">Digitally Verified</div>
+                                </div>
+                            </div>
+                            <Sparkles className="w-5 h-5 text-blue-200" />
                         </div>
-                    </Card>
+                    </div>
                 </div>
             </div>
         </div>
@@ -364,11 +286,7 @@ function InvoiceDetailContent() {
 
 export default function InvoiceDetailPage() {
     return (
-        <Suspense fallback={
-            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50/30">
-                <div className="text-purple-600 font-medium animate-pulse">Loading...</div>
-            </div>
-        }>
+        <Suspense fallback={<div className="p-32 text-center animate-pulse text-blue-600 font-bold">Loading...</div>}>
             <InvoiceDetailContent />
         </Suspense>
     );

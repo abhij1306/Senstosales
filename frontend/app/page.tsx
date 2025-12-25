@@ -3,17 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, DashboardSummary, ActivityItem } from "@/lib/api";
-import { FileText, Truck, Receipt, MoveUpRight, Clock, Sparkles, AlertCircle } from "lucide-react";
+import { FileText, Truck, Receipt, MoveUpRight, Clock, Sparkles, AlertCircle, BarChart3, ArrowRight, Plus, Activity } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
-import StatusBadge from "@/components/ui/StatusBadge";
 import { DenseTable } from "@/components/ui/DenseTable";
-import { formatDate, formatIndianCurrency } from "@/lib/utils";
-import ReconciliationBadge from "@/components/ui/ReconciliationBadge";
+import { formatIndianCurrency } from "@/lib/utils";
 
 export default function DashboardPage() {
   const router = useRouter();
-  /* eslint-disable @typescript-eslint/no-explicit-any */
-  const [insights, setInsights] = useState<{ type: 'success' | 'warning' | 'error'; text: string; action: string }[]>([]);
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -22,227 +18,215 @@ export default function DashboardPage() {
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const [insightsData, summaryData, activityData] = await Promise.all([
-          api.getDashboardInsights(),
+        const [summaryData, activityData] = await Promise.all([
           api.getDashboardSummary(),
-          api.getRecentActivity(15) // Increased count to leverage density
+          api.getRecentActivity(15)
         ]);
-
-        setInsights(insightsData);
         setSummary(summaryData);
         setActivity(activityData);
-        setLoading(false);
       } catch (err) {
-        console.error("Failed to load dashboard:", err);
-        setError(err instanceof Error ? err.message : "Failed to load dashboard");
+        console.error("Dashboard Load Error:", err);
+        setError("System synchronization failure. Please verify backend connectivity.");
+      } finally {
         setLoading(false);
       }
     };
-
     loadDashboard();
   }, []);
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-[50vh] text-slate-400 font-medium animate-pulse">
-      Loading Financial Overview...
+    <div className="flex items-center justify-center min-h-[60vh] text-blue-500 font-bold animate-pulse uppercase tracking-widest text-xs">
+      Initialising Business Engine...
     </div>
   );
 
-  if (error) return (
-    <GlassCard className="border-red-200 bg-red-50/50 text-red-600 flex items-center gap-3">
-      <AlertCircle className="w-5 h-5" />
-      {error}
-    </GlassCard>
+  if (error || !summary) return (
+    <div className="p-12">
+      <GlassCard className="border-rose-200 bg-rose-50/50 text-rose-700 flex items-center gap-4 p-8">
+        <AlertCircle className="w-8 h-8" />
+        <div>
+          <h2 className="heading-md uppercase">Critical Interface Error</h2>
+          <p className="text-xs font-medium opacity-80">{error || "Data stream interrupted."}</p>
+        </div>
+      </GlassCard>
+    </div>
   );
 
-  if (!summary) return null;
-
-  // Table Columns for Activity
   const activityColumns = [
     {
-      header: "Reference ID",
+      header: "Movement ID",
       accessorKey: "number" as keyof ActivityItem,
       cell: (item: ActivityItem) => (
-        <div className="flex items-center gap-2 font-medium">
-          <span className={item.type === 'Invoice' ? 'text-blue-600' : 'text-purple-600'}>
-            {item.type === 'Invoice' ? <FileText className="w-3.5 h-3.5" /> : <Truck className="w-3.5 h-3.5" />}
-          </span>
-          <span className="text-slate-700">{item.type}-{item.number}</span>
+        <div className="flex items-center gap-3 font-bold">
+          <div className={`p-1.5 rounded-lg ${item.type === 'Invoice' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
+            {item.type === 'Invoice' ? <Receipt className="w-3.5 h-3.5" /> : <Truck className="w-3.5 h-3.5" />}
+          </div>
+          <span className="text-slate-800 tracking-tight">{item.number}</span>
         </div>
       )
     },
     {
-      header: "Date",
+      header: "Movement Date",
       accessorKey: "date" as keyof ActivityItem,
-      className: "w-32",
-      cell: (item: ActivityItem) => <span className="text-slate-600 font-medium text-xs">{formatDate(item.date)}</span>
+      cell: (item: ActivityItem) => <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">{new Date(item.date).toLocaleDateString()}</span>
     },
     {
-      header: "Amount",
+      header: "Gross Amount",
       accessorKey: "amount" as keyof ActivityItem,
-      className: "text-right font-medium text-slate-700",
-      cell: (item: ActivityItem) => item.amount ? `₹${item.amount.toLocaleString('en-IN')}` : '-'
+      className: "text-right font-bold text-slate-800",
+      cell: (item: ActivityItem) => <span className="text-accounting">{item.amount ? formatIndianCurrency(item.amount) : 'N/A'}</span>
     },
     {
-      header: "Status",
+      header: "Execution Status",
       accessorKey: "status" as keyof ActivityItem,
       className: "text-right w-32",
-      cell: (item: ActivityItem) => <StatusBadge status={item.status} className="ml-auto" />
+      cell: (item: ActivityItem) => (
+        <span className={`badge-premium ${item.status === 'Completed' ? 'badge-emerald' : item.status === 'Pending' ? 'badge-amber' : 'badge-blue'}`}>
+          {item.status.toUpperCase()}
+        </span>
+      )
     }
   ];
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-purple-50/30 p-4 md:p-6 space-y-6">
-      {/* Header & Welcome */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-blue-50/20 p-6 space-y-10 pb-32 animate-in fade-in slide-in-from-bottom-2 duration-500">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Financial Overview</h1>
-          <p className="text-slate-500 text-xs mt-0.5">
-            Snapshot for {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+          <h1 className="heading-xl">Enterprise Overview</h1>
+          <p className="text-xs text-slate-500 mt-1 font-medium font-mono uppercase tracking-[0.2em]">
+            Live Sync: {new Date().toLocaleTimeString()} • {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase()}
           </p>
         </div>
-
-        {/* Compact Insight Pills */}
-        {insights.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0">
-            {insights.slice(0, 3).map((insight, idx) => (
-              <div key={idx} onClick={() => router.push('/reports')}
-                className="glass px-3 py-1.5 rounded-full flex items-center gap-2 text-xs cursor-pointer hover:bg-white/80 transition-colors whitespace-nowrap">
-                <span className={insight.type === 'error' ? 'text-red-500' : insight.type === 'warning' ? 'text-amber-500' : 'text-emerald-500'}>
-                  ●
-                </span>
-                <span className="text-slate-700 font-medium">{insight.text}</span>
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="flex gap-3">
+          <button
+            onClick={() => router.push('/reports')}
+            className="btn-premium btn-ghost"
+          >
+            <BarChart3 className="w-4 h-4" />
+            Analytical Ledger
+          </button>
+          <button
+            onClick={() => router.push('/po/create')}
+            className="btn-premium btn-primary shadow-xl"
+          >
+            <Plus className="w-4 h-4" />
+            Initiate Purchase
+          </button>
+        </div>
       </div>
 
-      {/* KPI Glass Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* KPI Display Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <KpiTile
-          title="Total Sales (Month)"
+          title="Monthly Revenue"
           value={formatIndianCurrency(summary.total_sales_month)}
           trend={summary.sales_growth}
-          icon={FileText}
+          icon={Receipt}
           color="blue"
         />
         <KpiTile
-          title="Pending POs"
+          title="Open Procurement"
           value={summary.pending_pos}
-          trend={`${summary.new_pos_today} new`}
+          trend={`${summary.new_pos_today} New Today`}
           icon={Clock}
           color="amber"
         />
         <KpiTile
-          title="Active Challans"
+          title="Dispatched Logistics"
           value={summary.active_challans}
-          trend="In Transit"
+          trend="In Transit Flow"
           icon={Truck}
           color="purple"
         />
         <KpiTile
-          title="Total PO Value (YTD)"
+          title="YTD Volume"
           value={formatIndianCurrency(summary.total_po_value)}
           trend={summary.po_value_growth}
-          icon={Receipt}
+          icon={Activity}
           color="emerald"
         />
       </div>
 
-      {/* Global Reconciliation Snapshot (NEW) */}
-      <GlassCard className="p-4 bg-white/40 border-slate-200">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-600">
-              <Sparkles className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-slate-800 tracking-tight">System Reconciliation Snapshot</h3>
-              <p className="text-[10px] text-slate-500 uppercase font-semibold">Global Business Ledger Integrity</p>
-            </div>
-          </div>
-          <div className="flex-1 max-w-md w-full md:px-8">
-            <ReconciliationBadge
-              ordered={summary.total_ordered || 0}
-              delivered={summary.total_delivered || 0}
-              received={summary.total_received || 0}
-            />
-          </div>
-          <div className="hidden md:block">
-            <button
-              onClick={() => router.push('/reports')}
-              className="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800 transition-colors shadow-sm"
-            >
-              Analyze Ledger
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+        {/* Activity Ledger (Left) */}
+        <div className="lg:col-span-8 space-y-6">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="heading-md uppercase tracking-wider text-slate-800">Operational Real-time Feed</h3>
+            <button onClick={() => router.push('/reports')} className="text-[10px] font-extrabold text-blue-600 hover:text-blue-800 uppercase tracking-widest flex items-center gap-2 group">
+              Full System Audit <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
-        </div>
-      </GlassCard>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Dense Activity Feed */}
-        <div className="lg:col-span-2 space-y-3">
-          <div className="flex items-center justify-between px-1">
-            <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide">Recent Movements</h3>
-            <button onClick={() => router.push('/reports')} className="text-xs text-blue-600 hover:text-blue-700 font-medium transition-colors">
-              View Full Ledger
-            </button>
-          </div>
-          <DenseTable
-            data={activity}
-            columns={activityColumns}
-            className="bg-white/40 shadow-sm"
-            onRowClick={(item) => {
-              if (item.type === 'PO') router.push(`/po/${item.number}`);
-              else if (item.type === 'DC') router.push(`/dc/${item.number}`);
-              else if (item.type === 'Invoice') router.push(`/invoice/${item.number}`);
-            }}
-          />
-        </div>
-
-        {/* Quick Actions (Sidebar) */}
-        <div className="space-y-3">
-          <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wide px-1">Quick Actions</h3>
-          <div className="space-y-2">
-            <ActionTile
-              title="New Purchase Order"
-              desc="Draft supply order"
-              icon={FileText}
-              color="blue"
-              onClick={() => router.push("/po/create")}
-            />
-            <ActionTile
-              title="New Delivery Challan"
-              desc="Dispatch material"
-              icon={Truck}
-              color="purple"
-              onClick={() => router.push("/dc/create")}
-            />
-            <ActionTile
-              title="Create Invoice"
-              desc="Bill customer"
-              icon={Receipt}
-              color="emerald"
-              onClick={() => router.push("/invoice/create")}
-            />
-            <ActionTile
-              title="Upload SRV"
-              desc="Reconcile receipt"
-              icon={Sparkles}
-              color="indigo"
-              onClick={() => router.push("/srv")}
-            />
-            <ActionTile
-              title="Daily Summary"
-              desc="Download dispatch report"
-              icon={FileText}
-              color="amber"
-              onClick={() => {
-                const date = new Date().toISOString().split('T')[0];
-                window.open(`${api.baseUrl}/api/reports/daily-dispatch?date=${date}&export=true`, '_blank');
+          <div className="glass-panel overflow-hidden border-blue-50/50">
+            <DenseTable
+              data={activity}
+              columns={activityColumns}
+              className="bg-transparent border-none rounded-none"
+              onRowClick={(item) => {
+                if (item.type === 'PO') router.push(`/po/view?id=${item.number}`);
+                else if (item.type === 'DC') router.push(`/dc/view?id=${item.number}`);
+                else if (item.type === 'Invoice') router.push(`/invoice/view?id=${item.number}`);
               }}
             />
+          </div>
+        </div>
+
+        {/* Global Strategy & Quick Actions (Right) */}
+        <div className="lg:col-span-4 space-y-8">
+          <div className="glass-panel p-6 bg-blue-600 text-white border-none shadow-blue-200/50">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-white/20 rounded-lg">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <h3 className="text-sm font-bold uppercase tracking-widest">Business Integrity</h3>
+            </div>
+            <div className="space-y-4 mb-8">
+              <div className="flex justify-between items-end border-b border-white/10 pb-2">
+                <span className="text-[10px] font-bold uppercase opacity-60">Ordered</span>
+                <span className="text-lg font-bold tracking-tighter">{(summary.total_ordered || 0).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-end border-b border-white/10 pb-2">
+                <span className="text-[10px] font-bold uppercase opacity-60">Delivered</span>
+                <span className="text-lg font-bold tracking-tighter">{(summary.total_delivered || 0).toLocaleString()}</span>
+              </div>
+              <div className="flex justify-between items-end">
+                <span className="text-[10px] font-bold uppercase opacity-60">Fulfilled</span>
+                <span className="text-lg font-bold tracking-tighter">{(summary.total_received || 0).toLocaleString()}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => router.push('/reports')}
+              className="w-full py-3 bg-white text-blue-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/90 transition-all shadow-lg active:scale-95"
+            >
+              Run Integrity Audit
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="heading-md uppercase tracking-wider text-slate-800 px-2">Rapid Execution</h3>
+            <div className="grid grid-cols-1 gap-3">
+              <ActionTile
+                title="Draft PO"
+                desc="Generate new supply chain order"
+                icon={FileText}
+                color="blue"
+                onClick={() => router.push("/po/create")}
+              />
+              <ActionTile
+                title="Log Dispatch"
+                desc="Execute material movement"
+                icon={Truck}
+                color="purple"
+                onClick={() => router.push("/dc/create")}
+              />
+              <ActionTile
+                title="Issue Invoice"
+                desc="Finalize financial billing cycle"
+                icon={Receipt}
+                color="emerald"
+                onClick={() => router.push("/invoice/create")}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -250,58 +234,43 @@ export default function DashboardPage() {
   );
 }
 
-// Micro-components
 function KpiTile({ title, value, trend, icon: Icon, color }: any) {
-  const colors: Record<string, string> = {
-    blue: "text-blue-600 bg-blue-50/50 border-blue-100",
-    amber: "text-amber-600 bg-amber-50/50 border-amber-100",
-    purple: "text-purple-600 bg-purple-50/50 border-purple-100",
-    emerald: "text-emerald-600 bg-emerald-50/50 border-emerald-100",
-  };
-
   return (
-    <GlassCard className="p-4 flex flex-col justify-between h-[110px] relative overflow-hidden group">
-      <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
-        <Icon className="w-16 h-16" />
-      </div>
-
-      <div className="flex justify-between items-start relative z-10">
-        <span className="text-[11px] uppercase tracking-wider font-semibold text-slate-500">{title}</span>
-        <div className={`p-1.5 rounded-lg ${colors[color]}`}>
-          <Icon className="w-3.5 h-3.5" />
+    <GlassCard className="p-6 flex flex-col justify-between h-[130px] group border-white/60">
+      <div className="flex justify-between items-start">
+        <div className="space-y-1">
+          <span className="text-label mb-0">{title}</span>
+          <div className="text-2xl font-black text-slate-900 tracking-tighter group-hover:text-blue-600 transition-colors uppercase">{value}</div>
+        </div>
+        <div className={`p-2 rounded-xl bg-${color}-50/50 border border-${color}-100 group-hover:scale-110 transition-transform`}>
+          <Icon className={`w-4 h-4 text-${color}-600`} />
         </div>
       </div>
-
-      <div className="relative z-10">
-        <div className="text-[28px] font-bold text-slate-900 tracking-tight">{value}</div>
-        <div className="text-[10px] font-medium flex items-center gap-1 text-slate-500 mt-0.5">
-          {typeof trend === 'number' && trend > 0 && <MoveUpRight className="w-2.5 h-2.5 text-emerald-500" />}
-          <span>{typeof trend === 'number' && trend > 0 ? `+${trend}%` : trend}</span>
-        </div>
+      <div className="text-[10px] font-bold flex items-center gap-1.5 text-slate-400 mt-2">
+        {trend && (typeof trend === 'number' || trend.includes('%')) && (
+          <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+            <MoveUpRight className="w-2.5 h-2.5" />
+            <span>{trend}</span>
+          </div>
+        )}
+        {!trend?.toString().includes('%') && <span>{trend}</span>}
       </div>
     </GlassCard>
   );
 }
 
 function ActionTile({ title, desc, icon: Icon, color, onClick }: any) {
-  const colors: Record<string, string> = {
-    blue: "text-blue-600 group-hover:bg-blue-50",
-    purple: "text-purple-600 group-hover:bg-purple-50",
-    emerald: "text-emerald-600 group-hover:bg-emerald-50",
-    indigo: "text-indigo-600 group-hover:bg-indigo-50",
-  };
-
   return (
     <button
       onClick={onClick}
-      className="w-full text-left flex items-center gap-3 p-3 rounded-lg border border-transparent hover:border-white/40 hover:bg-white/40 hover:shadow-sm transition-all group"
+      className="glass-panel glass-panel-interactive w-full text-left flex items-center gap-4 p-4 group"
     >
-      <div className={`p-2 rounded-md bg-white/50 border border-white/60 shadow-sm transition-colors ${colors[color]}`}>
-        <Icon className="w-4 h-4" />
+      <div className={`p-3 rounded-xl bg-${color}-50 text-${color}-600 border border-${color}-100 group-hover:bg-white group-hover:shadow-md transition-all`}>
+        <Icon className="w-5 h-5" />
       </div>
       <div>
-        <div className="text-sm font-semibold text-slate-700">{title}</div>
-        <div className="text-[10px] text-slate-500">{desc}</div>
+        <div className="text-xs font-black text-slate-800 uppercase tracking-tighter">{title}</div>
+        <div className="text-[10px] text-slate-400 font-medium italic mt-0.5">{desc}</div>
       </div>
     </button>
   );

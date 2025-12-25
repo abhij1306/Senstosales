@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '@/lib/utils'; // Assuming generic utility exists, else will inline
+import { cn } from '@/lib/utils';
 
 interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
     children: React.ReactNode;
@@ -10,8 +10,8 @@ const GlassCard = ({ children, className, variant = 'default', ...props }: Glass
     return (
         <div
             className={cn(
-                "glass rounded-xl p-5 transition-all duration-300",
-                variant === 'interact' && "hover:translate-y-[-2px] hover:shadow-lg cursor-pointer",
+                "glass-panel p-5",
+                variant === 'interact' && "glass-panel-interactive cursor-pointer",
                 className
             )}
             {...props}

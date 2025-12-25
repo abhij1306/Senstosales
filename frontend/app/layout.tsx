@@ -31,7 +31,7 @@ export default function RootLayout({
                 </div>
 
                 <div className="flex items-center gap-4">
-                  <div className="glass rounded-full px-2 py-1 shadow-sm">
+                  <div className="glass-search rounded-full px-2 py-1 shadow-sm">
                     <GlobalSearch />
                   </div>
                   {/* User Profile / Notifications could go here */}

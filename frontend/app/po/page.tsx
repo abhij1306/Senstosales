@@ -1,63 +1,30 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { api, POListItem, POStats } from "@/lib/api";
 import {
-    Upload, X, CheckCircle, XCircle, Loader2, Plus, Search, Filter,
-    TrendingUp, ClipboardList, Clock, DollarSign, FileText, ChevronRight
+    Upload, X, CheckCircle, XCircle, Loader2, Plus, Search,
+    TrendingUp, Clock, DollarSign, FileText, Activity, Layers, Sparkles
 } from "lucide-react";
 import GlassCard from "@/components/ui/GlassCard";
-import StatusBadge from "@/components/ui/StatusBadge";
 import { DenseTable, SortConfig, Column } from "@/components/ui/DenseTable";
 import { Pagination } from "@/components/ui/Pagination";
 import { formatDate, formatIndianCurrency } from "@/lib/utils";
-import { useToast } from "@/components/ui/Toast";
-
-interface UploadResult {
-    filename: string;
-    success: boolean;
-    po_number: number | null;
-    message: string;
-}
-
-interface BatchUploadResponse {
-    total: number;
-    successful: number;
-    failed: number;
-    results: UploadResult[];
-}
 
 export default function POPage() {
     const router = useRouter();
-    const { toast, success, error } = useToast();
     const [pos, setPOs] = useState<POListItem[]>([]);
     const [stats, setStats] = useState<POStats | null>(null);
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-    const [uploadResults, setUploadResults] = useState<BatchUploadResponse | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
-    const [statusFilter, setStatusFilter] = useState("All Statuses");
-
-    // Upload State
     const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
-    const [currentFileName, setCurrentFileName] = useState<string>('');
-
-    // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [sortConfig, setSortConfig] = useState<SortConfig<POListItem> | null>(null);
     const isCancelled = useRef(false);
-
-    const handleSort = (key: keyof POListItem) => {
-        let direction: 'asc' | 'desc' = 'asc';
-        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
-            direction = 'desc';
-        }
-        setSortConfig({ key, direction });
-    };
 
     useEffect(() => {
         const fetchData = async () => {
@@ -66,10 +33,10 @@ export default function POPage() {
                     api.listPOs(),
                     api.getPOStats()
                 ]);
-                setPOs(posData);
+                setPOs(posData || []);
                 setStats(statsData);
             } catch (err) {
-                console.error("Failed to load PO data:", err);
+                console.error("Fetch Error:", err);
             } finally {
                 setLoading(false);
             }
@@ -80,472 +47,283 @@ export default function POPage() {
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files || []);
         setSelectedFiles(files);
-        setUploadResults(null);
-        setUploadProgress({ current: 0, total: 0 });
-        setCurrentFileName('');
-    };
-
-    const removeFile = (index: number) => {
-        setSelectedFiles(files => files.filter((_, i) => i !== index));
     };
 
     const handleUpload = async () => {
         if (selectedFiles.length === 0) return;
         setUploading(true);
-        setUploadResults(null);
         setUploadProgress({ current: 0, total: selectedFiles.length });
-        let successful = 0;
-        let failed = 0;
         let processedCount = 0;
-        const totalFiles = selectedFiles.length;
-        const results: UploadResult[] = [];
 
         try {
             const CHUNK_SIZE = 25;
-
-            for (let i = 0; i < totalFiles; i += CHUNK_SIZE) {
+            for (let i = 0; i < selectedFiles.length; i += CHUNK_SIZE) {
                 if (isCancelled.current) break;
-
                 const chunk = selectedFiles.slice(i, i + CHUNK_SIZE);
-                setCurrentFileName(chunk[0].name);
-
-                try {
-                    const response = await api.uploadPOBatch(chunk);
-                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                    const data: any = response;
-
-                    if (data.status === 'error') {
-                        throw new Error(data.message || 'Upload failed');
-                    }
-
-                    if (data.results) {
-                        successful += data.results.successful || 0;
-                        failed += data.results.failed || 0;
-                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                        results.push(...(data.results.results || []));
-                    }
-                } catch (err: any) {
-                    console.error("Batch upload error:", err);
-                    chunk.forEach(file => {
-                        failed++;
-                        results.push({
-                            filename: file.name,
-                            success: false,
-                            po_number: null,
-                            message: err.message || "Network error or timeout"
-                        });
-                    });
-                }
-
+                await api.uploadPOBatch(chunk);
                 processedCount += chunk.length;
-                setUploadProgress({
-                    current: processedCount,
-                    total: totalFiles
-                });
-
-                await new Promise(resolve => setTimeout(resolve, 50));
+                setUploadProgress({ current: processedCount, total: selectedFiles.length });
             }
 
-            if (isCancelled.current) {
-                toast("Upload Cancelled", `Processed ${processedCount} of ${totalFiles} files.`);
-            } else {
-                success(`Processed ${totalFiles} files. Successful: ${successful}, Failed: ${failed}`);
-            }
-
-            const finalResponse: BatchUploadResponse = {
-                total: results.length,
-                successful,
-                failed,
-                results
-            };
-
-            setUploadResults(finalResponse);
-
-            if (successful > 0) {
-                const [updatedPos, updatedStats] = await Promise.all([
-                    api.listPOs(),
-                    api.getPOStats()
-                ]);
-                setPOs(updatedPos);
+            // Only refresh and clear if not cancelled
+            if (!isCancelled.current) {
+                const [updatedPos, updatedStats] = await Promise.all([api.listPOs(), api.getPOStats()]);
+                setPOs(updatedPos || []);
                 setStats(updatedStats);
+                setSelectedFiles([]);
             }
-
-        } catch (err: any) {
-            error(err.message || 'Failed to upload files');
+        } catch (err) {
+            console.error("Upload Error:", err);
         } finally {
             setUploading(false);
-            setCurrentFileName('');
             isCancelled.current = false;
-            setSelectedFiles([]);
-        }
-    };
-
-    const handleCancel = () => {
-        if (uploading) {
-            isCancelled.current = true;
         }
     };
 
     const columns: Column<POListItem>[] = [
         {
-            header: "PO Number",
+            header: "Purchase ID",
             accessorKey: "po_number",
             enableSorting: true,
             cell: (po: POListItem) => (
-                <div
-                    onClick={() => router.push(`/po/${po.po_number}`)}
-                    className="font-medium text-blue-600 cursor-pointer hover:text-blue-800 hover:underline"
-                >
-                    PO-{po.po_number}
+                <div onClick={() => router.push(`/po/view?id=${po.po_number}`)} className="link font-bold text-sm">
+                    {po.po_number}
                 </div>
             )
         },
         {
-            header: "Date",
+            header: "Order Date",
             accessorKey: "po_date",
             enableSorting: true,
-            cell: (po: POListItem) => <span className="text-slate-600 font-medium text-xs">{formatDate(po.po_date)}</span>
+            cell: (po: POListItem) => <span className="text-meta font-bold uppercase">{formatDate(po.po_date)}</span>
+        },
+        {
+            header: "Items",
+            accessorKey: "total_items_count",
+            className: "text-right w-16",
+            cell: (po: POListItem) => (
+                <span className="badge-premium badge-slate opacity-75 tabular-nums">
+                    {po.total_items_count || 0}
+                </span>
+            )
         },
         {
             header: "Ord",
             accessorKey: "total_ordered_quantity",
-            enableSorting: true,
-            className: "text-right w-[80px] text-slate-700 font-medium tabular-nums border-l border-slate-100",
-            cell: (po: POListItem) => po.total_ordered_quantity?.toLocaleString('en-IN') || '-'
+            className: "text-right",
+            cell: (po: POListItem) => <span className="text-accounting">{po.total_ordered_quantity?.toLocaleString() ?? 0}</span>
         },
         {
             header: "Del",
             accessorKey: "total_dispatched_quantity",
-            enableSorting: true,
-            className: "text-right w-[80px] text-slate-700 tabular-nums border-l border-slate-100",
-            cell: (po: POListItem) => (
-                <span className={(po.total_dispatched_quantity || 0) > 0 ? "text-slate-700 font-medium" : "text-slate-400 font-normal"}>
-                    {po.total_dispatched_quantity?.toLocaleString('en-IN') || '0'}
-                </span>
-            )
+            className: "text-right",
+            cell: (po: POListItem) => <span className={`text-accounting ${(po.total_dispatched_quantity ?? 0) > 0 ? 'text-blue-600' : 'text-slate-300'}`}>{po.total_dispatched_quantity?.toLocaleString() ?? 0}</span>
         },
         {
-            header: "Recd",
+            header: "Accepted",
             accessorKey: "total_received_quantity",
-            enableSorting: true,
-            className: "text-right w-[80px] tabular-nums border-l border-slate-100",
-            cell: (po: POListItem) => (
-                <span className={(po.total_received_quantity || 0) > 0 ? "text-emerald-600 font-medium" : "text-slate-400 font-normal"}>
-                    {po.total_received_quantity?.toLocaleString('en-IN') || '0'}
-                </span>
-            )
+            className: "text-right",
+            cell: (po: POListItem) => <span className={`text-accounting ${(po.total_received_quantity ?? 0) > 0 ? 'text-emerald-600' : 'text-slate-300'}`}>{po.total_received_quantity?.toLocaleString() ?? 0}</span>
         },
         {
-            header: "Rej",
-            accessorKey: "total_rejected_quantity",
-            enableSorting: true,
-            className: "text-right w-[80px] tabular-nums border-l border-slate-100 border-r-2 border-r-transparent",
-            cell: (po: POListItem) => (
-                <span className={(po.total_rejected_quantity || 0) > 0 ? "text-red-600 font-medium" : "text-slate-300 font-normal"}>
-                    {po.total_rejected_quantity?.toLocaleString('en-IN') || '0'}
-                </span>
-            )
+            header: "Balance",
+            accessorKey: "total_pending_quantity",
+            className: "text-right font-black",
+            cell: (po: POListItem) => {
+                const balance = (po.total_ordered_quantity ?? 0) - (po.total_dispatched_quantity ?? 0);
+                return <span className={`text-accounting ${balance > 0 ? 'text-amber-600' : 'text-slate-300'}`}>{balance.toLocaleString()}</span>
+            }
         },
         {
-            header: "Value",
+            header: "Gross Value",
             accessorKey: "po_value",
             enableSorting: true,
-            className: "text-right tabular-nums",
-            cell: (po: POListItem) => (
-                <span className="font-semibold text-slate-700">
-                    {formatIndianCurrency(po.po_value)}
-                </span>
-            )
+            className: "text-right",
+            cell: (po: POListItem) => <span className="text-accounting font-bold text-slate-800">{formatIndianCurrency(po.po_value)}</span>
         }
     ];
 
-    if (loading) return (
-        <div className="flex justify-center items-center h-[50vh] bg-gradient-to-br from-slate-50 via-white to-purple-50/30">
-            <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
-        </div>
-    );
-
-    // Filter, Sort, and Paginate
-    const filteredPOs = pos.filter(po => {
-        const matchesSearch =
-            po.po_number.toString().includes(searchQuery) ||
-            (po.supplier_name && po.supplier_name.toLowerCase().includes(searchQuery.toLowerCase()));
-        const status = po.status || 'New';
-        const matchesStatus = statusFilter === 'All Statuses' || status === statusFilter;
-        return matchesSearch && matchesStatus;
-    });
-
+    const filteredPOs = pos.filter(po => po.po_number.toString().includes(searchQuery));
     const sortedPOs = [...filteredPOs].sort((a, b) => {
         if (!sortConfig) return 0;
-
-        const aValue = a[sortConfig.key];
-        const bValue = b[sortConfig.key];
-
-        if (aValue === bValue) return 0;
-
-        // Handle null/undefined values
-        if (aValue === undefined || aValue === null) return 1;
-        if (bValue === undefined || bValue === null) return -1;
-
-        if (aValue < bValue) {
-            return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (aValue > bValue) {
-            return sortConfig.direction === 'asc' ? 1 : -1;
-        }
-        return 0;
+        const aVal = a[sortConfig.key];
+        const bVal = b[sortConfig.key];
+        if (aVal === bVal) return 0;
+        return (sortConfig.direction === 'asc' ? 1 : -1) * (aVal > bVal ? 1 : -1);
     });
+    const paginatedPOs = sortedPOs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
-    const paginatedPOs = sortedPOs.slice(
-        (currentPage - 1) * pageSize,
-        currentPage * pageSize
-    );
+    if (loading) return <div className="p-32 text-center animate-pulse text-blue-500 font-bold uppercase tracking-widest text-xs">Synchronizing Repository...</div>;
 
     return (
-        <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-purple-50/30 p-4 md:p-6 space-y-6 pb-24">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-blue-50/20 p-6 space-y-6 pb-24 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Purchase Orders</h1>
-                    <p className="text-xs text-slate-500 mt-0.5">Procurement tracking and management</p>
+                    <h1 className="heading-xl flex items-center gap-4">
+                        <Layers className="w-8 h-8 text-blue-500" />
+                        Procurement Pipeline
+                    </h1>
+                    <p className="text-sm text-slate-500 mt-1 font-medium italic">Execute and track enterprise purchase orders</p>
                 </div>
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => router.push('/po/create')}
-                        className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-xs font-semibold shadow-sm transition-all shadow-blue-500/20"
-                    >
-                        <Plus className="w-3.5 h-3.5" />
-                        Create Order
+                <div className="flex gap-3">
+                    <button onClick={() => router.push('/po/create')} className="btn-premium btn-primary shadow-xl">
+                        <Plus className="w-4 h-4" />
+                        New Order
                     </button>
-                    <label className="px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 cursor-pointer flex items-center gap-2 transition-colors">
-                        <Upload className="w-3.5 h-3.5" />
-                        Batch Upload
-                        <input
-                            type="file"
-                            accept=".html"
-                            multiple
-                            onChange={handleFileSelect}
-                            disabled={uploading}
-                            className="hidden"
-                        />
+                    <label className="btn-premium btn-ghost">
+                        <Upload className="w-4 h-4" />
+                        Batch Ingest
+                        <input type="file" multiple hidden onChange={handleFileSelect} />
                     </label>
                 </div>
             </div>
 
-
-            {/* KPIs */}
             {stats && (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <GlassCard className="flex flex-col justify-between h-[90px] p-4">
-                        <div className="flex justify-between items-start">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total POs</span>
-                            <FileText className="w-4 h-4 text-indigo-500" />
-                        </div>
-                        <div className="text-[28px] font-bold text-slate-800">{pos.length.toLocaleString('en-IN')}</div>
-                    </GlassCard>
-                    <GlassCard className="flex flex-col justify-between h-[90px] p-4">
-                        <div className="flex justify-between items-start">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Orders</span>
-                            <ClipboardList className="w-4 h-4 text-blue-500" />
-                        </div>
-                        <div className="text-[28px] font-bold text-slate-800">{stats.open_orders_count.toLocaleString('en-IN')}</div>
-                    </GlassCard>
-                    <GlassCard className="flex flex-col justify-between h-[90px] p-4">
-                        <div className="flex justify-between items-start">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pending</span>
-                            <Clock className="w-4 h-4 text-amber-500" />
-                        </div>
-                        <div className="text-[28px] font-bold text-slate-800">{stats.pending_approval_count.toLocaleString('en-IN')}</div>
-                    </GlassCard>
-                    <GlassCard className="flex flex-col justify-between h-[90px] p-4">
-                        <div className="flex justify-between items-start">
-                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total Value (YTD)</span>
-                            <DollarSign className="w-4 h-4 text-emerald-500" />
-                        </div>
-                        <div className="flex flex-col">
-                            <div className="text-[28px] font-bold text-slate-800">{formatIndianCurrency(stats.total_value_ytd)}</div>
-                            <div className="text-[10px] text-emerald-600 font-medium flex items-center gap-1">
-                                <TrendingUp className="w-3 h-3" />
-                                {stats.total_value_change}% vs last month
-                            </div>
-                        </div>
-                    </GlassCard>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <StatCard title="Active Contracts" value={pos.length} icon={FileText} color="indigo" />
+                    <StatCard title="Open Fulfillment" value={stats.open_orders_count} icon={Activity} color="blue" />
+                    <StatCard title="Pending Review" value={stats.pending_approval_count} icon={Clock} color="amber" />
+                    <StatCard title="Total Pipeline" value={formatIndianCurrency(stats.total_value_ytd)} icon={DollarSign} color="emerald" trend={`${stats.total_value_change}%`} />
                 </div>
             )}
 
-
-            {/* Upload Progress Indicator */}
-            {(selectedFiles.length > 0 || uploadResults) && (
-                <GlassCard className="p-4 space-y-4 border-dashed border-blue-200 bg-blue-50/20">
-                    {selectedFiles.length > 0 && (
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm font-medium text-slate-700">{selectedFiles.length} files selected</span>
-                                <button
-                                    onClick={handleUpload}
-                                    disabled={uploading}
-                                    className="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-xs font-semibold transition-all flex items-center gap-2"
-                                >
-                                    {uploading ? (
-                                        <>
-                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                            Processing...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Upload className="w-3.5 h-3.5" />
-                                            Start Upload
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-
-                            {uploading && (
-                                <div className="space-y-2">
-                                    {/* Progress Bar */}
-                                    <div className="relative w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-                                        <div
-                                            className={`absolute top-0 left-0 h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300 ease-out ${uploadProgress.current === 0 ? 'animate-pulse' : ''}`}
-                                            style={{ width: `${uploadProgress.total > 0 ? Math.max((uploadProgress.current / uploadProgress.total) * 100, 3) : 3}%` }}
-                                        />
-                                    </div>
-
-                                    {/* Status Text with Cancel Button */}
-                                    <div className="flex items-center justify-between text-xs">
-                                        <span className="text-slate-600 font-medium">
-                                            {uploadProgress.current === uploadProgress.total
-                                                ? `All ${uploadProgress.total} files processed`
-                                                : `Processing files ${uploadProgress.current + 1}-${Math.min(uploadProgress.current + 25, uploadProgress.total)} of ${uploadProgress.total}`
-                                            }
-                                        </span>
-                                        <div className="flex items-center gap-3">
-                                            <button
-                                                onClick={handleCancel}
-                                                className="text-red-500 hover:text-red-700 font-medium hover:underline transition-colors"
-                                            >
-                                                Cancel
-                                            </button>
-                                            <span className="text-blue-600 font-semibold">
-                                                {uploadProgress.total > 0 ? Math.round((uploadProgress.current / uploadProgress.total) * 100) : 0}%
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    {/* Current File Name */}
-                                    {currentFileName && (
-                                        <div className="text-[10px] text-slate-500 truncate" title={currentFileName}>
-                                            📄 {currentFileName}
-                                        </div>
-                                    )}
-
-                                    {/* Info Message */}
-                                    <div className="flex items-start gap-2 p-2 bg-blue-50 border border-blue-100 rounded-lg">
-                                        <Clock className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                                        <p className="text-[11px] text-blue-700">
-                                            Large batches may take several minutes. Please do not close this page.
-                                            {selectedFiles.length > 100 && ` Processing ${selectedFiles.length} files in batches of 50...`}
-                                        </p>
-                                    </div>
-                                </div>
-                            )}
+            {selectedFiles.length > 0 && !uploading && (
+                <GlassCard className="p-6 border-dashed border-2 border-blue-300 bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center justify-between animate-in slide-in-from-top-4 shadow-xl">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg animate-pulse">
+                            <Sparkles className="w-6 h-6 text-blue-600" />
                         </div>
-                    )}
-                    {uploadResults && (
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <h4 className="text-sm font-semibold text-slate-800">Upload Complete</h4>
-                                <button
-                                    onClick={() => setUploadResults(null)}
-                                    className="text-slate-400 hover:text-slate-600"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
-                            </div>
-                            <div className="flex gap-4 text-xs">
-                                <div className="flex items-center gap-1.5">
-                                    <CheckCircle className="w-4 h-4 text-emerald-500" />
-                                    <span className="text-emerald-600 font-medium">{uploadResults.successful} successful</span>
-                                </div>
-                                {uploadResults.failed > 0 && (
-                                    <div className="flex items-center gap-1.5">
-                                        <XCircle className="w-4 h-4 text-red-500" />
-                                        <span className="text-red-600 font-medium">{uploadResults.failed} failed</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Failed Files List */}
-                            {uploadResults.failed > 0 && (
-                                <div className="mt-3 p-3 bg-red-50 border border-red-100 rounded-lg space-y-2">
-                                    <h5 className="text-xs font-semibold text-red-800 flex items-center gap-1.5">
-                                        <XCircle className="w-3.5 h-3.5" />
-                                        Failed Files ({uploadResults.failed})
-                                    </h5>
-                                    <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                                        {uploadResults.results
-                                            .filter(r => !r.success)
-                                            .map((result, idx) => (
-                                                <button
-                                                    key={idx}
-                                                    onClick={() => {
-                                                        navigator.clipboard.writeText(result.filename);
-                                                    }}
-                                                    className="w-full p-2 bg-white border border-red-100 rounded text-[11px] hover:bg-red-50 hover:border-red-200 transition-colors cursor-pointer text-left"
-                                                    title={`Click to copy: ${result.filename}`}
-                                                >
-                                                    <div className="font-medium text-red-700 truncate flex items-center gap-1.5">
-                                                        <FileText className="w-3 h-3 flex-shrink-0" />
-                                                        {result.filename}
-                                                    </div>
-                                                    <div className="text-red-600 mt-0.5">
-                                                        {result.message}
-                                                    </div>
-                                                    <div className="text-[9px] text-red-400 mt-1">
-                                                        Click to copy filename
-                                                    </div>
-                                                </button>
-                                            ))
-                                        }
-                                    </div>
-                                </div>
-                            )}
+                        <div>
+                            <div className="text-sm font-black uppercase tracking-wider text-blue-700">{selectedFiles.length} Documents Selected</div>
+                            <div className="text-xs font-bold text-blue-500 mt-0.5 uppercase tracking-wide">Ready for system ingestion</div>
                         </div>
-                    )}
+                    </div>
+                    <div className="flex gap-3">
+                        <button onClick={() => setSelectedFiles([])} className="btn-premium btn-ghost border-none bg-white/50 h-12 w-12 p-0 hover:bg-white shadow-md">
+                            <X className="w-5 h-5" />
+                        </button>
+                        <button onClick={handleUpload} disabled={uploading} className="btn-premium btn-primary px-8 h-12 shadow-lg">
+                            {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Upload className="w-5 h-5" />}
+                            {uploading ? "Processing..." : "Start Sync"}
+                        </button>
+                    </div>
                 </GlassCard>
             )}
 
-            {/* filters */}
-            <div className="flex gap-2">
-                <div className="relative flex-1 max-w-sm">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input
-                        type="text"
-                        placeholder="Filter orders..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-9 pr-4 py-1.5 bg-white/60 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none"
+            {uploading && uploadProgress.total > 0 && (
+                <GlassCard className="p-6 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 animate-in slide-in-from-top-4 shadow-xl overflow-hidden">
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg">
+                                    <Loader2 className="w-6 h-6 text-blue-600 animate-spin" />
+                                </div>
+                                <div>
+                                    <div className="text-sm font-black uppercase tracking-wider text-blue-700">Processing Purchase Orders</div>
+                                    <div className="text-xs font-bold text-blue-500">
+                                        {uploadProgress.current} of {uploadProgress.total} documents ingested
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className="text-right">
+                                    <div className="text-2xl font-black text-blue-600">{Math.round((uploadProgress.current / uploadProgress.total) * 100)}%</div>
+                                    <div className="text-xs font-bold text-slate-400 uppercase tracking-wide">Complete</div>
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        isCancelled.current = true;
+                                        setUploading(false);
+                                    }}
+                                    className="btn-premium btn-ghost border-red-200 text-red-600 h-10 px-4"
+                                >
+                                    <X className="w-4 h-4" /> Stop
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Animated Progress Bar */}
+                        <div className="relative h-3 bg-white/50 rounded-full overflow-hidden shadow-inner">
+                            <div
+                                className="h-full bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 transition-all duration-500 ease-out relative overflow-hidden"
+                                style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-shimmer" />
+                            </div>
+                        </div>
+
+                        {/* File Processing Animation */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-48 overflow-y-auto">
+                            {selectedFiles.slice(0, uploadProgress.current).map((file, idx) => (
+                                <div key={idx} className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm animate-in fade-in slide-in-from-left-2" style={{ animationDelay: `${idx * 50}ms` }}>
+                                    <FileText className="w-4 h-4 text-emerald-500" />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="text-xs font-bold text-slate-700 truncate">{file.name}</div>
+                                    </div>
+                                    <div className="w-5 h-5 bg-emerald-50 rounded-full flex items-center justify-center">
+                                        <span className="text-emerald-600 text-xs">✓</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </GlassCard>
+            )}
+
+            <div className="space-y-4">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-2">
+                    <h2 className="heading-md uppercase tracking-wider text-slate-800">Pipeline Inventory</h2>
+                    <div className="relative w-full md:w-80">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input
+                            type="text"
+                            placeholder="SEARCH BY PURCHASE ID..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="input-premium pl-12 font-bold uppercase tracking-widest text-[10px]"
+                        />
+                    </div>
+                </div>
+
+                <div className="glass-panel overflow-hidden">
+                    <DenseTable
+                        data={paginatedPOs}
+                        columns={columns}
+                        onRowClick={(po) => router.push(`/po/view?id=${po.po_number}`)}
+                        className="bg-transparent border-none"
                     />
+                    <div className="p-4 border-t border-white/20 bg-white/10">
+                        <Pagination
+                            currentPage={currentPage}
+                            totalItems={filteredPOs.length}
+                            pageSize={pageSize}
+                            onPageChange={setCurrentPage}
+                            onPageSizeChange={setPageSize}
+                        />
+                    </div>
                 </div>
             </div>
-
-            <DenseTable
-                loading={loading}
-                data={paginatedPOs}
-                columns={columns}
-                onRowClick={(po) => router.push(`/po/view?id=${po.po_number}`)}
-                className="bg-white/60 shadow-sm backdrop-blur-sm min-h-[500px]"
-                keyField="po_number"
-                onSort={handleSort}
-                sortConfig={sortConfig}
-            />
-
-            <Pagination
-                currentPage={currentPage}
-                totalItems={filteredPOs.length}
-                pageSize={pageSize}
-                onPageChange={setCurrentPage}
-                onPageSizeChange={setPageSize}
-            />
         </div>
+    );
+}
+
+function StatCard({ title, value, icon: Icon, color, trend }: any) {
+    return (
+        <GlassCard className="p-6 h-[110px] flex flex-col justify-between group">
+            <div className="flex justify-between items-start">
+                <div>
+                    <span className="text-label uppercase opacity-60 m-0">{title}</span>
+                    <div className="text-xl font-black text-slate-800 tracking-tighter mt-1 group-hover:text-blue-600 transition-colors">{typeof value === 'number' ? value.toLocaleString() : value}</div>
+                </div>
+                <div className={`p-2 rounded-xl bg-${color}-50/50 border border-${color}-100 group-hover:scale-110 transition-transform`}>
+                    <Icon className={`w-4 h-4 text-${color}-600`} />
+                </div>
+            </div>
+            {trend && (
+                <div className="flex items-center gap-1.5 text-[10px] font-black text-emerald-600 uppercase mt-2">
+                    <TrendingUp className="w-3 h-3" /> {trend} Growth
+                </div>
+            )}
+        </GlassCard>
     );
 }

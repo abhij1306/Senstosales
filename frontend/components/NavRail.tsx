@@ -59,23 +59,23 @@ function NavRailComponent() {
                     </div>
                     <div>
                         <h1 className="text-sm font-bold text-slate-800 leading-tight tracking-tight">SenstoSales</h1>
-                        <p className="text-[9px] text-slate-500 font-semibold uppercase tracking-widest">Manager</p>
+                        <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-widest">Manager</p>
                     </div>
                 </div>
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-6">
+            <nav className="nav-scrollable py-6 px-3 space-y-6">
                 {sections.map((section, idx) => (
                     <div key={idx}>
                         {section.title && (
-                            <h3 className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2 ml-1">
+                            <h3 className="nav-section-title">
                                 {section.title}
                             </h3>
                         )}
                         <ul className="space-y-0.5">
                             {section.items.map((item: any) => {
-                                const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+                                const isActive = pathname === item.href || (item.href !== "/" && pathname.startsWith(`${item.href}/`));
                                 const Icon = item.icon;
 
                                 return (
@@ -101,7 +101,7 @@ function NavRailComponent() {
             {/* Profile Footer */}
             <div className="nav-footer">
                 <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold border border-white/50 text-xs">
+                    <div className="nav-avatar">
                         JD
                     </div>
                     <div className="flex-1 min-w-0">

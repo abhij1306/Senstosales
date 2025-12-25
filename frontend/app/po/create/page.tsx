@@ -2,30 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, X, ChevronDown, ChevronUp, FileText, Briefcase, CreditCard, User, Plus, Trash2, Package } from "lucide-react";
-import { Card } from "@/components/ui/Card";
-
-// ============================================================================
-// COMPONENTS
-// ============================================================================
-
-const CompactInput = ({ label, value, onChange, type = "text", step, placeholder = "", required = false, readOnly = false, className = "" }: any) => (
-    <div className={`space-y-0.5 ${className}`}>
-        <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-500">
-            {label} {required && <span className="text-red-500">*</span>}
-        </label>
-        <input
-            type={type}
-            step={step}
-            value={value}
-            onChange={onChange}
-            readOnly={readOnly}
-            placeholder={placeholder}
-            className={`w-full px-2 py-1.5 text-xs border border-slate-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-slate-900 transition-colors ${readOnly ? 'bg-slate-50 text-slate-500 cursor-not-allowed' : 'bg-white/80'
-                }`}
-        />
-    </div>
-);
+import { ArrowLeft, Save, X, FileText, Briefcase, CreditCard, User, Plus, Trash2, Package, Loader2, Sparkles } from "lucide-react";
+import GlassCard from "@/components/ui/GlassCard";
+import Tabs from "@/components/ui/Tabs";
 
 // ============================================================================
 // MAIN CONTENT
@@ -71,18 +50,7 @@ export default function CreatePOPage() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [data, setData] = useState<any>(initialData);
     const [activeTab, setActiveTab] = useState("basic");
-    const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
     const [saving, setSaving] = useState(false);
-
-    const toggleItem = (itemNo: number) => {
-        const newExpanded = new Set(expandedItems);
-        if (newExpanded.has(itemNo)) {
-            newExpanded.delete(itemNo);
-        } else {
-            newExpanded.add(itemNo);
-        }
-        setExpandedItems(newExpanded);
-    };
 
     const addItem = () => {
         if (!data || !data.items) return;
@@ -100,52 +68,12 @@ export default function CreatePOPage() {
             deliveries: []
         };
         setData({ ...data, items: [...data.items, newItem] });
-        setExpandedItems(new Set([...expandedItems, maxItemNo + 1]));
     };
 
     const removeItem = (itemNo: number) => {
         if (!data || !data.items) return;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const newItems = data.items.filter((i: any) => i.po_item_no !== itemNo);
-        setData({ ...data, items: newItems });
-        const newExpanded = new Set(expandedItems);
-        newExpanded.delete(itemNo);
-        setExpandedItems(newExpanded);
-    };
-
-    const addDelivery = (itemNo: number) => {
-        if (!data || !data.items) return;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const newItems = data.items.map((item: any) => {
-            if (item.po_item_no === itemNo) {
-                const newDelivery = {
-                    lot_no: (item.deliveries?.length || 0) + 1,
-                    dely_qty: 0,
-                    dely_date: '',
-                    entry_allow_date: '',
-                    dest_code: ''
-                };
-                return {
-                    ...item,
-                    deliveries: [...(item.deliveries || []), newDelivery]
-                };
-            }
-            return item;
-        });
-        setData({ ...data, items: newItems });
-    };
-
-    const removeDelivery = (itemNo: number, deliveryIndex: number) => {
-        if (!data || !data.items) return;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const newItems = data.items.map((item: any) => {
-            if (item.po_item_no === itemNo) {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const newDeliveries = item.deliveries.filter((_: any, idx: number) => idx !== deliveryIndex);
-                return { ...item, deliveries: newDeliveries };
-            }
-            return item;
-        });
         setData({ ...data, items: newItems });
     };
 
@@ -169,315 +97,366 @@ export default function CreatePOPage() {
     };
 
     return (
-        <div className="space-y-4 pb-12 w-full max-w-6xl mx-auto">
-            {/* Header */}
-            <div className="flex items-center justify-between pt-2">
-                <div className="flex items-center gap-3">
-                    <button onClick={() => router.back()} className="text-slate-500 hover:text-slate-700 transition-colors p-1.5 rounded-full hover:bg-white/50">
-                        <ArrowLeft className="w-4 h-4" />
+        <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-blue-50/20 p-6 space-y-8 pb-32 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            {/* Page Header */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                <div className="flex items-center gap-6">
+                    <button onClick={() => router.back()} className="h-10 w-10 flex items-center justify-center rounded-xl bg-white/80 border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-white shadow-sm transition-all">
+                        <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div>
-                        <h1 className="text-lg font-bold text-slate-800 flex items-center gap-2 tracking-tight">
-                            Create Purchase Order
-                        </h1>
-                        <p className="text-xs text-slate-500">
-                            Drafting new manual PO
-                        </p>
+                        <div className="flex items-center gap-3">
+                            <h1 className="text-[20px] font-semibold text-slate-800 tracking-tight uppercase">Create Purchase Order</h1>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 uppercase tracking-widest">
+                                PROCUREMENT
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-4 mt-1">
+                            <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
+                                <FileText className="w-3.5 h-3.5" />
+                                {header.po_number || 'ST/PO/24-25/---'}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
-                <div className="flex gap-2">
+                <div className="flex items-center gap-3">
                     <button
                         onClick={() => router.back()}
-                        className="px-3 py-1.5 text-xs font-medium text-slate-600 bg-white/50 border border-slate-200 rounded-lg hover:bg-white transition-colors"
+                        className="btn-premium btn-ghost h-11 px-6 text-slate-500"
                     >
-                        <X className="w-3.5 h-3.5 inline mr-1" /> Cancel
+                        <X className="w-4 h-4" /> Discard
                     </button>
                     <button
                         onClick={handleSave}
                         disabled={saving}
-                        className="px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs font-medium shadow-sm transition-all flex items-center gap-2 disabled:opacity-70"
+                        className="btn-premium btn-primary bg-gradient-to-r from-blue-600 to-indigo-600 shadow-indigo-200 h-11 px-8"
                     >
-                        <Save className="w-3.5 h-3.5" />
+                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         {saving ? 'Saving...' : 'Save PO'}
                     </button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+                {/* Left Column: Details & Items */}
+                <div className="lg:col-span-8 space-y-10">
+                    <GlassCard className="p-0 overflow-hidden border-slate-200/60 shadow-sm transition-all">
+                        <Tabs
+                            tabs={[
+                                { id: 'basic', icon: FileText, label: 'Basic Info' },
+                                { id: 'references', icon: Briefcase, label: 'References' },
+                                { id: 'financial', icon: CreditCard, label: 'Financials' },
+                                { id: 'issuer', icon: User, label: 'Issuer Details' },
+                            ]}
+                            activeTab={activeTab}
+                            onTabChange={setActiveTab}
+                            className="px-6 pt-6"
+                        />
 
-                {/* Left Column: Header Details (Tabs) */}
-                <div className="md:col-span-4 space-y-4">
-                    <Card variant="glass" padding="none" className="overflow-hidden h-fit sticky top-6">
-                        {/* Tabs Header */}
-                        <div className="flex flex-wrap border-b border-white/20 bg-white/40">
-                            {[
-                                { id: 'basic', icon: FileText, label: 'Basic' },
-                                { id: 'references', icon: Briefcase, label: 'Ref' },
-                                { id: 'financial', icon: CreditCard, label: 'Finance' },
-                                { id: 'issuer', icon: User, label: 'Issuer' },
-                            ].map(tab => {
-                                const Icon = tab.icon;
-                                return (
-                                    <button
-                                        key={tab.id}
-                                        onClick={() => setActiveTab(tab.id)}
-                                        className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold transition-all flex-1 justify-center border-b-2 ${activeTab === tab.id
-                                            ? "border-blue-500 text-blue-700 bg-blue-50/30"
-                                            : "border-transparent text-slate-500 hover:text-slate-700 hover:bg-white/40"
-                                            }`}
-                                    >
-                                        <Icon className="w-3.5 h-3.5" /> {tab.label}
-                                    </button>
-                                );
-                            })}
-                        </div>
-
-                        <div className="p-5">
+                        <div className="p-10">
                             {activeTab === 'basic' && (
-                                <div className="space-y-3">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <CompactInput label="PO Number" value={header.po_number || ''} onChange={(e: any) => updateHeader('po_number', e.target.value)} />
-                                        <CompactInput label="PO Date" value={header.po_date || ''} onChange={(e: any) => updateHeader('po_date', e.target.value)} type="date" />
-                                        <CompactInput label="Supplier Name" value={header.supplier_name || ''} onChange={(e: any) => updateHeader('supplier_name', e.target.value)} />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                    <div className="space-y-2">
+                                        <label className="text-label">PO Number</label>
+                                        <input value={header.po_number || ''} onChange={(e) => updateHeader('po_number', e.target.value)} className="input-premium font-black uppercase" placeholder="e.g. PO/24-25/001" />
                                     </div>
-                                    <div className="h-px bg-slate-200/50 my-1" />
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <CompactInput label="Supplier Code" value={header.supplier_code || ''} onChange={(e: any) => updateHeader('supplier_code', e.target.value)} />
-                                        <CompactInput label="Dept (DVN)" value={header.department_no || ''} onChange={(e: any) => updateHeader('department_no', e.target.value)} />
-                                        <CompactInput label="Email" value={header.supplier_email || ''} onChange={(e: any) => updateHeader('supplier_email', e.target.value)} />
+                                    <div className="space-y-2">
+                                        <label className="text-label">PO Date</label>
+                                        <input type="date" value={header.po_date || ''} onChange={(e) => updateHeader('po_date', e.target.value)} className="input-premium font-bold" />
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <CompactInput label="Phone" value={header.supplier_phone || ''} onChange={(e: any) => updateHeader('supplier_phone', e.target.value)} />
-                                        <CompactInput label="Fax" value={header.supplier_fax || ''} onChange={(e: any) => updateHeader('supplier_fax', e.target.value)} />
+                                    <div className="col-span-full space-y-2">
+                                        <label className="text-label">Supplier Name</label>
+                                        <input value={header.supplier_name || ''} onChange={(e) => updateHeader('supplier_name', e.target.value)} className="input-premium font-bold" placeholder="Legal name of supplier" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-label">Supplier Code</label>
+                                        <input value={header.supplier_code || ''} onChange={(e) => updateHeader('supplier_code', e.target.value)} className="input-premium font-black uppercase" placeholder="VND-001" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-label">Department</label>
+                                        <input value={header.department_no || ''} onChange={(e) => updateHeader('department_no', e.target.value)} className="input-premium font-bold" placeholder="Department code/name" />
+                                    </div>
+                                    <div className="col-span-full h-px bg-slate-50 my-2" />
+                                    <div className="space-y-2">
+                                        <label className="text-label">Email Address</label>
+                                        <input value={header.supplier_email || ''} onChange={(e) => updateHeader('supplier_email', e.target.value)} className="input-premium" placeholder="contact@supplier.com" />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-label">Phone</label>
+                                            <input value={header.supplier_phone || ''} onChange={(e) => updateHeader('supplier_phone', e.target.value)} className="input-premium" placeholder="+91..." />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-label">Fax</label>
+                                            <input value={header.supplier_fax || ''} onChange={(e) => updateHeader('supplier_fax', e.target.value)} className="input-premium" placeholder="Fax no." />
+                                        </div>
                                     </div>
                                 </div>
                             )}
 
                             {activeTab === 'references' && (
-                                <div className="space-y-3">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <CompactInput label="Enquiry No" value={header.enquiry_no || ''} onChange={(e: any) => updateHeader('enquiry_no', e.target.value)} />
-                                        <CompactInput label="Enquiry Date" value={header.enquiry_date || ''} onChange={(e: any) => updateHeader('enquiry_date', e.target.value)} type="date" />
-                                        <CompactInput label="Quotation Ref" value={header.quotation_ref || ''} onChange={(e: any) => updateHeader('quotation_ref', e.target.value)} />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                    <div className="space-y-2">
+                                        <label className="text-label">Enquiry No</label>
+                                        <input value={header.enquiry_no || ''} onChange={(e) => updateHeader('enquiry_no', e.target.value)} className="input-premium font-black" placeholder="ENQ/..." />
                                     </div>
-                                    <div className="h-px bg-slate-200/50 my-1" />
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <CompactInput label="Quotation Date" value={header.quotation_date || ''} onChange={(e: any) => updateHeader('quotation_date', e.target.value)} type="date" />
-                                        <CompactInput label="RC No" value={header.rc_no || ''} onChange={(e: any) => updateHeader('rc_no', e.target.value)} />
-                                        <CompactInput label="Order Type" value={header.order_type || ''} onChange={(e: any) => updateHeader('order_type', e.target.value)} />
+                                    <div className="space-y-2">
+                                        <label className="text-label">Enquiry Date</label>
+                                        <input type="date" value={header.enquiry_date || ''} onChange={(e) => updateHeader('enquiry_date', e.target.value)} className="input-premium font-bold" />
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <CompactInput label="PO Status" value={header.po_status || ''} onChange={(e: any) => updateHeader('po_status', e.target.value)} />
-                                        <CompactInput label="Amend No" value={header.amend_no || ''} onChange={(e: any) => updateHeader('amend_no', e.target.value)} type="number" />
+                                    <div className="space-y-2">
+                                        <label className="text-label">Quotation Ref</label>
+                                        <input value={header.quotation_ref || ''} onChange={(e) => updateHeader('quotation_ref', e.target.value)} className="input-premium font-black" placeholder="QTN/..." />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-label">Quotation Date</label>
+                                        <input type="date" value={header.quotation_date || ''} onChange={(e) => updateHeader('quotation_date', e.target.value)} className="input-premium font-bold" />
+                                    </div>
+                                    <div className="col-span-full h-px bg-slate-50 my-2" />
+                                    <div className="space-y-2">
+                                        <label className="text-label">Order Type</label>
+                                        <input value={header.order_type || ''} onChange={(e) => updateHeader('order_type', e.target.value)} className="input-premium font-bold" placeholder="e.g. Regular, AMC, Service" />
                                     </div>
                                 </div>
                             )}
 
                             {activeTab === 'financial' && (
-                                <div className="space-y-3">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <CompactInput label="PO Value" value={header.po_value || 0} onChange={(e: any) => updateHeader('po_value', e.target.value)} type="number" step="0.01" />
-                                        <CompactInput label="Net PO Value" value={header.net_po_value || 0} onChange={(e: any) => updateHeader('net_po_value', e.target.value)} type="number" />
-                                        <CompactInput label="FOB Value" value={header.fob_value || 0} onChange={(e: any) => updateHeader('fob_value', e.target.value)} type="number" />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                    <div className="space-y-2">
+                                        <label className="text-label">TIN Number</label>
+                                        <input value={header.tin_no || ''} onChange={(e) => updateHeader('tin_no', e.target.value)} className="input-premium font-black" placeholder="Tax ID" />
                                     </div>
-                                    <div className="h-px bg-slate-200/50 my-1" />
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <CompactInput label="TIN No" value={header.tin_no || ''} onChange={(e: any) => updateHeader('tin_no', e.target.value)} />
-                                        <CompactInput label="ECC No" value={header.ecc_no || ''} onChange={(e: any) => updateHeader('ecc_no', e.target.value)} />
-                                        <CompactInput label="MPCT No" value={header.mpct_no || ''} onChange={(e: any) => updateHeader('mpct_no', e.target.value)} />
+                                    <div className="space-y-2">
+                                        <label className="text-label">ECC Number</label>
+                                        <input value={header.ecc_no || ''} onChange={(e) => updateHeader('ecc_no', e.target.value)} className="input-premium font-black" placeholder="Excise Control Code" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-label">MPCT Number</label>
+                                        <input value={header.mpct_no || ''} onChange={(e) => updateHeader('mpct_no', e.target.value)} className="input-premium font-black" placeholder="MPCT ref" />
+                                    </div>
+                                    <div className="col-span-full h-px bg-slate-50 my-2" />
+                                    <div className="space-y-2">
+                                        <label className="text-label">Net PO Value</label>
+                                        <input type="number" value={header.net_po_value || 0} onChange={(e) => updateHeader('net_po_value', e.target.value)} className="input-premium font-bold" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-label">FOB Value</label>
+                                        <input type="number" value={header.fob_value || 0} onChange={(e) => updateHeader('fob_value', e.target.value)} className="input-premium font-bold" />
                                     </div>
                                 </div>
                             )}
 
                             {activeTab === 'issuer' && (
-                                <div className="space-y-3">
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <CompactInput label="Inspection By" value={header.inspection_by || ''} onChange={(e: any) => updateHeader('inspection_by', e.target.value)} />
-                                        <CompactInput label="Issuer Name" value={header.issuer_name || ''} onChange={(e: any) => updateHeader('issuer_name', e.target.value)} />
-                                        <CompactInput label="Designation" value={header.issuer_designation || ''} onChange={(e: any) => updateHeader('issuer_designation', e.target.value)} />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                    <div className="space-y-2 col-span-full">
+                                        <label className="text-label">Inspection By</label>
+                                        <input value={header.inspection_by || ''} onChange={(e) => updateHeader('inspection_by', e.target.value)} className="input-premium font-bold" placeholder="Department or Third Party" />
                                     </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                                        <CompactInput label="Issuer Phone" value={header.issuer_phone || ''} onChange={(e: any) => updateHeader('issuer_phone', e.target.value)} />
+                                    <div className="space-y-2">
+                                        <label className="text-label">Issuer Name</label>
+                                        <input value={header.issuer_name || ''} onChange={(e) => updateHeader('issuer_name', e.target.value)} className="input-premium font-bold" placeholder="Authorized Person" />
                                     </div>
-
-                                    <div className="pt-2">
-                                        <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-500 mb-1">Remarks</label>
+                                    <div className="space-y-2">
+                                        <label className="text-label">Role / Designation</label>
+                                        <input value={header.issuer_designation || ''} onChange={(e) => updateHeader('issuer_designation', e.target.value)} className="input-premium font-bold" placeholder="Designation" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-label">Contact Phone</label>
+                                        <input value={header.issuer_phone || ''} onChange={(e) => updateHeader('issuer_phone', e.target.value)} className="input-premium" placeholder="Direct line" />
+                                    </div>
+                                    <div className="col-span-full space-y-2">
+                                        <label className="text-label">Internal Remarks</label>
                                         <textarea
                                             value={header.remarks || ''}
                                             onChange={(e) => updateHeader('remarks', e.target.value)}
-                                            rows={2} // Reduced rows
-                                            className="w-full px-2 py-1.5 text-xs border border-slate-200 rounded-md focus:ring-1 focus:ring-blue-500 text-slate-900 bg-white/80 resize-none"
+                                            rows={2}
+                                            className="input-premium resize-none"
+                                            placeholder="Confidential notes or special instructions..."
                                         />
                                     </div>
                                 </div>
                             )}
                         </div>
-                    </Card>
-                </div>
+                    </GlassCard>
 
-                {/* Right Column: Items & Deliveries */}
-                <div className="md:col-span-8">
-                    <Card variant="glass" padding="none" className="min-h-[500px]">
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-white/20 bg-white/40">
-                            <div className="flex items-center gap-2">
-                                <Package className="w-4 h-4 text-blue-600" />
-                                <div>
-                                    <h3 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Order Items</h3>
-                                    <p className="text-[10px] text-slate-500 hidden sm:block">Manage items and delivery schedules</p>
-                                </div>
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between px-2">
+                            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                <Package className="w-3.5 h-3.5" /> Purchase Items
+                            </h3>
+                            <div className="flex items-center gap-3">
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-500 border border-slate-200 uppercase tracking-widest">
+                                    {items.length} {items.length === 1 ? 'ITEM' : 'ITEMS'}
+                                </span>
+                                <button onClick={addItem} className="h-8 px-4 rounded-xl bg-slate-800 text-white text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 hover:bg-slate-900 transition-all shadow-sm">
+                                    <Plus className="w-3.5 h-3.5" /> <span>Add Row</span>
+                                </button>
                             </div>
-                            <button onClick={addItem} className="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-3 py-1.5 rounded-md text-xs font-medium flex items-center gap-1 transition-colors shadow-sm">
-                                <Plus className="w-3.5 h-3.5" /> Add Item
-                            </button>
                         </div>
 
-                        <div className="p-4 space-y-3">
-                            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                            {items && items.length > 0 ? items.map((item: any) => (
-                                <div key={item.po_item_no} className="border border-slate-200 rounded-lg overflow-hidden bg-white/40">
-                                    {/* Item Header Row */}
-                                    <div className="p-3 bg-slate-50/50 flex flex-wrap gap-4 items-end">
-                                        <div className="w-12">
-                                            <label className="text-[10px] text-slate-400">#</label>
-                                            <div className="text-sm font-semibold text-slate-700">{item.po_item_no}</div>
-                                        </div>
-                                        <div className="flex-1 min-w-[150px]">
-                                            <CompactInput label="Description" value={item.material_description} onChange={(e: any) => {
-                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                const newItems = items.map((i: any) => i.po_item_no === item.po_item_no ? { ...i, material_description: e.target.value } : i);
-                                                setData({ ...data, items: newItems });
-                                            }} placeholder="Item Description" />
-                                        </div>
-                                        <div className="w-24">
-                                            <CompactInput label="Code" value={item.material_code} onChange={(e: any) => {
-                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                const newItems = items.map((i: any) => i.po_item_no === item.po_item_no ? { ...i, material_code: e.target.value } : i);
-                                                setData({ ...data, items: newItems });
-                                            }} />
-                                        </div>
-                                        <div className="w-20">
-                                            <CompactInput label="Unit" value={item.unit} onChange={(e: any) => {
-                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                const newItems = items.map((i: any) => i.po_item_no === item.po_item_no ? { ...i, unit: e.target.value } : i);
-                                                setData({ ...data, items: newItems });
-                                            }} />
-                                        </div>
-                                        <div className="w-20">
-                                            <CompactInput label="Qty" type="number" value={item.ord_qty} onChange={(e: any) => {
-                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                const newItems = items.map((i: any) => i.po_item_no === item.po_item_no ? { ...i, ord_qty: parseFloat(e.target.value) } : i);
-                                                setData({ ...data, items: newItems });
-                                            }} />
-                                        </div>
-                                        <div className="w-24">
-                                            <CompactInput label="Rate" type="number" value={item.po_rate} onChange={(e: any) => {
-                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                const newItems = items.map((i: any) => i.po_item_no === item.po_item_no ? { ...i, po_rate: parseFloat(e.target.value) } : i);
-                                                setData({ ...data, items: newItems });
-                                            }} />
-                                        </div>
-                                        <div className="w-24 text-right">
-                                            <label className="block text-[10px] uppercase tracking-wider font-semibold text-slate-400 mb-1">Value</label>
-                                            <div className="text-xs font-bold text-slate-700 py-1.5">₹{(item.ord_qty * item.po_rate).toLocaleString()}</div>
-                                        </div>
-
-                                        <div className="flex gap-1 pb-0.5 ml-auto">
-                                            <button onClick={() => toggleItem(item.po_item_no)} className="p-1.5 text-slate-400 hover:text-blue-600 rounded hover:bg-white transition-colors">
-                                                {expandedItems.has(item.po_item_no) ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                                            </button>
-                                            <button onClick={() => removeItem(item.po_item_no)} className="p-1.5 text-slate-400 hover:text-red-500 rounded hover:bg-white transition-colors">
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
+                        <div className="bg-white/60 backdrop-blur-md border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden min-h-[400px]">
+                            {items && items.length > 0 ? (
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr>
+                                            <th className="table-th w-16 text-center">#SL</th>
+                                            <th className="table-th">Description of Material</th>
+                                            <th className="table-th w-28">Mat. Code</th>
+                                            <th className="table-th w-20">Unit</th>
+                                            <th className="table-th text-right w-24">Ord Qty</th>
+                                            <th className="table-th text-right w-28">PO Rate</th>
+                                            <th className="table-th text-right w-32">Item Value</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100/50">
+                                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                                        {items.map((item: any) => (
+                                            <tr key={item.po_item_no} className="table-row group">
+                                                <td className="table-td text-center font-black text-slate-300 text-[10px]">{item.po_item_no}</td>
+                                                <td className="table-td">
+                                                    <input
+                                                        value={item.material_description}
+                                                        onChange={(e) => {
+                                                            const newItems = items.map((i: any) => i.po_item_no === item.po_item_no ? { ...i, material_description: e.target.value } : i);
+                                                            setData({ ...data, items: newItems });
+                                                        }}
+                                                        className="w-full bg-transparent border-none focus:ring-0 p-0 font-bold text-slate-700 placeholder:text-slate-300 text-sm"
+                                                        placeholder="e.g. MS Plate 10mm IS:2062"
+                                                    />
+                                                </td>
+                                                <td className="table-td">
+                                                    <input
+                                                        value={item.material_code}
+                                                        onChange={(e) => {
+                                                            const newItems = items.map((i: any) => i.po_item_no === item.po_item_no ? { ...i, material_code: e.target.value.toUpperCase() } : i);
+                                                            setData({ ...data, items: newItems });
+                                                        }}
+                                                        className="w-full bg-transparent border-none focus:ring-0 p-0 font-black text-slate-400 uppercase text-[10px] tracking-tight"
+                                                        placeholder="CODE"
+                                                    />
+                                                </td>
+                                                <td className="table-td">
+                                                    <input
+                                                        value={item.unit}
+                                                        onChange={(e) => {
+                                                            const newItems = items.map((i: any) => i.po_item_no === item.po_item_no ? { ...i, unit: e.target.value.toUpperCase() } : i);
+                                                            setData({ ...data, items: newItems });
+                                                        }}
+                                                        className="w-full bg-transparent border-none focus:ring-0 p-0 text-slate-500 text-[10px] font-bold uppercase"
+                                                        placeholder="UN"
+                                                    />
+                                                </td>
+                                                <td className="table-td text-right">
+                                                    <input
+                                                        type="number"
+                                                        value={item.ord_qty}
+                                                        onChange={(e) => {
+                                                            const val = parseFloat(e.target.value) || 0;
+                                                            const newItems = items.map((i: any) => i.po_item_no === item.po_item_no ? { ...i, ord_qty: val } : i);
+                                                            setData({ ...data, items: newItems });
+                                                        }}
+                                                        className="w-full bg-transparent border-none focus:ring-0 p-0 text-right font-black text-slate-800"
+                                                    />
+                                                </td>
+                                                <td className="table-td text-right">
+                                                    <input
+                                                        type="number"
+                                                        value={item.po_rate}
+                                                        onChange={(e) => {
+                                                            const val = parseFloat(e.target.value) || 0;
+                                                            const newItems = items.map((i: any) => i.po_item_no === item.po_item_no ? { ...i, po_rate: val } : i);
+                                                            setData({ ...data, items: newItems });
+                                                        }}
+                                                        className="w-full bg-transparent border-none focus:ring-0 p-0 text-right font-bold text-blue-600"
+                                                    />
+                                                </td>
+                                                <td className="table-td text-right group-hover:bg-slate-50/80 transition-all">
+                                                    <div className="flex items-center justify-end gap-3">
+                                                        <span className="font-black text-slate-700 text-sm">₹{(item.ord_qty * item.po_rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                                                        <button
+                                                            onClick={() => removeItem(item.po_item_no)}
+                                                            className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                                                        >
+                                                            <Trash2 className="w-4 h-4" />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center min-h-[400px] text-slate-400 gap-4">
+                                    <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 shadow-inner">
+                                        <Package className="w-8 h-8 text-slate-200" />
                                     </div>
-
-                                    {/* Deliveries */}
-                                    {expandedItems.has(item.po_item_no) && (
-                                        <div className="p-3 bg-white border-t border-slate-100">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Delivery Schedule</h4>
-                                                <button onClick={() => addDelivery(item.po_item_no)} className="text-[10px] text-blue-600 font-medium hover:underline">+ Add Delivery</button>
-                                            </div>
-
-                                            {item.deliveries && item.deliveries.length > 0 ? (
-                                                <div className="space-y-2">
-                                                    {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                                    {item.deliveries.map((delivery: any, idx: number) => (
-                                                        <div key={idx} className="flex gap-2 items-center">
-                                                            <div className="w-12 text-xs text-slate-500 text-center">{delivery.lot_no}</div>
-                                                            <input
-                                                                type="number"
-                                                                placeholder="Qty"
-                                                                value={delivery.dely_qty}
-                                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                                onChange={(e: any) => {
-                                                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                                    const newItems = items.map((i: any) => {
-                                                                        if (i.po_item_no === item.po_item_no) {
-                                                                            const newD = [...i.deliveries];
-                                                                            newD[idx] = { ...newD[idx], dely_qty: parseFloat(e.target.value) };
-                                                                            return { ...i, deliveries: newD };
-                                                                        }
-                                                                        return i;
-                                                                    });
-                                                                    setData({ ...data, items: newItems });
-                                                                }}
-                                                                className="w-20 px-2 py-1 text-xs border border-slate-200 rounded"
-                                                            />
-                                                            <input type="date" value={delivery.dely_date}
-                                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                                onChange={(e: any) => {
-                                                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                                    const newItems = items.map((i: any) => {
-                                                                        if (i.po_item_no === item.po_item_no) {
-                                                                            const newD = [...i.deliveries];
-                                                                            newD[idx] = { ...newD[idx], dely_date: e.target.value };
-                                                                            return { ...i, deliveries: newD };
-                                                                        }
-                                                                        return i;
-                                                                    });
-                                                                    setData({ ...data, items: newItems });
-                                                                }}
-                                                                className="w-28 px-2 py-1 text-xs border border-slate-200 rounded"
-                                                            />
-                                                            <input type="text" placeholder="Dest" value={delivery.dest_code}
-                                                                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                                onChange={(e: any) => {
-                                                                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                                                                    const newItems = items.map((i: any) => {
-                                                                        if (i.po_item_no === item.po_item_no) {
-                                                                            const newD = [...i.deliveries];
-                                                                            newD[idx] = { ...newD[idx], dest_code: e.target.value };
-                                                                            return { ...i, deliveries: newD };
-                                                                        }
-                                                                        return i;
-                                                                    });
-                                                                    setData({ ...data, items: newItems });
-                                                                }}
-                                                                className="w-20 px-2 py-1 text-xs border border-slate-200 rounded"
-                                                            />
-                                                            <button onClick={() => removeDelivery(item.po_item_no, idx)} className="text-slate-400 hover:text-red-500">
-                                                                <X className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <div className="text-xs text-slate-400 italic">No deliveries added.</div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            )) : (
-                                <div className="text-center py-12 text-slate-400 text-xs border-dashed border border-slate-200 rounded">
-                                    No items added. Click "Add Item" to start.
+                                    <div className="text-center space-y-1">
+                                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Your item list is empty</p>
+                                        <button onClick={addItem} className="text-xs text-blue-500 hover:underline font-bold">Add your first material line</button>
+                                    </div>
                                 </div>
                             )}
                         </div>
-                    </Card>
+                    </div>
+                </div>
+
+                {/* Right Column: Commercial Summary */}
+                <div className="lg:col-span-4 space-y-8 h-fit lg:sticky lg:top-8">
+                    <GlassCard className="p-8 border-blue-100/50 shadow-lg shadow-blue-500/5 overflow-hidden relative group">
+                        <div className="absolute -right-8 -top-8 h-32 w-32 bg-blue-50 rounded-full opacity-50 group-hover:scale-110 transition-transform duration-500" />
+
+                        <h3 className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-2 relative">
+                            <Briefcase className="w-3.5 h-3.5" /> Commercial Value
+                        </h3>
+
+                        <div className="space-y-5 relative">
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gross PO Value</span>
+                                <span className="text-sm font-bold text-slate-700 tabular-nums">
+                                    ₹{items.reduce((sum: number, item: any) => sum + (item.ord_qty * item.po_rate), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Net Payable</span>
+                                <span className="text-sm font-bold text-slate-700 tabular-nums">₹{(header.net_po_value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            </div>
+
+                            <div className="pt-5 border-t border-slate-100">
+                                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-[0.2em] block mb-2">Total PO Amount</span>
+                                <div className="text-4xl font-black text-slate-900 tracking-tighter mb-4 drop-shadow-sm tabular-nums">
+                                    ₹{items.reduce((sum: number, item: any) => sum + (item.ord_qty * item.po_rate), 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
+                                <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 text-[9px] font-bold leading-relaxed text-slate-500 italic uppercase tracking-wider">
+                                    Consolidated value across all items. Taxes and duties as per terms.
+                                </div>
+                            </div>
+                        </div>
+                    </GlassCard>
+
+                    <GlassCard className="p-8 border-slate-100/50 shadow-sm">
+                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Order Context</h4>
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Status</span>
+                                <span className="px-2 py-0.5 rounded text-[9px] font-black bg-blue-50 text-blue-600 border border-blue-100 uppercase uppercase">
+                                    {header.po_status || 'NEW'}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Amendment</span>
+                                <span className="text-xs font-black text-slate-700">#{header.amend_no || 0}</span>
+                            </div>
+                            <div className="pt-4 border-t border-slate-50">
+                                <p className="text-[9px] font-medium text-slate-400 leading-relaxed uppercase tracking-widest">
+                                    Once saved, this PO will be available for Delivery Challan linking and Invoice generation.
+                                </p>
+                            </div>
+                        </div>
+                    </GlassCard>
                 </div>
             </div>
+
         </div>
     );
 }

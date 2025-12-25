@@ -4,6 +4,21 @@
 
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+export interface POHeader {
+    po_number: string;
+    po_date: string;
+    supplier_name: string;
+    supplier_code: string;
+    supplier_email: string;
+    department_no: string;
+    po_value: number;
+    net_po_value: number;
+    tin_no: string;
+    ecc_no: string;
+    remarks: string;
+    project_name?: string;
+    status?: string;
+}
 export interface POListItem {
     po_number: number;
     po_date: string;
@@ -17,6 +32,7 @@ export interface POListItem {
     total_received_quantity?: number;
     total_rejected_quantity?: number;
     total_pending_quantity?: number;
+    total_items_count?: number; // Added
     status: string;
     [key: string]: any;
 }
@@ -64,6 +80,18 @@ export interface InvoiceStats {
     gst_collected_change: number;
     pending_payments: number;
     pending_payments_count: number;
+}
+
+export interface ReconciliationItem {
+    id: number;
+    po_item_no: number;
+    material_code: string;
+    material_description: string;
+    unit: string;
+    ord_qty: number;
+    dispatched_qty: number;
+    pending_qty: number;
+    status: string;
 }
 
 export interface PONote {
@@ -214,6 +242,7 @@ export const api = {
     getPO: (poNumber: string | number) => apiFetch<any>(`/api/po/${poNumber}`), // Alias for internal use
     getPODetail: (poNumber: string | number) => apiFetch<any>(`/api/po/${poNumber}`), // Explicitly called by UI
     checkPOHasDC: (poNumber: string | number) => apiFetch<any>(`/api/po/${poNumber}/dc`),
+    updatePO: (poNumber: string | number, data: any, items: any[]) => apiFetch(`/api/po/${poNumber}`, { method: 'PUT', body: JSON.stringify({ header: data, items }) }),
     syncPO: (file: File) => {
         const formData = new FormData();
         formData.append('file', file);
