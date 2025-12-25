@@ -109,6 +109,7 @@ export interface DashboardSummary {
     active_challans: number;
     total_po_value: number;
     po_value_growth: number | string;
+    active_po_count: number;
     total_ordered?: number;
     total_delivered?: number;
     total_received?: number;
@@ -277,6 +278,10 @@ export const api = {
     getInvoiceStats: () => apiFetch<InvoiceStats>('/api/invoice/stats'),
     createInvoice: (data: any) => apiFetch('/api/invoice/', { method: 'POST', body: JSON.stringify(data) }),
     getInvoiceDetail: (invoiceNumber: string) => apiFetch<any>(`/api/invoice/${encodeURIComponent(invoiceNumber)}`),
+
+    // COMMON
+    checkDuplicateNumber: (type: 'DC' | 'Invoice', number: string, date: string) =>
+        apiFetch<{ exists: boolean; financial_year: string }>(`/api/common/check-duplicate?type=${type}&number=${encodeURIComponent(number)}&date=${date}`),
 
     // SRVS
     listSRVs: (poId?: number) => apiFetch<any[]>(poId ? `/api/srv/po/${poId}/srvs` : '/api/srv/'),

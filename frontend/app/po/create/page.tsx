@@ -2,18 +2,20 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, X, FileText, Briefcase, CreditCard, User, Plus, Trash2, Package, Loader2, Sparkles } from "lucide-react";
-import GlassCard from "@/components/ui/GlassCard";
-import Tabs from "@/components/ui/Tabs";
-
-// ============================================================================
-// MAIN CONTENT
-// ============================================================================
+import {
+    Save, Plus, Trash2, Package, Loader2
+} from "lucide-react";
+import {
+    H3, Label, SmallText, Body,
+    Accounting, DocumentJourney, DocumentTemplate,
+    Button, Badge, Input, Card,
+    Tabs, TabsList, TabsTrigger, TabsContent
+} from "@/components/design-system";
+import { formatIndianCurrency } from "@/lib/utils";
 
 export default function CreatePOPage() {
     const router = useRouter();
 
-    // Initial Empty Data System
     const initialData = {
         header: {
             po_number: '',
@@ -39,6 +41,9 @@ export default function CreatePOPage() {
             ecc_no: '',
             mpct_no: '',
             inspection_by: '',
+            inspection_at: 'BHEL Works, Bhopal',
+            consignee_name: 'BHEL BHOPAL',
+            consignee_address: 'PIPLANI, BHOPAL, MADHYA PRADESH, 462022',
             issuer_name: '',
             issuer_designation: '',
             issuer_phone: '',
@@ -47,21 +52,18 @@ export default function CreatePOPage() {
         items: []
     };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [data, setData] = useState<any>(initialData);
     const [activeTab, setActiveTab] = useState("basic");
     const [saving, setSaving] = useState(false);
 
     const addItem = () => {
-        if (!data || !data.items) return;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const maxItemNo = data.items.length > 0 ? Math.max(...data.items.map((i: any) => i.po_item_no || 0)) : 0;
         const newItem = {
             po_item_no: maxItemNo + 1,
             material_code: '',
             material_description: '',
             drg_no: '',
-            unit: '',
+            unit: 'NOS',
             ord_qty: 0,
             po_rate: 0,
             item_value: 0,
@@ -71,8 +73,6 @@ export default function CreatePOPage() {
     };
 
     const removeItem = (itemNo: number) => {
-        if (!data || !data.items) return;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const newItems = data.items.filter((i: any) => i.po_item_no !== itemNo);
         setData({ ...data, items: newItems });
     };
@@ -80,15 +80,13 @@ export default function CreatePOPage() {
     const handleSave = async () => {
         setSaving(true);
         setTimeout(() => {
-            alert('Save functionality coming soon (Phase 2)');
+            alert('Save functionality coming soon (Phase 2 - Backend Integration)');
             setSaving(false);
         }, 1000);
     };
 
     const { header, items } = data;
 
-    // Helper for updating header
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateHeader = (field: string, value: any) => {
         setData({
             ...data,
@@ -96,367 +94,252 @@ export default function CreatePOPage() {
         });
     };
 
-    return (
-        <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-blue-50/20 p-6 space-y-8 pb-32 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            {/* Page Header */}
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                <div className="flex items-center gap-6">
-                    <button onClick={() => router.back()} className="h-10 w-10 flex items-center justify-center rounded-xl bg-white/80 border border-slate-200 text-slate-400 hover:text-slate-600 hover:bg-white shadow-sm transition-all">
-                        <ArrowLeft className="w-5 h-5" />
-                    </button>
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-[20px] font-semibold text-slate-800 tracking-tight uppercase">Create Purchase Order</h1>
-                            <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100 uppercase tracking-widest">
-                                PROCUREMENT
-                            </span>
-                        </div>
-                        <div className="flex items-center gap-4 mt-1">
-                            <span className="text-xs text-slate-400 font-medium flex items-center gap-1.5">
-                                <FileText className="w-3.5 h-3.5" />
-                                {header.po_number || 'ST/PO/24-25/---'}
-                            </span>
-                        </div>
-                    </div>
-                </div>
+    const updateItem = (index: number, field: string, value: any) => {
+        const newItems = [...data.items];
+        newItems[index] = { ...newItems[index], [field]: value };
+        if (field === 'ord_qty' || field === 'po_rate') {
+            newItems[index].item_value = (newItems[index].ord_qty || 0) * (newItems[index].po_rate || 0);
+        }
+        setData({ ...data, items: newItems });
+    };
 
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => router.back()}
-                        className="btn-premium btn-ghost h-11 px-6 text-slate-500"
-                    >
-                        <X className="w-4 h-4" /> Discard
-                    </button>
-                    <button
-                        onClick={handleSave}
-                        disabled={saving}
-                        className="btn-premium btn-primary bg-gradient-to-r from-blue-600 to-indigo-600 shadow-indigo-200 h-11 px-8"
-                    >
-                        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        {saving ? 'Saving...' : 'Save PO'}
-                    </button>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
-                {/* Left Column: Details & Items */}
-                <div className="lg:col-span-8 space-y-10">
-                    <GlassCard className="p-0 overflow-hidden border-slate-200/60 shadow-sm transition-all">
-                        <Tabs
-                            tabs={[
-                                { id: 'basic', icon: FileText, label: 'Basic Info' },
-                                { id: 'references', icon: Briefcase, label: 'References' },
-                                { id: 'financial', icon: CreditCard, label: 'Financials' },
-                                { id: 'issuer', icon: User, label: 'Issuer Details' },
-                            ]}
-                            activeTab={activeTab}
-                            onTabChange={setActiveTab}
-                            className="px-6 pt-6"
-                        />
-
-                        <div className="p-10">
-                            {activeTab === 'basic' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-label">PO Number</label>
-                                        <input value={header.po_number || ''} onChange={(e) => updateHeader('po_number', e.target.value)} className="input-premium font-black uppercase" placeholder="e.g. PO/24-25/001" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-label">PO Date</label>
-                                        <input type="date" value={header.po_date || ''} onChange={(e) => updateHeader('po_date', e.target.value)} className="input-premium font-bold" />
-                                    </div>
-                                    <div className="col-span-full space-y-2">
-                                        <label className="text-label">Supplier Name</label>
-                                        <input value={header.supplier_name || ''} onChange={(e) => updateHeader('supplier_name', e.target.value)} className="input-premium font-bold" placeholder="Legal name of supplier" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-label">Supplier Code</label>
-                                        <input value={header.supplier_code || ''} onChange={(e) => updateHeader('supplier_code', e.target.value)} className="input-premium font-black uppercase" placeholder="VND-001" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-label">Department</label>
-                                        <input value={header.department_no || ''} onChange={(e) => updateHeader('department_no', e.target.value)} className="input-premium font-bold" placeholder="Department code/name" />
-                                    </div>
-                                    <div className="col-span-full h-px bg-slate-50 my-2" />
-                                    <div className="space-y-2">
-                                        <label className="text-label">Email Address</label>
-                                        <input value={header.supplier_email || ''} onChange={(e) => updateHeader('supplier_email', e.target.value)} className="input-premium" placeholder="contact@supplier.com" />
-                                    </div>
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-label">Phone</label>
-                                            <input value={header.supplier_phone || ''} onChange={(e) => updateHeader('supplier_phone', e.target.value)} className="input-premium" placeholder="+91..." />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-label">Fax</label>
-                                            <input value={header.supplier_fax || ''} onChange={(e) => updateHeader('supplier_fax', e.target.value)} className="input-premium" placeholder="Fax no." />
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'references' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-label">Enquiry No</label>
-                                        <input value={header.enquiry_no || ''} onChange={(e) => updateHeader('enquiry_no', e.target.value)} className="input-premium font-black" placeholder="ENQ/..." />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-label">Enquiry Date</label>
-                                        <input type="date" value={header.enquiry_date || ''} onChange={(e) => updateHeader('enquiry_date', e.target.value)} className="input-premium font-bold" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-label">Quotation Ref</label>
-                                        <input value={header.quotation_ref || ''} onChange={(e) => updateHeader('quotation_ref', e.target.value)} className="input-premium font-black" placeholder="QTN/..." />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-label">Quotation Date</label>
-                                        <input type="date" value={header.quotation_date || ''} onChange={(e) => updateHeader('quotation_date', e.target.value)} className="input-premium font-bold" />
-                                    </div>
-                                    <div className="col-span-full h-px bg-slate-50 my-2" />
-                                    <div className="space-y-2">
-                                        <label className="text-label">Order Type</label>
-                                        <input value={header.order_type || ''} onChange={(e) => updateHeader('order_type', e.target.value)} className="input-premium font-bold" placeholder="e.g. Regular, AMC, Service" />
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'financial' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                    <div className="space-y-2">
-                                        <label className="text-label">TIN Number</label>
-                                        <input value={header.tin_no || ''} onChange={(e) => updateHeader('tin_no', e.target.value)} className="input-premium font-black" placeholder="Tax ID" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-label">ECC Number</label>
-                                        <input value={header.ecc_no || ''} onChange={(e) => updateHeader('ecc_no', e.target.value)} className="input-premium font-black" placeholder="Excise Control Code" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-label">MPCT Number</label>
-                                        <input value={header.mpct_no || ''} onChange={(e) => updateHeader('mpct_no', e.target.value)} className="input-premium font-black" placeholder="MPCT ref" />
-                                    </div>
-                                    <div className="col-span-full h-px bg-slate-50 my-2" />
-                                    <div className="space-y-2">
-                                        <label className="text-label">Net PO Value</label>
-                                        <input type="number" value={header.net_po_value || 0} onChange={(e) => updateHeader('net_po_value', e.target.value)} className="input-premium font-bold" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-label">FOB Value</label>
-                                        <input type="number" value={header.fob_value || 0} onChange={(e) => updateHeader('fob_value', e.target.value)} className="input-premium font-bold" />
-                                    </div>
-                                </div>
-                            )}
-
-                            {activeTab === 'issuer' && (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                    <div className="space-y-2 col-span-full">
-                                        <label className="text-label">Inspection By</label>
-                                        <input value={header.inspection_by || ''} onChange={(e) => updateHeader('inspection_by', e.target.value)} className="input-premium font-bold" placeholder="Department or Third Party" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-label">Issuer Name</label>
-                                        <input value={header.issuer_name || ''} onChange={(e) => updateHeader('issuer_name', e.target.value)} className="input-premium font-bold" placeholder="Authorized Person" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-label">Role / Designation</label>
-                                        <input value={header.issuer_designation || ''} onChange={(e) => updateHeader('issuer_designation', e.target.value)} className="input-premium font-bold" placeholder="Designation" />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-label">Contact Phone</label>
-                                        <input value={header.issuer_phone || ''} onChange={(e) => updateHeader('issuer_phone', e.target.value)} className="input-premium" placeholder="Direct line" />
-                                    </div>
-                                    <div className="col-span-full space-y-2">
-                                        <label className="text-label">Internal Remarks</label>
-                                        <textarea
-                                            value={header.remarks || ''}
-                                            onChange={(e) => updateHeader('remarks', e.target.value)}
-                                            rows={2}
-                                            className="input-premium resize-none"
-                                            placeholder="Confidential notes or special instructions..."
-                                        />
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </GlassCard>
-
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between px-2">
-                            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
-                                <Package className="w-3.5 h-3.5" /> Purchase Items
-                            </h3>
-                            <div className="flex items-center gap-3">
-                                <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-500 border border-slate-200 uppercase tracking-widest">
-                                    {items.length} {items.length === 1 ? 'ITEM' : 'ITEMS'}
-                                </span>
-                                <button onClick={addItem} className="h-8 px-4 rounded-xl bg-slate-800 text-white text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 hover:bg-slate-900 transition-all shadow-sm">
-                                    <Plus className="w-3.5 h-3.5" /> <span>Add Row</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div className="bg-white/60 backdrop-blur-md border border-slate-200/60 rounded-2xl shadow-sm overflow-hidden min-h-[400px]">
-                            {items && items.length > 0 ? (
-                                <table className="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr>
-                                            <th className="table-th w-16 text-center">#SL</th>
-                                            <th className="table-th">Description of Material</th>
-                                            <th className="table-th w-28">Mat. Code</th>
-                                            <th className="table-th w-20">Unit</th>
-                                            <th className="table-th text-right w-24">Ord Qty</th>
-                                            <th className="table-th text-right w-28">PO Rate</th>
-                                            <th className="table-th text-right w-32">Item Value</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-slate-100/50">
-                                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                                        {items.map((item: any) => (
-                                            <tr key={item.po_item_no} className="table-row group">
-                                                <td className="table-td text-center font-black text-slate-300 text-[10px]">{item.po_item_no}</td>
-                                                <td className="table-td">
-                                                    <input
-                                                        value={item.material_description}
-                                                        onChange={(e) => {
-                                                            const newItems = items.map((i: any) => i.po_item_no === item.po_item_no ? { ...i, material_description: e.target.value } : i);
-                                                            setData({ ...data, items: newItems });
-                                                        }}
-                                                        className="w-full bg-transparent border-none focus:ring-0 p-0 font-bold text-slate-700 placeholder:text-slate-300 text-sm"
-                                                        placeholder="e.g. MS Plate 10mm IS:2062"
-                                                    />
-                                                </td>
-                                                <td className="table-td">
-                                                    <input
-                                                        value={item.material_code}
-                                                        onChange={(e) => {
-                                                            const newItems = items.map((i: any) => i.po_item_no === item.po_item_no ? { ...i, material_code: e.target.value.toUpperCase() } : i);
-                                                            setData({ ...data, items: newItems });
-                                                        }}
-                                                        className="w-full bg-transparent border-none focus:ring-0 p-0 font-black text-slate-400 uppercase text-[10px] tracking-tight"
-                                                        placeholder="CODE"
-                                                    />
-                                                </td>
-                                                <td className="table-td">
-                                                    <input
-                                                        value={item.unit}
-                                                        onChange={(e) => {
-                                                            const newItems = items.map((i: any) => i.po_item_no === item.po_item_no ? { ...i, unit: e.target.value.toUpperCase() } : i);
-                                                            setData({ ...data, items: newItems });
-                                                        }}
-                                                        className="w-full bg-transparent border-none focus:ring-0 p-0 text-slate-500 text-[10px] font-bold uppercase"
-                                                        placeholder="UN"
-                                                    />
-                                                </td>
-                                                <td className="table-td text-right">
-                                                    <input
-                                                        type="number"
-                                                        value={item.ord_qty}
-                                                        onChange={(e) => {
-                                                            const val = parseFloat(e.target.value) || 0;
-                                                            const newItems = items.map((i: any) => i.po_item_no === item.po_item_no ? { ...i, ord_qty: val } : i);
-                                                            setData({ ...data, items: newItems });
-                                                        }}
-                                                        className="w-full bg-transparent border-none focus:ring-0 p-0 text-right font-black text-slate-800"
-                                                    />
-                                                </td>
-                                                <td className="table-td text-right">
-                                                    <input
-                                                        type="number"
-                                                        value={item.po_rate}
-                                                        onChange={(e) => {
-                                                            const val = parseFloat(e.target.value) || 0;
-                                                            const newItems = items.map((i: any) => i.po_item_no === item.po_item_no ? { ...i, po_rate: val } : i);
-                                                            setData({ ...data, items: newItems });
-                                                        }}
-                                                        className="w-full bg-transparent border-none focus:ring-0 p-0 text-right font-bold text-blue-600"
-                                                    />
-                                                </td>
-                                                <td className="table-td text-right group-hover:bg-slate-50/80 transition-all">
-                                                    <div className="flex items-center justify-end gap-3">
-                                                        <span className="font-black text-slate-700 text-sm">₹{(item.ord_qty * item.po_rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                                                        <button
-                                                            onClick={() => removeItem(item.po_item_no)}
-                                                            className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            ) : (
-                                <div className="flex flex-col items-center justify-center min-h-[400px] text-slate-400 gap-4">
-                                    <div className="h-16 w-16 rounded-full bg-slate-50 flex items-center justify-center border border-slate-100 shadow-inner">
-                                        <Package className="w-8 h-8 text-slate-200" />
-                                    </div>
-                                    <div className="text-center space-y-1">
-                                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-60">Your item list is empty</p>
-                                        <button onClick={addItem} className="text-xs text-blue-500 hover:underline font-bold">Add your first material line</button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right Column: Commercial Summary */}
-                <div className="lg:col-span-4 space-y-8 h-fit lg:sticky lg:top-8">
-                    <GlassCard className="p-8 border-blue-100/50 shadow-lg shadow-blue-500/5 overflow-hidden relative group">
-                        <div className="absolute -right-8 -top-8 h-32 w-32 bg-blue-50 rounded-full opacity-50 group-hover:scale-110 transition-transform duration-500" />
-
-                        <h3 className="text-[10px] font-bold text-blue-400 uppercase tracking-[0.2em] mb-8 flex items-center gap-2 relative">
-                            <Briefcase className="w-3.5 h-3.5" /> Commercial Value
-                        </h3>
-
-                        <div className="space-y-5 relative">
-                            <div className="flex justify-between items-center">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Gross PO Value</span>
-                                <span className="text-sm font-bold text-slate-700 tabular-nums">
-                                    ₹{items.reduce((sum: number, item: any) => sum + (item.ord_qty * item.po_rate), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                </span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Net Payable</span>
-                                <span className="text-sm font-bold text-slate-700 tabular-nums">₹{(header.net_po_value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-                            </div>
-
-                            <div className="pt-5 border-t border-slate-100">
-                                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-[0.2em] block mb-2">Total PO Amount</span>
-                                <div className="text-4xl font-black text-slate-900 tracking-tighter mb-4 drop-shadow-sm tabular-nums">
-                                    ₹{items.reduce((sum: number, item: any) => sum + (item.ord_qty * item.po_rate), 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </div>
-                                <div className="p-4 bg-slate-50/50 rounded-2xl border border-slate-100 text-[9px] font-bold leading-relaxed text-slate-500 italic uppercase tracking-wider">
-                                    Consolidated value across all items. Taxes and duties as per terms.
-                                </div>
-                            </div>
-                        </div>
-                    </GlassCard>
-
-                    <GlassCard className="p-8 border-slate-100/50 shadow-sm">
-                        <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-6">Order Context</h4>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Status</span>
-                                <span className="px-2 py-0.5 rounded text-[9px] font-black bg-blue-50 text-blue-600 border border-blue-100 uppercase uppercase">
-                                    {header.po_status || 'NEW'}
-                                </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Amendment</span>
-                                <span className="text-xs font-black text-slate-700">#{header.amend_no || 0}</span>
-                            </div>
-                            <div className="pt-4 border-t border-slate-50">
-                                <p className="text-[9px] font-medium text-slate-400 leading-relaxed uppercase tracking-widest">
-                                    Once saved, this PO will be available for Delivery Challan linking and Invoice generation.
-                                </p>
-                            </div>
-                        </div>
-                    </GlassCard>
-                </div>
-            </div>
-
+    const topActions = (
+        <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => router.back()} disabled={saving}>
+                Cancel
+            </Button>
+            <Button color="primary" size="sm" onClick={handleSave} disabled={saving}>
+                {saving ? <Loader2 size={16} className="animate-spin mr-2" /> : <Save size={16} className="mr-2" />}
+                {saving ? 'Saving...' : 'Save PO'}
+            </Button>
         </div>
+    );
+
+    return (
+        <DocumentTemplate
+            title="Create Purchase Order"
+            description="Enter procurement contract details manually"
+            actions={topActions}
+        >
+            <div className="mb-6">
+                <DocumentJourney currentStage="PO" />
+            </div>
+
+            <div className="space-y-6">
+                {/* Tabs for Header Info */}
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                    <TabsList className="mb-4">
+                        <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                        <TabsTrigger value="supplier">Supplier</TabsTrigger>
+                        <TabsTrigger value="references">References</TabsTrigger>
+                        <TabsTrigger value="financial">Financial</TabsTrigger>
+                        <TabsTrigger value="issuer">Issuer</TabsTrigger>
+                        <TabsTrigger value="consignee">Consignee</TabsTrigger>
+                    </TabsList>
+
+                    <Card className="p-6">
+                        <TabsContent value="basic" className="mt-0">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">PO Number</Label>
+                                    <Input value={header.po_number} onChange={(e) => updateHeader('po_number', e.target.value)} placeholder="e.g. 4500012345" className="font-medium text-slate-930" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">PO Date</Label>
+                                    <Input type="date" value={header.po_date} onChange={(e) => updateHeader('po_date', e.target.value)} className="font-medium text-slate-930" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">Department No</Label>
+                                    <Input value={header.department_no} onChange={(e) => updateHeader('department_no', e.target.value)} className="font-medium text-slate-930" />
+                                </div>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="supplier" className="mt-0">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">Supplier Name</Label>
+                                    <Input value={header.supplier_name} onChange={(e) => updateHeader('supplier_name', e.target.value)} className="font-medium text-slate-930" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">Supplier Code</Label>
+                                    <Input value={header.supplier_code} onChange={(e) => updateHeader('supplier_code', e.target.value)} className="font-medium text-slate-930" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">Phone</Label>
+                                    <Input value={header.supplier_phone} onChange={(e) => updateHeader('supplier_phone', e.target.value)} className="font-medium text-slate-930" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">Email</Label>
+                                    <Input type="email" value={header.supplier_email} onChange={(e) => updateHeader('supplier_email', e.target.value)} className="font-medium text-slate-930" />
+                                </div>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="references" className="mt-0">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">Enquiry No</Label>
+                                    <Input value={header.enquiry_no} onChange={(e) => updateHeader('enquiry_no', e.target.value)} className="font-medium text-slate-930" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">RC Number</Label>
+                                    <Input value={header.rc_no} onChange={(e) => updateHeader('rc_no', e.target.value)} className="font-medium text-slate-930" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">Order Type</Label>
+                                    <Input value={header.order_type} onChange={(e) => updateHeader('order_type', e.target.value)} className="font-medium text-slate-930" />
+                                </div>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="financial" className="mt-0">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">TIN Number</Label>
+                                    <Input value={header.tin_no} onChange={(e) => updateHeader('tin_no', e.target.value)} className="font-medium text-slate-930 font-mono" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">ECC Number</Label>
+                                    <Input value={header.ecc_no} onChange={(e) => updateHeader('ecc_no', e.target.value)} className="font-medium text-slate-930 font-mono" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">MPCT Number</Label>
+                                    <Input value={header.mpct_no} onChange={(e) => updateHeader('mpct_no', e.target.value)} className="font-medium text-slate-930 font-mono" />
+                                </div>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="issuer" className="mt-0">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">Issuer Name</Label>
+                                    <Input value={header.issuer_name} onChange={(e) => updateHeader('issuer_name', e.target.value)} className="font-medium text-slate-930" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">Designation</Label>
+                                    <Input value={header.issuer_designation} onChange={(e) => updateHeader('issuer_designation', e.target.value)} className="font-medium text-slate-930" />
+                                </div>
+                                <div className="col-span-full space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">Remarks</Label>
+                                    <textarea
+                                        value={header.remarks}
+                                        onChange={(e) => updateHeader('remarks', e.target.value)}
+                                        className="w-full px-3 py-2 text-[13px] font-medium text-slate-930 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-950/10 focus:border-slate-300 resize-none transition-all"
+                                        rows={3}
+                                        placeholder="Additional project information..."
+                                    />
+                                </div>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="consignee" className="mt-0">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">Consignee Name</Label>
+                                    <Input value={header.consignee_name} onChange={(e) => updateHeader('consignee_name', e.target.value)} className="font-medium text-slate-930" />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">Consignee Address</Label>
+                                    <textarea
+                                        value={header.consignee_address}
+                                        onChange={(e) => updateHeader('consignee_address', e.target.value)}
+                                        className="w-full px-3 py-2 text-[13px] font-medium text-slate-930 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-slate-950/10 focus:border-slate-300 resize-none transition-all"
+                                        rows={3}
+                                    />
+                                </div>
+                            </div>
+                        </TabsContent>
+                    </Card>
+                </Tabs>
+
+                {/* Items Section */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between px-1">
+                        <H3 className="font-medium text-slate-950 text-sm">Material Items ({items.length})</H3>
+                        <Button color="secondary" size="sm" onClick={addItem}>
+                            <Plus size={16} className="mr-2" />
+                            Add Item
+                        </Button>
+                    </div>
+
+                    <Card className="p-0 overflow-hidden border-none shadow-sm">
+                        <div className="overflow-x-auto">
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="border-b border-slate-100 bg-slate-50/30">
+                                        <th className="py-3 px-6 text-left"><Label className="text-[10px] uppercase tracking-widest text-slate-500 font-medium">#</Label></th>
+                                        <th className="py-3 px-6 text-left"><Label className="text-[10px] uppercase tracking-widest text-slate-500 font-medium">Material Details</Label></th>
+                                        <th className="py-3 px-6 text-right"><Label className="text-[10px] uppercase tracking-widest text-slate-500 font-medium">Qty</Label></th>
+                                        <th className="py-3 px-6 text-right"><Label className="text-[10px] uppercase tracking-widest text-slate-500 font-medium">Rate</Label></th>
+                                        <th className="py-3 px-6 text-right"><Label className="text-[10px] uppercase tracking-widest text-slate-500 font-medium">Value</Label></th>
+                                        <th className="py-3 px-6 w-16"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {items.length > 0 ? items.map((item: any, idx: number) => (
+                                        <tr key={idx} className="border-b border-slate-50 hover:bg-slate-50/10 transition-colors">
+                                            <td className="py-4 px-6">
+                                                <Accounting className="font-medium text-slate-930">{item.po_item_no}</Accounting>
+                                            </td>
+                                            <td className="py-4 px-6 space-y-3 min-w-[300px]">
+                                                <Input value={item.material_description} onChange={e => updateItem(idx, 'material_description', e.target.value)} placeholder="Material Description" className="font-medium text-slate-930" />
+                                                <div className="grid grid-cols-3 gap-2">
+                                                    <div>
+                                                        <Label className="text-[9px] uppercase text-slate-400 ml-1">Code</Label>
+                                                        <Input value={item.material_code} onChange={e => updateItem(idx, 'material_code', e.target.value)} placeholder="Code" className="font-medium text-slate-930 h-8" />
+                                                    </div>
+                                                    <div>
+                                                        <Label className="text-[9px] uppercase text-slate-400 ml-1">Drawing</Label>
+                                                        <Input value={item.drg_no} onChange={e => updateItem(idx, 'drg_no', e.target.value)} placeholder="DRG" className="font-medium text-slate-930 h-8" />
+                                                    </div>
+                                                    <div>
+                                                        <Label className="text-[9px] uppercase text-slate-400 ml-1">Unit</Label>
+                                                        <Input value={item.unit} onChange={e => updateItem(idx, 'unit', e.target.value)} placeholder="Unit" className="font-medium text-slate-930 h-8 uppercase" />
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="py-4 px-6">
+                                                <Input type="number" value={item.ord_qty} onChange={e => updateItem(idx, 'ord_qty', parseFloat(e.target.value))} className="text-right font-medium font-mono" />
+                                            </td>
+                                            <td className="py-4 px-6">
+                                                <Input type="number" value={item.po_rate} onChange={e => updateItem(idx, 'po_rate', parseFloat(e.target.value))} className="text-right font-medium font-mono" />
+                                            </td>
+                                            <td className="py-4 px-6 text-right">
+                                                <Accounting className="font-medium text-slate-950">{item.item_value}</Accounting>
+                                            </td>
+                                            <td className="py-4 px-6 text-center">
+                                                <Button variant="ghost" size="sm" onClick={() => removeItem(item.po_item_no)} className="text-slate-400 hover:text-red-600">
+                                                    <Trash2 size={16} />
+                                                </Button>
+                                            </td>
+                                        </tr>
+                                    )) : (
+                                        <tr>
+                                            <td colSpan={6} className="py-24 text-center">
+                                                <div className="flex flex-col items-center justify-center opacity-40">
+                                                    <Package className="w-12 h-12 text-slate-300 mb-3 stroke-[1.5]" />
+                                                    <Body className="text-slate-500 font-medium">No material items defined yet</Body>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                        {items.length > 0 && (
+                            <div className="bg-slate-50/50 border-t border-slate-100 p-8 flex justify-end">
+                                <div className="text-right flex items-center gap-8">
+                                    <Label className="text-[11px] uppercase tracking-[0.2em] text-slate-600 font-medium">Estimated Total Value</Label>
+                                    <Accounting isCurrency className="text-2xl font-medium text-slate-950">
+                                        {items.reduce((acc: number, cur: any) => acc + (cur.item_value || 0), 0)}
+                                    </Accounting>
+                                </div>
+                            </div>
+                        )}
+                    </Card>
+                </div>
+            </div>
+        </DocumentTemplate>
     );
 }

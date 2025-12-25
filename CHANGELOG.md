@@ -5,6 +5,17 @@ All notable changes to SenstoSales ERP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.2.0] - 2025-12-26
+
+### Fixed
+- **Reports Page**: Resolved "Duplicate children with the same key" React error in "Shortages" and "Ledger Audit" tabs by implementing unique composite keys for data rows.
+- **Reports Icons**: Fixed "Objects are not valid as a React child" error in KPI cards by correctly instantiating Lucide icons.
+- **Invoice Creation**: Fixed 422 Unprocessable Entity error and client-side crash by correctly mapping frontend models to backend schemas and improving error message handling.
+
+### Added
+- **Manual Numbering**: Implemented strict manual entry for Invoice and DC numbers with real-time financial year-based duplicate checking.
+- **UI Streamlining**: Auto-hiding creation steps/selectors when creating documents contextually (e.g., creating DC from PO view).
+
 ## [3.1.1] - 2025-12-25
 
 ### Fixed

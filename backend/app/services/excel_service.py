@@ -197,201 +197,150 @@ class ExcelService:
     @staticmethod
     def generate_exact_invoice_excel(header: Dict, items: List[Dict], db: sqlite3.Connection) -> StreamingResponse:
         """
-        Generate strict Excel format matching 'GST_INV_11.xls' and User Screenshot
+        Generate strict Excel format matching 'GST_INV_31.xls' audit structure.
+        Uses a 19-column grid (A-S).
         """
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output)
         worksheet = workbook.add_worksheet("Invoice")
         
-        # Styles (Redefined in helper often, but keeping for specialized sections)
-        header_center = workbook.add_format({'bold': False, 'font_name': 'Calibri', 'font_size': 11, 'align': 'left', 'valign': 'vcenter'})
-        border_all = workbook.add_format({'border': 1, 'font_name': 'Calibri', 'font_size': 10, 'text_wrap': True, 'valign': 'top'})
-        border_bold = workbook.add_format({'border': 1, 'bold': True, 'font_name': 'Calibri', 'font_size': 10, 'text_wrap': True})
-        border_center = workbook.add_format({'border': 1, 'font_name': 'Calibri', 'font_size': 10, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
-        border_right = workbook.add_format({'border': 1, 'font_name': 'Calibri', 'font_size': 10, 'align': 'right', 'valign': 'vcenter'})
-        header_table = workbook.add_format({'border': 1, 'bold': True, 'font_name': 'Calibri', 'font_size': 10, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+        # Styles
+        font_name = 'Arial'
+        title_fmt = workbook.add_format({'bold': True, 'font_size': 13, 'align': 'center', 'valign': 'vcenter', 'font_name': font_name})
+        copy_fmt = workbook.add_format({'font_size': 24, 'align': 'right', 'valign': 'vcenter', 'font_name': font_name})
+        header_bold = workbook.add_format({'bold': True, 'font_size': 10, 'font_name': font_name, 'border': 1, 'valign': 'top'})
+        header_normal = workbook.add_format({'font_size': 10, 'font_name': font_name, 'border': 1, 'valign': 'top', 'text_wrap': True})
         
-        # Column Widths
-        worksheet.set_column('A:A', 6)   # PO SL No.
-        worksheet.set_column('B:B', 40)  # Description
-        worksheet.set_column('C:C', 10)  # HSN
-        worksheet.set_column('D:D', 8)   # No of Pckt
-        worksheet.set_column('E:E', 12)  # Quantity
-        worksheet.set_column('F:F', 10)  # Rate
-        worksheet.set_column('G:G', 8)   # Qty Unit
-        worksheet.set_column('H:H', 15)  # Taxable Value
-        worksheet.set_column('I:J', 10)  # Central Tax Rate/Amt
-        worksheet.set_column('K:L', 10)  # State Tax Rate/Amt
-        worksheet.set_column('M:M', 16)  # Total Amount
+        table_hdr = workbook.add_format({'bold': True, 'font_size': 10, 'font_name': font_name, 'border': 1, 'align': 'center', 'valign': 'vcenter', 'text_wrap': True})
+        cell_center = workbook.add_format({'font_size': 10, 'font_name': font_name, 'border': 1, 'align': 'center', 'valign': 'vcenter'})
+        cell_left = workbook.add_format({'font_size': 10, 'font_name': font_name, 'border': 1, 'align': 'left', 'valign': 'vcenter', 'text_wrap': True})
+        cell_right = workbook.add_format({'font_size': 10, 'font_name': font_name, 'border': 1, 'align': 'right', 'valign': 'vcenter', 'num_format': '#,##0.00'})
+        decl_fmt = workbook.add_format({'font_size': 9, 'font_name': font_name, 'italic': True, 'text_wrap': True, 'valign': 'top'})
         
-        # --- HEADER SECTION ---
-        current_row = ExcelService._write_standard_header(worksheet, workbook, columns=13, db=db, title="TAX INVOICE", layout="invoice")
-
-        # Right Side Info Box (Rows coincide with Buyer block)
-        # Using a helper for detail formats
-        bold_detail = workbook.add_format({'bold': True, 'font_size': 10, 'font_name': 'Calibri', 'border': 1})
-        detail_fmt = workbook.add_format({'font_size': 10, 'font_name': 'Calibri', 'border': 1})
-
-        # Buyer Block
-        buyer_end_row = ExcelService._write_buyer_block(worksheet, workbook, current_row + 1, 0, db, header, width=7)
+        # Column Widths (Approximated based on 19 cols)
+        worksheet.set_column('A:A', 5)   # PO SL
+        worksheet.set_column('B:H', 6)   # Description (Merged)
+        worksheet.set_column('I:I', 10)  # HSN
+        worksheet.set_column('J:J', 8)   # No of Pckt
+        worksheet.set_column('K:K', 10)  # Quantity
+        worksheet.set_column('L:L', 10)  # Rate
+        worksheet.set_column('M:M', 8)   # Unit
+        worksheet.set_column('N:N', 12)  # Taxable
+        worksheet.set_column('O:P', 10)  # CGST
+        worksheet.set_column('Q:R', 10)  # SGST
+        worksheet.set_column('S:S', 15)  # Total
         
-        # Info Box (Right Side) - Fits within columns 8-12 (5 columns total)
-        info_row = current_row + 1
+        # --- ROW 0: TITLE ---
+        worksheet.merge_range(0, 0, 0, 18, "TAX INVOICE", title_fmt)
         
-        # Row 1: Invoice No | Dated
-        worksheet.merge_range(info_row, 8, info_row, 9, "Invoice No.", bold_detail)
-        worksheet.write(info_row, 10, header.get('invoice_number', ''), detail_fmt)
-        worksheet.write(info_row, 11, "Dated", bold_detail)
-        worksheet.write(info_row, 12, header.get('invoice_date', ''), detail_fmt)
-        info_row += 1
+        # --- ROW 1: COPY ---
+        worksheet.merge_range(1, 14, 1, 18, "Extra Copy", copy_fmt)
         
-        # Row 2: Delivery Note | Mode/Terms of Payment
-        worksheet.write(info_row, 8, "Delivery Note", bold_detail)
-        worksheet.write(info_row, 9, header.get('delivery_note', ''), detail_fmt)
-        worksheet.write(info_row, 10, "Mode/Terms of Payment", bold_detail)
-        worksheet.merge_range(info_row, 11, info_row, 12, header.get('payment_terms', '45 Days'), detail_fmt)
-        info_row += 1
+        # --- HEADER BLOCKS (Rows 2-13) ---
+        # Supplier (Left)
+        s_name = "SENSTOGRAPHIC"
+        s_addr = "H-20/21, Industrial Estate, Govindpura, Bhopal - 462023"
+        s_gst = "23AACFS6810L1Z7"
         
-        # Row 3: Challan No | Dated
-        worksheet.write(info_row, 8, "Challan No", bold_detail)
-        worksheet.write(info_row, 9, str(header.get('linked_dc_numbers', '')), detail_fmt)
-        worksheet.write(info_row, 10, "Dated", bold_detail)
-        worksheet.merge_range(info_row, 11, info_row, 12, header.get('dc_date', ''), detail_fmt)
-        info_row += 1
+        worksheet.merge_range(2, 0, 4, 7, f"{s_name}\n{s_addr}\nGSTIN: {s_gst}", header_bold)
         
-        # Row 4: Buyer's Order No. | Dated
-        worksheet.write(info_row, 8, "Buyer's Order No.", bold_detail)
-        worksheet.write(info_row, 9, str(header.get('po_numbers', '')), detail_fmt)
-        worksheet.write(info_row, 10, "Dated", bold_detail)
-        worksheet.merge_range(info_row, 11, info_row, 12, header.get('po_date', ''), detail_fmt)
-        info_row += 1
+        # Info Box (Right)
+        worksheet.merge_range(2, 8, 3, 12, "Invoice No.", header_bold)
+        worksheet.merge_range(2, 13, 3, 18, header.get('invoice_number', ''), cell_center)
         
-        # Row 5: Despatch Document No. | SRV No | SRV Dt.
-        worksheet.write(info_row, 8, "Despatch Document No.", bold_detail)
-        worksheet.write(info_row, 9, '', detail_fmt)
-        worksheet.write(info_row, 10, "SRV No", bold_detail)
-        worksheet.write(info_row, 11, header.get('srv_number', ''), detail_fmt)
-        worksheet.write(info_row, 12, "SRV Dt.", bold_detail)
-        info_row += 1
+        worksheet.merge_range(4, 8, 5, 12, "Dated", header_bold)
+        worksheet.merge_range(4, 13, 5, 18, header.get('invoice_date', ''), cell_center)
         
-        # Row 6: Despatched through | Destination
-        worksheet.write(info_row, 8, "Despatched through", bold_detail)
-        worksheet.write(info_row, 9, '', detail_fmt)
-        worksheet.write(info_row, 10, "Destination", bold_detail)
-        worksheet.merge_range(info_row, 11, info_row, 12, header.get('consignee_name', ''), detail_fmt)
-        info_row += 1
+        # Buyer
+        buyer_val = f"{header.get('buyer_name', '')}\n{header.get('buyer_address', '')}\nGSTIN: {header.get('buyer_gstin', '')}"
+        worksheet.merge_range(5, 0, 9, 7, f"Buyer:\n{buyer_val}", header_normal)
         
-        # Row 7: By Loading Vehicle
-        worksheet.write(info_row, 8, "By Loading Vehicle", bold_detail)
-        worksheet.merge_range(info_row, 9, info_row, 12, '', detail_fmt)
-        info_row += 1
+        # More Info
+        worksheet.merge_range(6, 8, 7, 12, "Buyer's Order No.", header_bold)
+        worksheet.merge_range(6, 13, 7, 18, str(header.get('po_numbers', '')), cell_center)
         
-        # Row 8: Terms of Delivery
-        worksheet.merge_range(info_row, 8, info_row, 12, "Terms of Delivery", bold_detail)
+        worksheet.merge_range(8, 8, 9, 12, "DC Number", header_bold)
+        worksheet.merge_range(8, 13, 9, 18, str(header.get('linked_dc_numbers', '')), cell_center)
         
-        # Table starts after buyer block and info box
-        table_start_row = max(buyer_end_row, info_row + 1)
+        # Dispatch
+        worksheet.merge_range(10, 0, 11, 7, f"Despatched through: {header.get('transporter', '')}", header_normal)
+        worksheet.merge_range(10, 8, 11, 18, f"Destination: {header.get('destination', '')}", header_normal)
         
-        # --- TABLE HEADER ---
-        current_row = table_start_row + 1
-        worksheet.merge_range(current_row, 0, current_row+1, 0, "PO SL\nNo.", header_table)
-        worksheet.merge_range(current_row, 1, current_row+1, 1, "Description of Goods", header_table)
-        worksheet.merge_range(current_row, 2, current_row+1, 2, "HSN/SAC", header_table)
-        worksheet.merge_range(current_row, 3, current_row+1, 3, "No of\nPckt", header_table)
-        worksheet.merge_range(current_row, 4, current_row+1, 4, "Quantity", header_table)
-        worksheet.merge_range(current_row, 5, current_row+1, 5, "Rate", header_table)
-        worksheet.merge_range(current_row, 6, current_row+1, 6, "Qty\nUnit", header_table)
-        worksheet.merge_range(current_row, 7, current_row+1, 7, "Taxable\nValue", header_table)
-        worksheet.merge_range(current_row, 8, current_row, 9, "Central Tax", header_table)
-        worksheet.merge_range(current_row, 10, current_row, 11, "State Tax", header_table)
-        worksheet.merge_range(current_row, 12, current_row, 12, "Total", header_table)
+        worksheet.merge_range(12, 0, 13, 18, f"Terms of Delivery: {header.get('terms_of_delivery', '')}", header_normal)
         
-        current_row += 1
-        worksheet.write(current_row, 8, "Rate", header_table)
-        worksheet.write(current_row, 9, "Amount", header_table)
-        worksheet.write(current_row, 10, "Rate", header_table)
-        worksheet.write(current_row, 11, "Amount", header_table)
-        worksheet.write(current_row, 12, "Amount", header_table)
-
-        # --- ITEMS ---
-        current_row += 1
+        # --- TABLE HEADER (Rows 14-15) ---
+        row = 14
+        worksheet.merge_range(row, 0, row+1, 0, "PO\nSL", table_hdr)
+        worksheet.merge_range(row, 1, row+1, 7, "Description of Goods", table_hdr)
+        worksheet.merge_range(row, 8, row+1, 8, "HSN/SAC", table_hdr)
+        worksheet.merge_range(row, 9, row+1, 9, "No of\nPckt", table_hdr)
+        worksheet.merge_range(row, 10, row+1, 10, "Quantity", table_hdr)
+        worksheet.merge_range(row, 11, row+1, 11, "Rate", table_hdr)
+        worksheet.merge_range(row, 12, row+1, 12, "Unit", table_hdr)
+        worksheet.merge_range(row, 13, row+1, 13, "Taxable", table_hdr)
+        worksheet.merge_range(row, 14, row, 15, "Central Tax", table_hdr)
+        worksheet.merge_range(row, 16, row, 17, "State Tax", table_hdr)
+        worksheet.merge_range(row, 18, row+1, 18, "Total", table_hdr)
+        
+        row += 1
+        worksheet.write(row, 14, "Rate", table_hdr)
+        worksheet.write(row, 15, "Amount", table_hdr)
+        worksheet.write(row, 16, "Rate", table_hdr)
+        worksheet.write(row, 17, "Amount", table_hdr)
+        
+        # --- DATA ROWS ---
+        row += 1
         for idx, item in enumerate(items):
-            worksheet.write(current_row, 0, item.get('po_item_no', idx + 1), border_center)
-            worksheet.write(current_row, 1, item.get('description'), border_all)
-            worksheet.write(current_row, 2, item.get('hsn_sac', ''), border_center)
-            worksheet.write(current_row, 3, item.get('no_of_packets', ''), border_center)
-            worksheet.write(current_row, 4, item.get('quantity'), border_center)
-            worksheet.write(current_row, 5, item.get('rate'), border_right)
-            worksheet.write(current_row, 6, item.get('unit'), border_center)
-            worksheet.write(current_row, 7, item.get('taxable_value'), border_right)
+            worksheet.write(row, 0, item.get('po_item_no', idx + 1), cell_center)
+            worksheet.merge_range(row, 1, row, 7, item.get('description', ''), cell_left)
+            worksheet.write(row, 8, item.get('hsn_sac', ''), cell_center)
+            worksheet.write(row, 9, item.get('no_of_packets', 0), cell_center)
+            worksheet.write(row, 10, item.get('quantity', 0), cell_center)
+            worksheet.write(row, 11, item.get('rate', 0), cell_right)
+            worksheet.write(row, 12, item.get('unit', 'NOS'), cell_center)
+            worksheet.write(row, 13, item.get('taxable_value', 0), cell_right)
             
-            # CGST 
-            worksheet.write(current_row, 8, "9", border_center) 
-            worksheet.write(current_row, 9, item.get('cgst_amount'), border_right)
+            worksheet.write(row, 14, "9.00%", cell_center)
+            worksheet.write(row, 15, item.get('cgst_amount', 0), cell_right)
+            worksheet.write(row, 16, "9.00%", cell_center)
+            worksheet.write(row, 17, item.get('sgst_amount', 0), cell_right)
             
-            # SGST
-            worksheet.write(current_row, 10, "9", border_center)
-            worksheet.write(current_row, 11, item.get('sgst_amount'), border_right)
+            worksheet.write(row, 18, item.get('total_amount', 0), cell_right)
+            row += 1
             
-            worksheet.write(current_row, 12, item.get('total_amount'), border_right)
-            current_row += 1
-
-        # Total Row
-        worksheet.write(current_row, 0, "", border_all)
-        worksheet.write(current_row, 1, "Total", border_bold)
-        worksheet.write(current_row, 2, "", border_all)
-        worksheet.write(current_row, 3, sum((i.get('no_of_packets', 0) or 0) for i in items), border_center)
-        worksheet.write(current_row, 4, sum((i.get('quantity', 0) or 0) for i in items), border_center)
-        worksheet.write(current_row, 5, "", border_all)
-        worksheet.write(current_row, 6, "", border_all)
-        worksheet.write(current_row, 7, header.get('taxable_value'), border_right)
-        worksheet.write(current_row, 8, "", border_all)
-        worksheet.write(current_row, 9, header.get('cgst'), border_right)
-        worksheet.write(current_row, 10, "", border_all)
-        worksheet.write(current_row, 11, header.get('sgst'), border_right)
-        worksheet.write(current_row, 12, header.get('total_invoice_value'), border_right)
+        # Totals
+        worksheet.merge_range(row, 0, row, 7, "Total", table_hdr)
+        worksheet.write(row, 8, "", table_hdr)
+        worksheet.write(row, 9, sum(i.get('no_of_packets', 0) or 0 for i in items), cell_center)
+        worksheet.write(row, 10, sum(i.get('quantity', 0) or 0 for i in items), cell_center)
+        worksheet.write(row, 11, "", table_hdr)
+        worksheet.write(row, 12, "", table_hdr)
+        worksheet.write(row, 13, header.get('taxable_value', 0), cell_right)
+        worksheet.write(row, 14, "", table_hdr)
+        worksheet.write(row, 15, header.get('cgst', 0), cell_right)
+        worksheet.write(row, 16, "", table_hdr)
+        worksheet.write(row, 17, header.get('sgst', 0), cell_right)
+        worksheet.write(row, 18, header.get('total_invoice_value', 0), cell_right)
         
         # Words Footer
-        current_row += 1
+        row += 1
         from app.utils.num_to_words import amount_to_words
         amount_words = amount_to_words(header.get('total_invoice_value', 0))
-        worksheet.merge_range(current_row, 0, current_row, 6, f"Total Amount (In Words):- {amount_words}", border_bold)
-        worksheet.merge_range(current_row, 7, current_row, 12, "E. & O.E", workbook.add_format({'align': 'right', 'bold': True}))
+        worksheet.merge_range(row, 0, row, 18, f"Total Amount (In Words):- {amount_words}", header_bold)
         
         # Final block
-        current_row += 1
-        worksheet.merge_range(current_row, 7, current_row, 9, "Taxable", border_all)
-        worksheet.merge_range(current_row, 10, current_row, 11, "Central Tax", border_all)
-        worksheet.write(current_row, 12, "Total", border_all)
-        
-        current_row += 1
-        worksheet.merge_range(current_row, 7, current_row, 9, "Value", border_all)
-        worksheet.write(current_row, 10, "Rate", border_all)
-        worksheet.write(current_row, 11, "Amount", border_all)
-        worksheet.write(current_row, 12, "Tax Amount", border_all)
-
-        current_row += 1
-        worksheet.merge_range(current_row, 7, current_row, 9, header.get('taxable_value'), border_right)
-        worksheet.write(current_row, 10, "9", border_center)
-        worksheet.write(current_row, 11, header.get('cgst'), border_right)
-        worksheet.write(current_row, 12, (header.get('cgst', 0) + header.get('sgst', 0)), border_right)
-
-        # Declaration Section
-        current_row += 2
-        decl_fmt = workbook.add_format({'font_size': 9, 'font_name': 'Calibri'})
-        worksheet.merge_range(current_row, 0, current_row, 6, "Declaration", workbook.add_format({'bold': True, 'font_size': 10, 'font_name': 'Calibri'}))
-        worksheet.merge_range(current_row, 7, current_row, 12, "For Senstographic", workbook.add_format({'bold': True, 'align': 'right', 'font_size': 11, 'font_name': 'Calibri'}))
-        current_row += 1
-        worksheet.merge_range(current_row, 0, current_row + 1, 6, "We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct", decl_fmt)
-        current_row += 2
-        worksheet.merge_range(current_row, 7, current_row, 12, "Authorised Signatory", workbook.add_format({'align': 'right', 'font_size': 11, 'font_name': 'Calibri'}))
+        worksheet.merge_range(row, 7, row, 12, "For Senstographic", workbook.add_format({'bold': True, 'align': 'right', 'font_size': 11, 'font_name': 'Calibri'}))
+        row += 1
+        worksheet.merge_range(row, 0, row + 1, 6, "We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct", decl_fmt)
+        row += 2
+        worksheet.merge_range(row, 7, row, 12, "Authorised Signatory", workbook.add_format({'align': 'right', 'font_size': 11, 'font_name': 'Calibri'}))
         
         # Footer Rows
-        current_row += 2
+        row += 2
         footer_fmt = workbook.add_format({'align': 'center', 'font_size': 10, 'font_name': 'Calibri'})
-        worksheet.merge_range(current_row, 0, current_row, 12, "SUBJECT TO BHOPAL JURISDICTION", footer_fmt)
-        current_row += 1
-        worksheet.merge_range(current_row, 0, current_row, 12, "This is a Computer Generated Invoice", footer_fmt)
+        worksheet.merge_range(row, 0, row, 12, "SUBJECT TO BHOPAL JURISDICTION", footer_fmt)
+        row += 1
+        worksheet.merge_range(row, 0, row, 12, "This is a Computer Generated Invoice", footer_fmt)
 
         workbook.close()
         output.seek(0)

@@ -229,6 +229,7 @@ export interface DCItemRow {
     hsn_code?: string;
     hsn_rate?: number;
     remaining_post_dc?: number;
+    drg_no?: string;
 }
 
 export interface DCHeader {
@@ -487,8 +488,13 @@ export interface SRVListItem {
     po_number: string;
     total_received_qty: number;
     total_rejected_qty: number;
+    total_order_qty: number;
+    total_challan_qty: number;
+    total_accepted_qty: number;
     po_found?: boolean;
     warning_message?: string;
+    challan_numbers?: string;
+    invoice_numbers?: string;
     created_at?: string;
 }
 

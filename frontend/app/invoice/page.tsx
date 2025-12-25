@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { Receipt, Plus, Download, TrendingUp, FileText, AlertCircle, Layers, Clock, Activity } from "lucide-react";
 import { api, InvoiceListItem, InvoiceStats } from "@/lib/api";
-import { Plus, Search, Download, TrendingUp, AlertCircle, FileText, Activity, Layers, Receipt } from "lucide-react";
 import { formatDate, formatIndianCurrency } from "@/lib/utils";
-import GlassCard from "@/components/ui/GlassCard";
-import { DenseTable } from "@/components/ui/DenseTable";
+import { ListPageTemplate } from "@/components/design-system/templates/ListPageTemplate";
+import { SearchBar as AtomicSearchBar } from "@/components/design-system/molecules/SearchBar";
+import { Accounting, TableCells, Body } from '@/components/design-system';
+import { Button } from "@/components/design-system/atoms/Button";
+import { Badge } from "@/components/design-system/atoms/Badge";
+import type { Column, SummaryCardProps } from "@/components/design-system";
 
 export default function InvoicePage() {
     const router = useRouter();
@@ -17,7 +21,6 @@ export default function InvoicePage() {
 
     useEffect(() => {
         const fetchData = async () => {
-            setLoading(true);
             try {
                 const [invoicesData, statsData] = await Promise.all([
                     api.listInvoices(),
@@ -34,158 +37,182 @@ export default function InvoicePage() {
         fetchData();
     }, []);
 
-    const filteredInvoices = invoices.filter(inv =>
-        inv.invoice_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (inv.customer_gstin && inv.customer_gstin.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
+    const filteredInvoices = useMemo(() => {
+        return invoices.filter(inv =>
+            inv.invoice_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (inv.customer_gstin && inv.customer_gstin.toLowerCase().includes(searchQuery.toLowerCase()))
+        );
+    }, [invoices, searchQuery]);
 
-    const columns = [
+    // Table columns
+    const columns: Column<InvoiceListItem>[] = [
         {
-            header: "Invoice ID",
-            accessorKey: "invoice_number" as keyof InvoiceListItem,
-            cell: (inv: InvoiceListItem) => (
-                <div onClick={() => router.push(`/invoice/view?id=${encodeURIComponent(inv.invoice_number)}`)} className="link font-bold text-sm">{inv.invoice_number}</div>
-            )
-        },
-        {
-            header: "Billing Date",
-            accessorKey: "invoice_date" as keyof InvoiceListItem,
-            cell: (inv: InvoiceListItem) => <span className="text-meta font-bold uppercase">{formatDate(inv.invoice_date)}</span>
-        },
-        {
-            header: "Linked PO",
-            accessorKey: "po_numbers" as keyof InvoiceListItem,
-            cell: (inv: InvoiceListItem) => (
-                <div className="flex flex-col gap-0.5">
-                    {inv.po_numbers ? inv.po_numbers.split(',').map((po, i) => (
-                        <span key={i} className="text-xs font-bold text-slate-600 hover:text-blue-600 cursor-pointer transition-colors" onClick={(e) => { e.stopPropagation(); router.push(`/po/view?id=${po.trim()}`) }}>
-                            PO #{po.trim()}
-                        </span>
-                    )) : <span className="text-slate-300 italic text-[10px]">N/A</span>}
-                </div>
-            )
-        },
-        {
-            header: "Linked DC",
-            accessorKey: "linked_dc_numbers" as keyof InvoiceListItem,
-            cell: (inv: InvoiceListItem) => (
-                <div className="flex flex-wrap gap-1.5">
-                    {inv.linked_dc_numbers ? inv.linked_dc_numbers.split(',').map((dc, i) => (
-                        <span key={i} className="badge-premium badge-rose opacity-80" title="Delivery Challan">
-                            {dc.trim()}
-                        </span>
-                    )) : <span className="text-slate-300 italic text-[10px]">DIRECT</span>}
-                </div>
-            )
-        },
-        {
-            header: "Final Amount",
-            accessorKey: "total_invoice_value" as keyof InvoiceListItem,
-            className: "text-right",
-            cell: (inv: InvoiceListItem) => (
-                <span className="text-accounting font-bold text-slate-800">
-                    {formatIndianCurrency(inv.total_invoice_value)}
-                </span>
-            )
-        },
-        {
-            header: "Finance Status",
-            accessorKey: "invoice_number" as keyof InvoiceListItem,
-            className: "text-right",
-            cell: () => <span className="badge-premium badge-emerald">ISSUED</span>
-        },
-        {
-            header: "",
-            accessorKey: "invoice_number" as keyof InvoiceListItem,
-            className: "w-10",
-            cell: (inv: InvoiceListItem) => (
-                <button
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        window.open(`${api.baseUrl}/api/invoice/${inv.invoice_number}/download`, '_blank');
-                    }}
-                    className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
-                    title="Export Ledger"
+            key: "invoice_number",
+            label: "Invoice Number",
+            sortable: true,
+            width: "15%",
+            render: (_value, inv) => (
+                <div
+                    onClick={() => router.push(`/invoice/${encodeURIComponent(inv.invoice_number)}`)}
+                    className="text-[#1A3D7C] font-medium cursor-pointer hover:underline"
                 >
-                    <Download className="w-4 h-4" />
-                </button>
+                    {inv.invoice_number}
+                </div>
+            )
+        },
+        {
+            key: "invoice_date",
+            label: "Date",
+            sortable: true,
+            width: "12%",
+            render: (_value, inv) => (
+                <span className="text-[#6B7280] whitespace-nowrap">{formatDate(inv.invoice_date)}</span>
+            )
+        },
+        {
+            key: "linked_dc_numbers",
+            label: "Linked DCs",
+            width: "15%",
+            render: (_value, inv) => (
+                <div className="flex flex-wrap gap-1">
+                    {inv.linked_dc_numbers ? inv.linked_dc_numbers.split(',').map((dc: string, i: number) => (
+                        <Badge
+                            key={i}
+                            variant="secondary"
+                            className="cursor-pointer hover:bg-[#1A3D7C]/10 text-[10px]"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/dc/${dc.trim()}`);
+                            }}
+                        >
+                            {dc.trim()}
+                        </Badge>
+                    )) : <span className="text-[#9CA3AF] italic text-[11px]">Direct</span>}
+                </div>
+            )
+        },
+        {
+            key: "po_numbers",
+            label: "Linked POs",
+            width: "18%",
+            render: (_value, inv) => (
+                <div className="flex flex-wrap gap-1">
+                    {inv.po_numbers ? inv.po_numbers.split(',').map((po: string, i: number) => (
+                        <Badge
+                            key={i}
+                            variant="outline"
+                            className="cursor-pointer hover:bg-[#1A3D7C]/10"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                router.push(`/po/${po.trim()}`);
+                            }}
+                        >
+                            {po.trim()}
+                        </Badge>
+                    )) : <span className="text-[#9CA3AF] italic text-[12px]">Direct</span>}
+                </div>
+            )
+        },
+        {
+            key: "customer_gstin",
+            label: "Customer GSTIN",
+            width: "20%",
+            render: (_value, inv) => (
+                <span className="font-mono text-[12px]">{inv.customer_gstin || 'N/A'}</span>
+            )
+        },
+        {
+            key: "total_value",
+            label: "Total Value",
+            sortable: true,
+            align: "right",
+            width: "15%",
+            render: (_value, inv) => (
+                <Accounting isCurrency className="text-slate-950 font-medium">{inv.total_value}</Accounting>
+            )
+        },
+        {
+            key: "igst",
+            label: "IGST",
+            align: "right",
+            width: "10%",
+            render: (_value, inv) => (
+                <span className="text-[#6B7280] text-[12px] tabular-nums">{formatIndianCurrency(inv.igst || 0)}</span>
+            )
+        },
+        {
+            key: "status",
+            label: "Status",
+            sortable: true,
+            width: "10%",
+            render: (_value, inv) => (
+                <Badge variant={inv.status === 'Paid' ? 'success' : 'warning'}>
+                    {inv.status || 'Pending'}
+                </Badge>
             )
         }
     ];
 
-    if (loading) return <div className="p-32 text-center animate-pulse text-blue-500 font-bold uppercase tracking-widest text-xs">Synchronizing Financial Core...</div>;
+    // Summary cards
+    const summaryCards: SummaryCardProps[] = [
+        {
+            title: 'Total Invoices',
+            value: <Accounting className="text-xl text-white">{invoices.length}</Accounting>,
+            icon: <Receipt size={24} />,
+            variant: 'primary',
+        },
+        {
+            title: 'Paid Invoices',
+            value: <Accounting className="text-xl text-white">{formatIndianCurrency(stats?.total_invoiced || 0)}</Accounting>,
+            icon: <Clock size={24} />,
+            variant: 'success'
+        },
+        {
+            title: 'Pending Payments',
+            value: <Accounting className="text-xl text-white">{formatIndianCurrency(stats?.pending_payments || 0)}</Accounting>,
+            icon: <Clock size={24} />,
+            variant: 'warning'
+        },
+        {
+            title: 'Total Invoiced',
+            value: <Accounting isCurrency className="text-xl text-white">{stats?.total_invoiced || 0}</Accounting>,
+            icon: <Activity size={24} />,
+            variant: 'secondary'
+        }
+    ];
 
-    return (
-        <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-blue-50/20 p-6 space-y-6 pb-24 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                <div>
-                    <h1 className="heading-xl flex items-center gap-4">
-                        <Receipt className="w-8 h-8 text-blue-600" />
-                        Billing & Revenue
-                    </h1>
-                    <p className="text-sm text-slate-500 mt-1 font-medium italic">Execute tax compliant invoices and track financial growth</p>
-                </div>
-                <button
-                    onClick={() => router.push('/invoice/create')}
-                    className="btn-premium btn-primary shadow-xl"
-                >
-                    <Plus className="w-4 h-4" />
-                    Generate Invoice
-                </button>
+    // Toolbar
+    const toolbar = (
+        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            <div className="flex-1 w-full max-w-md">
+                <AtomicSearchBar
+                    value={searchQuery}
+                    onChange={setSearchQuery}
+                    placeholder="Search by invoice number or GSTIN..."
+                />
             </div>
-
-            {stats && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <KpiCard title="Revenue Flow" value={formatIndianCurrency(stats.total_invoiced)} icon={TrendingUp} color="blue" trend={`+ ${stats.total_invoiced_change}% Growth`} />
-                    <KpiCard title="Tax Aggregate" value={formatIndianCurrency(stats.gst_collected)} icon={FileText} color="indigo" trend="Compliant" />
-                    <KpiCard title="Liquidity Gap" value={formatIndianCurrency(stats.pending_payments)} icon={AlertCircle} color="amber" trend={`${stats.pending_payments_count} Unpaid`} />
-                </div>
-            )}
-
-            <div className="space-y-4">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-2">
-                    <h2 className="heading-md uppercase tracking-wider text-slate-800">Financial Inventory</h2>
-                    <div className="relative w-full md:w-80">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input
-                            type="text"
-                            placeholder="SEARCH BY ID OR GSTIN..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="input-premium pl-12 font-bold uppercase tracking-widest text-[10px]"
-                        />
-                    </div>
-                </div>
-
-                <div className="glass-panel overflow-hidden">
-                    <DenseTable
-                        loading={loading}
-                        data={filteredInvoices}
-                        columns={columns}
-                        onRowClick={(inv) => router.push(`/invoice/view?id=${encodeURIComponent(inv.invoice_number)}`)}
-                        className="bg-transparent border-none rounded-none"
-                    />
-                </div>
+            <div className="flex items-center gap-3">
+                <Button variant="default" size="sm" onClick={() => router.push('/invoice/create')}>
+                    <Plus size={16} />
+                    Create New
+                </Button>
             </div>
         </div>
     );
-}
 
-function KpiCard({ title, value, icon: Icon, color, trend }: any) {
     return (
-        <GlassCard className="p-6 h-[110px] flex flex-col justify-between group border-white/60">
-            <div className="flex justify-between items-start">
-                <div>
-                    <span className="text-label uppercase opacity-60 m-0">{title}</span>
-                    <div className="text-xl font-black text-slate-800 tracking-tighter mt-1 group-hover:text-blue-600 transition-colors uppercase">{value}</div>
-                </div>
-                <div className={`p-2 rounded-xl bg-${color}-50/50 border border-${color}-100 group-hover:scale-110 transition-transform`}>
-                    <Icon className={`w-4 h-4 text-${color}-600`} />
-                </div>
-            </div>
-            <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase mt-2">
-                <Activity className="w-3 h-3" /> {trend}
-            </div>
-        </GlassCard>
+        <ListPageTemplate
+            title="GST Invoices"
+            subtitle="Manage all billing documentation and compliance"
+            toolbar={toolbar}
+            summaryCards={summaryCards}
+            columns={columns}
+            data={filteredInvoices}
+            keyField="invoice_number"
+            exportable
+            onExport={() => window.open(`${api.baseUrl}/api/reports/register/invoice?export=true`, '_blank')}
+            loading={loading}
+            emptyMessage="No invoices found"
+        />
     );
 }

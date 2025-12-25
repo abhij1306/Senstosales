@@ -1,9 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { Save, Building2, UserCircle, MapPin, Hash, Phone, Globe, ShieldCheck, Landmark, Activity, Sparkles, Building, Info, UserCheck, AlertOctagon } from 'lucide-react';
+import { Save, Building, UserCheck, AlertOctagon } from 'lucide-react';
 import ResetDatabase from '@/components/ResetDatabase';
-import GlassCard from "@/components/ui/GlassCard";
+import { H1, H3, Body, SmallText, Label } from "@/components/design-system/atoms/Typography";
+import { Button } from "@/components/design-system/atoms/Button";
+import { Card } from "@/components/design-system/atoms/Card";
+import { Input } from "@/components/design-system/atoms/Input";
 
 interface Settings {
     supplier_name: string;
@@ -13,7 +16,6 @@ interface Settings {
     supplier_contact: string;
     supplier_state: string;
     supplier_state_code: string;
-
     buyer_name: string;
     buyer_address: string;
     buyer_gstin: string;
@@ -78,217 +80,227 @@ export default function MyDetailsPage() {
             });
 
             if (response.ok) {
-                setMessage({ type: 'success', text: 'Global parameters updated successfully.' });
+                setMessage({ type: 'success', text: 'Settings updated successfully.' });
                 setTimeout(() => setMessage(null), 3000);
             } else {
-                setMessage({ type: 'error', text: 'Parameter synchronization failed.' });
+                setMessage({ type: 'error', text: 'Failed to update settings.' });
             }
         } catch (error) {
-            setMessage({ type: 'error', text: 'Execution failure in ledger sync.' });
+            setMessage({ type: 'error', text: 'Network error occurred.' });
         } finally {
             setIsSaving(false);
         }
     };
 
-    if (isLoading) return <div className="p-32 text-center animate-pulse text-blue-600 font-bold uppercase tracking-widest text-xs">Accessing System Configuration...</div>;
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center min-h-[50vh]">
+                <Body className="text-[#6B7280] animate-pulse">Loading settings...</Body>
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-blue-50/20 p-6 space-y-10 pb-32 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="space-y-8">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="heading-xl uppercase tracking-tighter">Global Parameters</h1>
-                    <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1 italic">Master configuration for financial documentation</p>
+                    <H1>Global Settings</H1>
+                    <Body className="text-[#6B7280] mt-1">
+                        Master configuration for financial documentation
+                    </Body>
                 </div>
                 <div className="flex items-center gap-4">
                     {message && (
-                        <div className={`px-4 py-2 rounded-xl border-2 flex items-center gap-2 animate-in slide-in-from-right-2 ${message.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-rose-50 border-rose-100 text-rose-600'}`}>
-                            <ShieldCheck className="w-4 h-4" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">{message.text}</span>
+                        <div className={`px-4 py-2 rounded-lg border flex items-center gap-2 ${message.type === 'success' ? 'bg-[#16A34A]/10 border-[#16A34A]/20 text-[#16A34A]' : 'bg-[#DC2626]/10 border-[#DC2626]/20 text-[#DC2626]'}`}>
+                            <SmallText className="font-semibold">{message.text}</SmallText>
                         </div>
                     )}
-                    <button
-                        onClick={() => handleUpdate()}
-                        disabled={isSaving}
-                        className="btn-premium btn-primary bg-slate-800 shadow-xl h-12 px-8"
-                    >
-                        <Save className={`w-4 h-4 ${isSaving ? 'animate-spin' : ''}`} />
-                        {isSaving ? 'SYNCING...' : 'COMMIT CHANGES'}
-                    </button>
+                    <Button onClick={() => handleUpdate()} variant="default" disabled={isSaving}>
+                        <Save size={16} className={isSaving ? 'animate-spin' : ''} />
+                        {isSaving ? 'Saving...' : 'Save Changes'}
+                    </Button>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                {/* Supplier Details */}
-                <GlassCard className="p-0 overflow-hidden border-blue-100/50">
-                    <div className="px-8 py-6 border-b border-white/20 bg-blue-50/30 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-white rounded-2xl shadow-sm text-blue-600">
-                                <Building className="w-5 h-5" />
-                            </div>
-                            <h3 className="heading-md uppercase text-xs tracking-widest">Supplier Identity</h3>
+            {/* Section: Identity & Location */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Supplier Identity */}
+                <Card className="overflow-hidden border-none shadow-premium bg-white/80 backdrop-blur-md">
+                    <div className="px-6 py-5 bg-gradient-to-r from-[#1A3D7C] to-[#2E5B9E] flex items-center gap-3">
+                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                            <Building className="w-5 h-5 text-white" />
                         </div>
-                        <Sparkles className="w-4 h-4 text-blue-300" />
+                        <H3 className="text-white">Supplier Profile</H3>
                     </div>
-                    <div className="p-10 space-y-8">
-                        <div className="space-y-2">
-                            <label className="text-label">Organization Name</label>
-                            <input
-                                value={settings.supplier_name}
-                                onChange={e => setSettings({ ...settings, supplier_name: e.target.value })}
-                                className="input-premium font-black text-lg"
-                                placeholder="ENTER COMPANY LEGAL NAME"
-                            />
+
+                    <div className="p-8 space-y-8">
+                        <div className="grid grid-cols-1 gap-6">
+                            <div className="space-y-2">
+                                <Label className="text-[10px] uppercase tracking-widest text-slate-500">Business Name</Label>
+                                <Input
+                                    value={settings.supplier_name}
+                                    onChange={e => setSettings({ ...settings, supplier_name: e.target.value })}
+                                    className="bg-slate-50/50 border-slate-200"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] uppercase tracking-widest text-slate-500">Tagline / Description</Label>
+                                <Input
+                                    value={settings.supplier_description}
+                                    onChange={e => setSettings({ ...settings, supplier_description: e.target.value })}
+                                    className="bg-slate-50/50 border-slate-200"
+                                />
+                            </div>
                         </div>
+
                         <div className="space-y-2">
-                            <label className="text-label">Fiscal Activity Description</label>
-                            <input
-                                value={settings.supplier_description}
-                                onChange={e => setSettings({ ...settings, supplier_description: e.target.value })}
-                                className="input-premium font-bold italic text-slate-600"
-                                placeholder="e.g. MANUFACTURERS OF INDUSTRIAL COMPONENTS"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-label">Registered Headquarters</label>
+                            <Label className="text-[10px] uppercase tracking-widest text-slate-500">Registered Address</Label>
                             <textarea
                                 value={settings.supplier_address}
                                 onChange={e => setSettings({ ...settings, supplier_address: e.target.value })}
-                                rows={3}
-                                className="input-premium font-medium resize-none shadow-inner"
-                                placeholder="FULL REGISTERED ADDRESS"
+                                rows={4}
+                                className="w-full px-4 py-3 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1A3D7C]/20 focus:border-[#1A3D7C] bg-slate-50/50 transition-all resize-none"
                             />
                         </div>
-                        <div className="grid grid-cols-2 gap-8">
+
+                        <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-label">GST Compliance ID</label>
-                                <input
+                                <Label className="text-[10px] uppercase tracking-widest text-slate-500">Tax Identity (GSTIN)</Label>
+                                <Input
                                     value={settings.supplier_gstin}
                                     onChange={e => setSettings({ ...settings, supplier_gstin: e.target.value.toUpperCase() })}
-                                    className="input-premium font-black tracking-widest text-blue-600"
+                                    className="bg-slate-50/50 border-slate-200 font-mono tracking-wider"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-label">Contact Node</label>
-                                <input
+                                <Label className="text-[10px] uppercase tracking-widest text-slate-500">Support Contact</Label>
+                                <Input
                                     value={settings.supplier_contact}
                                     onChange={e => setSettings({ ...settings, supplier_contact: e.target.value })}
-                                    className="input-premium font-bold"
+                                    className="bg-slate-50/50 border-slate-200"
                                 />
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-8">
+
+                        <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-label">Regional State</label>
-                                <input
+                                <Label className="text-[10px] uppercase tracking-widest text-slate-500">Jurisdiction (State)</Label>
+                                <Input
                                     value={settings.supplier_state}
                                     onChange={e => setSettings({ ...settings, supplier_state: e.target.value })}
-                                    className="input-premium font-black uppercase"
+                                    className="bg-slate-50/50 border-slate-200"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-label">State Identifier (Code)</label>
-                                <input
+                                <Label className="text-[10px] uppercase tracking-widest text-slate-500">State Code</Label>
+                                <Input
                                     value={settings.supplier_state_code}
                                     onChange={e => setSettings({ ...settings, supplier_state_code: e.target.value })}
-                                    className="input-premium font-black text-center"
+                                    className="bg-slate-50/50 border-slate-200"
                                 />
                             </div>
                         </div>
                     </div>
-                </GlassCard>
+                </Card>
 
                 {/* Buyer Details */}
-                <GlassCard className="p-0 overflow-hidden border-indigo-100/50">
-                    <div className="px-8 py-6 border-b border-white/20 bg-indigo-50/30 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-white rounded-2xl shadow-sm text-indigo-600">
-                                <UserCheck className="w-5 h-5" />
-                            </div>
-                            <h3 className="heading-md uppercase text-xs tracking-widest">Client Authority</h3>
+                <Card className="overflow-hidden border-none shadow-premium bg-white/80 backdrop-blur-md">
+                    <div className="px-6 py-5 bg-gradient-to-r from-[#2BB7A0] to-[#269E8A] flex items-center gap-3">
+                        <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+                            <UserCheck className="w-5 h-5 text-white" />
                         </div>
-                        <Activity className="w-4 h-4 text-indigo-300" />
+                        <H3 className="text-white">Buyer Information</H3>
                     </div>
-                    <div className="p-10 space-y-8">
-                        <div className="space-y-2">
-                            <label className="text-label">Customer Legal Entity</label>
-                            <input
-                                value={settings.buyer_name}
-                                onChange={e => setSettings({ ...settings, buyer_name: e.target.value })}
-                                className="input-premium font-black text-lg"
-                            />
+
+                    <div className="p-8 space-y-8">
+                        <div className="grid grid-cols-1 gap-6">
+                            <div className="space-y-2">
+                                <Label className="text-[10px] uppercase tracking-widest text-slate-500">Customer Legal Name</Label>
+                                <Input
+                                    value={settings.buyer_name}
+                                    onChange={e => setSettings({ ...settings, buyer_name: e.target.value })}
+                                    className="bg-slate-50/50 border-slate-200"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label className="text-[10px] uppercase tracking-widest text-slate-500">Authorized Designation</Label>
+                                <Input
+                                    value={settings.buyer_designation}
+                                    onChange={e => setSettings({ ...settings, buyer_designation: e.target.value })}
+                                    className="bg-slate-50/50 border-slate-200"
+                                />
+                            </div>
                         </div>
+
                         <div className="space-y-2">
-                            <label className="text-label">Authorized Designation</label>
-                            <input
-                                value={settings.buyer_designation}
-                                onChange={e => setSettings({ ...settings, buyer_designation: e.target.value })}
-                                className="input-premium font-bold text-indigo-600"
-                                placeholder="e.g. SENIOR ACCOUNTS OFFICER"
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-label">Billing Hub Address</label>
+                            <Label className="text-[10px] uppercase tracking-widest text-slate-500">Ship-to Address</Label>
                             <textarea
                                 value={settings.buyer_address}
                                 onChange={e => setSettings({ ...settings, buyer_address: e.target.value })}
-                                rows={3}
-                                className="input-premium font-medium resize-none shadow-inner"
+                                rows={4}
+                                className="w-full px-4 py-3 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#2BB7A0]/20 focus:border-[#2BB7A0] bg-slate-50/50 transition-all resize-none"
                             />
                         </div>
-                        <div className="grid grid-cols-2 gap-8">
+
+                        <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-label">Buyer GSTIN</label>
-                                <input
+                                <Label className="text-[10px] uppercase tracking-widest text-slate-500">Customer GSTIN</Label>
+                                <Input
                                     value={settings.buyer_gstin}
                                     onChange={e => setSettings({ ...settings, buyer_gstin: e.target.value.toUpperCase() })}
-                                    className="input-premium font-black tracking-widest text-indigo-600"
+                                    className="bg-slate-50/50 border-slate-200 font-mono tracking-wider"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-label">Point of Supply</label>
-                                <input
+                                <Label className="text-[10px] uppercase tracking-widest text-slate-500">Place of Supply</Label>
+                                <Input
                                     value={settings.buyer_place_of_supply}
                                     onChange={e => setSettings({ ...settings, buyer_place_of_supply: e.target.value })}
-                                    className="input-premium font-bold"
+                                    className="bg-slate-50/50 border-slate-200"
                                 />
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-8">
+
+                        <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-2">
-                                <label className="text-label">Customer Region</label>
-                                <input
+                                <Label className="text-[10px] uppercase tracking-widest text-slate-500">Customer State</Label>
+                                <Input
                                     value={settings.buyer_state}
                                     onChange={e => setSettings({ ...settings, buyer_state: e.target.value })}
-                                    className="input-premium font-black uppercase"
+                                    className="bg-slate-50/50 border-slate-200"
                                 />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-label">Region Code</label>
-                                <input
+                                <Label className="text-[10px] uppercase tracking-widest text-slate-500">State Code</Label>
+                                <Input
                                     value={settings.buyer_state_code}
                                     onChange={e => setSettings({ ...settings, buyer_state_code: e.target.value })}
-                                    className="input-premium font-black text-center"
+                                    className="bg-slate-50/50 border-slate-200"
                                 />
                             </div>
                         </div>
                     </div>
-                </GlassCard>
+                </Card>
             </div>
 
-            <div className="pt-10 border-t border-slate-100">
-                <div className="flex items-center gap-4 mb-6">
-                    <AlertOctagon className="w-6 h-6 text-rose-500" />
-                    <h2 className="heading-md uppercase tracking-widest text-rose-600">Critical Operations Vault (Danger Zone)</h2>
+            {/* Danger Zone */}
+            <div className="pt-8 border-t border-[#E5E7EB]">
+                <div className="flex items-center gap-3 mb-4">
+                    <AlertOctagon className="w-5 h-5 text-[#DC2626]" />
+                    <H3 className="text-[#DC2626]">Danger Zone</H3>
                 </div>
-                <GlassCard className="p-8 border-rose-100 bg-rose-50/10">
+                <Card className="p-6 border-[#DC2626]/20 bg-[#DC2626]/5">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                        <div className="max-w-2xl">
-                            <h3 className="font-black text-slate-800 uppercase text-xs tracking-widest mb-1">System Hard Reset</h3>
-                            <p className="text-xs text-slate-400 font-bold leading-relaxed">THIS ACTION WILL PERMANENTLY ERASE ALL LEDGERS, PROCUREMENT CONTRACTS, AND LOGISTIC RECORDS. DATA RECOVERY IS IMPOSSIBLE ONCE INITIATED.</p>
+                        <div>
+                            <H3 className="text-[14px] mb-1">System Hard Reset</H3>
+                            <SmallText className="text-[#6B7280] leading-relaxed">
+                                This action will permanently erase all ledgers, procurement contracts, and logistic records. Data recovery is impossible once initiated.
+                            </SmallText>
                         </div>
                         <ResetDatabase />
                     </div>
-                </GlassCard>
+                </Card>
             </div>
         </div>
     );

@@ -12,7 +12,7 @@ from datetime import date, datetime
 class POHeader(BaseModel):
     """Purchase Order Header"""
     po_number: int
-    po_date: Optional[str] = None
+    po_date: Optional[str] = Field(None, description="YYYY-MM-DD")
     supplier_name: Optional[str] = None
     supplier_gstin: Optional[str] = None
     supplier_code: Optional[str] = None
@@ -23,9 +23,9 @@ class POHeader(BaseModel):
     
     # Reference Info
     enquiry_no: Optional[str] = None
-    enquiry_date: Optional[str] = None
+    enquiry_date: Optional[str] = Field(None, description="YYYY-MM-DD")
     quotation_ref: Optional[str] = None
-    quotation_date: Optional[str] = None
+    quotation_date: Optional[str] = Field(None, description="YYYY-MM-DD")
     rc_no: Optional[str] = None
     order_type: Optional[str] = None
     po_status: Optional[str] = None
@@ -54,8 +54,8 @@ class PODelivery(BaseModel):
     id: Optional[str] = None
     lot_no: Optional[int] = None
     delivered_quantity: Optional[float] = None
-    dely_date: Optional[str] = None
-    entry_allow_date: Optional[str] = None
+    dely_date: Optional[str] = Field(None, description="YYYY-MM-DD")
+    entry_allow_date: Optional[str] = Field(None, description="YYYY-MM-DD")
     dest_code: Optional[int] = None
 
 class POItem(BaseModel):
@@ -113,7 +113,7 @@ class PODetail(BaseModel):
 class DCCreate(BaseModel):
     """Create Delivery Challan"""
     dc_number: str
-    dc_date: str
+    dc_date: str = Field(..., description="YYYY-MM-DD")
     po_number: Optional[int] = None
     department_no: Optional[int] = None
     consignee_name: Optional[str] = None
@@ -130,7 +130,7 @@ class DCCreate(BaseModel):
 class DCListItem(BaseModel):
     """Delivery Challan List Item"""
     dc_number: str
-    dc_date: str
+    dc_date: str = Field(..., description="YYYY-MM-DD")
     po_number: Optional[int] = None
     consignee_name: Optional[str] = None
     status: Optional[str] = "Pending"
@@ -152,7 +152,7 @@ class DCStats(BaseModel):
 class InvoiceCreate(BaseModel):
     """Create Invoice"""
     invoice_number: str
-    invoice_date: str
+    invoice_date: str = Field(..., description="YYYY-MM-DD")
     linked_dc_numbers: Optional[str] = None
     po_numbers: Optional[str] = None
     customer_gstin: Optional[str] = None
@@ -167,7 +167,7 @@ class InvoiceCreate(BaseModel):
 class InvoiceListItem(BaseModel):
     """Invoice List Item"""
     invoice_number: str
-    invoice_date: str
+    invoice_date: str = Field(..., description="YYYY-MM-DD")
     po_numbers: Optional[str] = None
     linked_dc_numbers: Optional[str] = None  # Added
     customer_gstin: Optional[str] = None     # Added
@@ -260,8 +260,13 @@ class SRVListItem(BaseModel):
     po_number: str
     total_received_qty: float = 0.0
     total_rejected_qty: float = 0.0
+    total_order_qty: float = 0.0
+    total_challan_qty: float = 0.0
+    total_accepted_qty: float = 0.0
     po_found: Optional[bool] = True  # Whether PO exists in database
     warning_message: Optional[str] = None  # Warning if PO not found
+    challan_numbers: Optional[str] = None
+    invoice_numbers: Optional[str] = None
     created_at: Optional[str] = None
 
 class SRVStats(BaseModel):

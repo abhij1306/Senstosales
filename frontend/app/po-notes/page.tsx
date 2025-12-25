@@ -1,9 +1,13 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { Plus, Edit2, Trash2, FileText, X, CheckSquare, Loader2, Quote, Sparkles } from "lucide-react";
+import { Plus, Edit2, Trash2, FileText, X, CheckSquare, Quote, Sparkles } from "lucide-react";
 import { api, PONote } from '@/lib/api';
-import GlassCard from "@/components/ui/GlassCard";
+import { H1, H3, Body, SmallText, Label } from "@/components/design-system/atoms/Typography";
+import { Button } from "@/components/design-system/atoms/Button";
+import { Card } from "@/components/design-system/atoms/Card";
+import { Input } from "@/components/design-system/atoms/Input";
+import { Badge } from "@/components/design-system/atoms/Badge";
 
 function PONotesContent() {
     const [templates, setTemplates] = useState<PONote[]>([]);
@@ -62,139 +66,143 @@ function PONotesContent() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[50vh] animate-pulse">
-                <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+            <div className="flex items-center justify-center min-h-[50vh]">
+                <Body className="text-[#6B7280] animate-pulse">Loading templates...</Body>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-indigo-50/20 p-6 space-y-8 pb-32 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="heading-xl flex items-center gap-4">
-                        <Sparkles className="w-8 h-8 text-blue-500" />
-                        Document Templates
-                    </h1>
-                    <p className="text-sm text-slate-500 mt-1 font-medium italic">Reusable terms and conditions for purchase orders & challans</p>
+                    <H1>Document Templates</H1>
+                    <Body className="text-[#6B7280] mt-1">
+                        Reusable terms and conditions for purchase orders & challans
+                    </Body>
                 </div>
-                <button
+                <Button
+                    variant="default"
                     onClick={() => {
                         setFormData({ title: "", content: "" });
                         setEditingId(null);
                         setShowForm(true);
                     }}
-                    className="btn-premium btn-primary"
                 >
-                    <Plus className="w-4 h-4" />
+                    <Plus size={16} />
                     New Template
-                </button>
+                </Button>
             </div>
 
             {/* Form Modal */}
             {showForm && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setShowForm(false)} />
-                    <div className="relative w-full max-w-xl glass-panel p-0 overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-300">
-                        <div className="px-8 py-6 border-b border-white/20 bg-white/20 flex items-center justify-between">
+                    <div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        onClick={() => setShowForm(false)}
+                    />
+                    <Card className="relative w-full max-w-xl p-0 shadow-2xl">
+                        <div className="px-6 py-4 border-b border-[#E5E7EB] flex items-center justify-between">
                             <div>
-                                <h2 className="heading-md uppercase tracking-widest text-blue-700">
-                                    {editingId ? "Update Template" : "New Template"}
-                                </h2>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase mt-1">Template Configuration</p>
+                                <H3>{editingId ? "Update Template" : "New Template"}</H3>
+                                <SmallText className="text-[#6B7280]">Template Configuration</SmallText>
                             </div>
-                            <button onClick={() => setShowForm(false)} className="p-2 text-slate-400 hover:text-slate-900 transition-colors">
-                                <X className="w-5 h-5" />
-                            </button>
+                            <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>
+                                <X size={16} />
+                            </Button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="p-8 space-y-6">
+                        <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div className="space-y-2">
-                                <label className="text-label">Template Title</label>
-                                <input
-                                    type="text"
+                                <Label>Template Title</Label>
+                                <Input
                                     value={formData.title}
                                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                    className="input-premium font-bold"
                                     placeholder="e.g., Standard Warranty Clause"
-                                    autoFocus
                                     required
+                                    autoFocus
                                 />
                             </div>
 
                             <div className="space-y-2">
-                                <label className="text-label">Template Content</label>
+                                <Label>Template Content</Label>
                                 <textarea
                                     value={formData.content}
                                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                                     rows={10}
-                                    className="input-premium resize-none leading-relaxed text-sm"
+                                    className="w-full px-3 py-2 text-[14px] border border-[#D1D5DB] rounded-md focus:outline-none focus:ring-2 focus:ring-[#1A3D7C] resize-none"
                                     placeholder="Enter documentation text..."
                                     required
                                 />
                             </div>
 
-                            <div className="flex gap-4 justify-end pt-4">
-                                <button type="button" onClick={() => setShowForm(false)} className="btn-premium btn-ghost">Cancel</button>
-                                <button type="submit" className="btn-premium btn-primary px-8">
+                            <div className="flex gap-3 justify-end pt-4">
+                                <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" variant="default">
                                     {editingId ? "Save Changes" : "Create Template"}
-                                </button>
+                                </Button>
                             </div>
                         </form>
-                    </div>
+                    </Card>
                 </div>
             )}
 
             {/* Templates Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {templates.map((template) => (
-                    <GlassCard key={template.id} variant="interact" className="flex flex-col h-full hover:ring-2 hover:ring-blue-100 p-0 overflow-hidden">
+                    <Card key={template.id} className="flex flex-col h-full hover:shadow-lg transition-shadow">
                         <div className="p-6 flex-1 flex flex-col">
                             <div className="flex items-start justify-between mb-4">
-                                <div className="flex items-center gap-4">
-                                    <div className="w-12 h-12 bg-blue-50/50 rounded-2xl flex items-center justify-center border border-blue-100 shadow-sm group-hover:scale-110 transition-transform">
-                                        <FileText className="w-6 h-6 text-blue-600" />
+                                <div className="flex items-center gap-3 flex-1">
+                                    <div className="w-10 h-10 bg-[#1A3D7C]/10 rounded-lg flex items-center justify-center">
+                                        <FileText className="w-5 h-5 text-[#1A3D7C]" />
                                     </div>
-                                    <h3 className="text-sm font-bold text-slate-800 line-clamp-1">{template.title}</h3>
+                                    <H3 className="text-[16px] line-clamp-1">{template.title}</H3>
                                 </div>
                                 <div className="flex gap-1">
-                                    <button onClick={() => handleEdit(template)} className="p-2 text-slate-400 hover:text-blue-600 transition-colors" title="Edit">
-                                        <Edit2 className="w-4 h-4" />
-                                    </button>
-                                    <button onClick={() => handleDelete(template.id)} className="p-2 text-slate-400 hover:text-rose-600 transition-colors" title="Delete">
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
+                                    <Button variant="ghost" size="sm" onClick={() => handleEdit(template)} title="Edit">
+                                        <Edit2 size={14} />
+                                    </Button>
+                                    <Button variant="ghost" size="sm" onClick={() => handleDelete(template.id)} className="text-[#DC2626] hover:text-[#991B1B]" title="Delete">
+                                        <Trash2 size={14} />
+                                    </Button>
                                 </div>
                             </div>
 
-                            <div className="flex-1 bg-white/30 rounded-2xl p-4 border border-white/40 shadow-inner">
-                                <p className="text-xs text-slate-600 leading-relaxed whitespace-pre-wrap">{template.content}</p>
+                            <div className="flex-1 bg-[#F9FAFB] rounded-lg p-4 border border-[#E5E7EB]">
+                                <SmallText className="text-[#6B7280] leading-relaxed whitespace-pre-wrap">
+                                    {template.content}
+                                </SmallText>
                             </div>
 
-                            <div className="flex items-center justify-between mt-6 pt-4 border-t border-white/20">
-                                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                    VER. {new Date(template.updated_at).getFullYear()}.{new Date(template.updated_at).getMonth() + 1}
-                                </span>
-                                <span className="badge-premium badge-emerald">
-                                    <CheckSquare className="w-3 h-3 mr-1" /> Active
-                                </span>
+                            <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#E5E7EB]">
+                                <SmallText className="text-[#9CA3AF]">
+                                    Ver. {new Date(template.updated_at).getFullYear()}.{new Date(template.updated_at).getMonth() + 1}
+                                </SmallText>
+                                <Badge variant="success">
+                                    <CheckSquare size={12} /> Active
+                                </Badge>
                             </div>
                         </div>
-                    </GlassCard>
+                    </Card>
                 ))}
             </div>
 
             {templates.length === 0 && (
-                <GlassCard className="text-center py-24 flex flex-col items-center justify-center border-dashed border-slate-300">
-                    <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6 shadow-inner">
-                        <Quote className="w-8 h-8 text-slate-300" />
+                <Card className="text-center py-24 border-dashed border-[#E5E7EB]">
+                    <div className="w-16 h-16 bg-[#F9FAFB] rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Quote className="w-8 h-8 text-[#D1D5DB]" />
                     </div>
-                    <h3 className="heading-md mb-2">No templates configured</h3>
-                    <p className="text-sm text-slate-500 mb-8 max-w-sm italic">Standardize your document terms for faster processing.</p>
-                    <button onClick={() => setShowForm(true)} className="btn-premium btn-primary">
-                        <Plus className="w-4 h-4" /> Setup First Template
-                    </button>
-                </GlassCard>
+                    <H3 className="mb-2">No templates configured</H3>
+                    <Body className="text-[#6B7280] mb-6">Standardize your document terms for faster processing.</Body>
+                    <Button onClick={() => setShowForm(true)} variant="default">
+                        <Plus size={16} />
+                        Setup First Template
+                    </Button>
+                </Card>
             )}
         </div>
     );
@@ -202,7 +210,7 @@ function PONotesContent() {
 
 export default function PONotesPage() {
     return (
-        <Suspense fallback={<div className="p-32 text-center animate-pulse text-blue-500 font-bold">Initializing Engine...</div>}>
+        <Suspense fallback={<div className="p-32 text-center"><Body className="text-[#6B7280] animate-pulse">Loading...</Body></div>}>
             <PONotesContent />
         </Suspense>
     );

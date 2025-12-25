@@ -20,42 +20,8 @@ logger = logging.getLogger(__name__)
 
 
 def generate_invoice_number(db: sqlite3.Connection) -> str:
-    """
-    Generate collision-safe invoice number: INV/{FY}/{XXX}
-    Uses atomic counter from document_sequences table
-    """
-    today = datetime.now()
-    
-    # Calculate financial year (Apr-Mar)
-    if today.month >= 4:
-        fy = f"{today.year}-{str(today.year + 1)[2:]}"
-    else:
-        fy = f"{today.year - 1}-{str(today.year)[2:]}"
-    
-    seq_key = f"INVOICE_{fy}"
-    prefix = f"INV/{fy}/"
-    
-    try:
-        # Ensure sequence exists
-        db.execute(
-            "INSERT OR IGNORE INTO document_sequences (seq_key, current_val, prefix) VALUES (?, 0, ?)", 
-            (seq_key, prefix)
-        )
-        
-        # Atomic Increment
-        db.execute("UPDATE document_sequences SET current_val = current_val + 1 WHERE seq_key = ?", (seq_key,))
-        
-        row = db.execute("SELECT current_val FROM document_sequences WHERE seq_key = ?", (seq_key,)).fetchone()
-        if not row:
-             raise Exception("Failed to retrieve sequence")
-             
-        new_num = row[0]
-        return f"{prefix}{new_num:03d}"
-        
-    except Exception as e:
-        logger.error(f"Failed to generate Invoice number: {e}")
-        # Fallback to random to avoid blocking transaction but marks it clearly
-        return f"{prefix}ERR-{uuid.uuid4().hex[:4].upper()}"
+    """DISABLED - Manual numbering now required"""
+    raise NotImplementedError("Manual numbering is now required. Auto-generation is disabled.")
 
 
 def calculate_tax(taxable_value: float, cgst_rate: float = 9.0, sgst_rate: float = 9.0) -> dict:
@@ -78,8 +44,9 @@ def validate_invoice_header(invoice_data: dict) -> None:
     """
     Validate invoice header fields
     Raises ValidationError if validation fails
-    Note: Invoice number is auto-generated, so not validated here
     """
+    if not invoice_data.get("invoice_number") or invoice_data["invoice_number"].strip() == "":
+        raise ValidationError("Invoice number is required")
     if not invoice_data.get("dc_number") or invoice_data["dc_number"].strip() == "":
         raise ValidationError("DC number is required")
     
@@ -162,14 +129,31 @@ def create_invoice(invoice_data: dict, db: sqlite3.Connection) -> ServiceResult[
         ServiceResult with success status, invoice_number, total_amount, items_count
     """
     try:
+        invoice_number = invoice_data["invoice_number"]
+        invoice_date = invoice_data["invoice_date"]
         dc_number = invoice_data["dc_number"]
+
+        from app.core.utils import get_financial_year
+        fy = get_financial_year(invoice_date)
         
-        # AUTO-GENERATE Invoice number if not provided
-        if not invoice_data.get("invoice_number") or invoice_data["invoice_number"].strip() == "":
-            invoice_number = generate_invoice_number(db)
-            logger.info(f"Auto-generated invoice number: {invoice_number}")
-        else:
-            invoice_number = invoice_data["invoice_number"]
+        # Financial year boundaries
+        year_start = fy.split('-')[0]
+        full_year_start = f"{year_start}-04-01"
+        year_end = f"20{fy.split('-')[1]}"
+        full_year_end = f"{year_end}-03-31"
+
+        # Check for duplicate invoice number within the FY
+        existing_dup = db.execute("""
+            SELECT 1 FROM gst_invoices 
+            WHERE invoice_number = ? 
+            AND invoice_date >= ? AND invoice_date <= ?
+        """, (invoice_number, full_year_start, full_year_end)).fetchone()
+        
+        if existing_dup:
+            raise ConflictError(
+                f"Invoice number {invoice_number} already exists in Financial Year {fy}.",
+                details={"invoice_number": invoice_number, "financial_year": fy}
+            )
         
         # Validate header
         validate_invoice_header(invoice_data)

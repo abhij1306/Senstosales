@@ -98,36 +98,34 @@ export function CommandBar() {
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-[20vh] px-4">
             {/* Backdrop */}
             <div
-                className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
+                className="fixed inset-0 bg-black/60 backdrop-blur-md transition-opacity"
                 onClick={() => setOpen(false)}
             />
 
             {/* Modal */}
-            <Card
-                variant="glass"
-                padding="none"
-                className="relative w-full max-w-2xl overflow-hidden shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+            <div
+                className="relative w-full max-w-2xl bg-gradient-to-br from-white/35 via-white/30 to-slate-100/40 backdrop-blur-3xl rounded-2xl overflow-hidden shadow-2xl border border-white/70 animate-in fade-in zoom-in-95 duration-200"
             >
                 {/* Search Input */}
-                <div className="flex items-center border-b px-4 py-3">
-                    <Search className="mr-2 h-5 w-5 text-text-muted opacity-50" />
+                <div className="flex items-center px-4 py-3 bg-gradient-to-r from-white/25 to-slate-50/30 backdrop-blur-xl">
+                    <Search className="mr-2 h-5 w-5 text-slate-400" />
                     <input
                         autoFocus
-                        className="flex h-6 w-full rounded-md bg-transparent py-3 text-lg outline-none placeholder:text-text-muted disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex h-6 w-full rounded-md bg-transparent py-3 text-sm font-medium text-slate-900 outline-none placeholder:text-slate-400"
                         placeholder="Type a command or search..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                     />
-                    <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-surface-1 px-1.5 font-mono text-[10px] font-medium text-text-muted opacity-100">
+                    <kbd className="inline-flex h-5 select-none items-center gap-1 rounded border border-slate-200 bg-white px-2 font-mono text-[10px] font-bold text-slate-500 shadow-sm">
                         <span className="text-xs">ESC</span>
                     </kbd>
                 </div>
 
                 {/* Results */}
-                <div className="max-h-[60vh] overflow-y-auto p-2 scrollbar-stable">
+                <div className="max-h-[60vh] overflow-y-auto p-2">
                     {sections.map((section, idx) => (
                         <div key={idx} className="mb-2">
-                            <div className="px-2 py-1.5 text-xs font-semibold text-text-muted uppercase tracking-wider">
+                            <div className="px-2 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                                 {section.title}
                             </div>
                             {section.items.map((item, itemIdx) => (
@@ -135,39 +133,30 @@ export function CommandBar() {
                                     key={itemIdx}
                                     onClick={() => handleNavigate(item.path)}
                                     className={cn(
-                                        "flex w-full select-none items-center rounded-lg px-2 py-2.5 text-sm outline-none",
-                                        "hover:bg-primary/10 hover:text-primary transition-colors cursor-pointer",
-                                        "focus:bg-primary/10 focus:text-primary"
+                                        "flex w-full select-none items-center rounded-lg px-3 py-2.5 text-sm font-medium text-slate-700",
+                                        "hover:bg-blue-50 hover:text-blue-600 transition-colors cursor-pointer",
+                                        "focus:bg-blue-50 focus:text-blue-600"
                                     )}
                                 >
-                                    <item.icon className="mr-2 h-4 w-4" />
+                                    <item.icon className="mr-3 h-4 w-4" />
                                     <span>{item.label}</span>
                                 </button>
                             ))}
                         </div>
                     ))}
 
-                    {/* AI Placeholder */}
-                    {search.length > 2 && (
-                        <div className="mt-4 p-2 border-t border-dashed">
-                            <div className="flex items-center text-sm text-text-muted">
-                                <span className="mr-2">✨</span>
-                                <span>Ask AI: "{search}"...</span>
-                                <span className="ml-auto text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">Coming Soon</span>
-                            </div>
-                        </div>
-                    )}
+
                 </div>
 
                 {/* Footer */}
-                <div className="bg-surface-1/50 px-4 py-2 text-xs text-text-muted flex justify-between border-t border-border/50">
+                <div className="bg-gradient-to-r from-white/25 to-slate-50/30 backdrop-blur-xl px-4 py-2.5 text-[10px] text-slate-700 font-semibold flex justify-between">
                     <span>SenstoSales OS v2.1</span>
-                    <div className="flex gap-2">
+                    <div className="flex gap-3">
                         <span>↑↓ Navigate</span>
                         <span>↵ Select</span>
                     </div>
                 </div>
-            </Card>
+            </div>
         </div>
     );
 }

@@ -59,7 +59,8 @@ def init_db(conn: sqlite3.Connection):
         "012_add_rejected_qty_to_poi.sql",
         "013_add_document_sequences.sql",
         "014_add_settings.sql",
-        "015_add_unique_constraints.sql"
+        "015_add_unique_constraints.sql",
+        "016_atomic_accounting_triggers.sql"
     ]
     
     cursor = conn.cursor()

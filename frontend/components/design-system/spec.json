@@ -1,0 +1,158 @@
+{
+    "version": "1.0.0",
+    "lastUpdated": "2025-12-26",
+    "typography": {
+        "scale": {
+            "table": "12px",
+            "body": "14px",
+            "label": "16px",
+            "subheading": "20px",
+            "heading": "28px"
+        },
+        "fontFamily": {
+            "sans": "Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+            "mono": "JetBrains Mono, 'Courier New', monospace"
+        },
+        "weights": {
+            "normal": 400,
+            "medium": 500,
+            "semibold": 600
+        },
+        "lineHeights": {
+            "tight": 1.2,
+            "normal": 1.5,
+            "relaxed": 1.75
+        }
+    },
+    "colors": {
+        "primary": "#1A3D7C",
+        "secondary": "#2BB7A0",
+        "accent": "#5AD7E5",
+        "background": "#F6F8FB",
+        "surface": "#FFFFFF",
+        "textPrimary": "#111827",
+        "textSecondary": "#6B7280",
+        "textTertiary": "#9CA3AF",
+        "error": "#DC2626",
+        "success": "#16A34A",
+        "warning": "#F59E0B",
+        "border": "#D1D5DB",
+        "borderLight": "#E5E7EB",
+        "disabled": "#9CA3AF"
+    },
+    "spacing": {
+        "scale": [
+            4,
+            8,
+            12,
+            16,
+            20,
+            24,
+            32,
+            40
+        ],
+        "unit": "px"
+    },
+    "radii": {
+        "sm": "4px",
+        "md": "6px",
+        "lg": "8px",
+        "xl": "12px",
+        "full": "9999px"
+    },
+    "shadows": {
+        "sm": "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
+        "md": "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+        "lg": "0 10px 15px -3px rgba(0, 0, 0, 0.1)"
+    },
+    "buttons": {
+        "height": 40,
+        "radius": 8,
+        "paddingX": 16,
+        "paddingY": 10,
+        "fontSize": "14px",
+        "fontWeight": 500,
+        "variants": {
+            "primary": {
+                "background": "#1A3D7C",
+                "text": "#FFFFFF",
+                "border": "none",
+                "hover": "#152F61",
+                "active": "#0F2346"
+            },
+            "secondary": {
+                "background": "transparent",
+                "text": "#2BB7A0",
+                "border": "#2BB7A0",
+                "hover": "#F6F8FB",
+                "active": "#E5E7EB"
+            },
+            "destructive": {
+                "background": "#DC2626",
+                "text": "#FFFFFF",
+                "border": "none",
+                "hover": "#B91C1C",
+                "active": "#991B1B"
+            },
+            "ghost": {
+                "background": "transparent",
+                "text": "#111827",
+                "border": "none",
+                "hover": "#F6F8FB",
+                "active": "#E5E7EB"
+            },
+            "disabled": {
+                "background": "#E5E7EB",
+                "text": "#9CA3AF",
+                "border": "none",
+                "cursor": "not-allowed",
+                "opacity": 0.6
+            }
+        }
+    },
+    "inputs": {
+        "height": 38,
+        "radius": 6,
+        "paddingX": 12,
+        "paddingY": 9,
+        "fontSize": "14px",
+        "fontWeight": 400,
+        "border": "#D1D5DB",
+        "borderWidth": 1,
+        "focusBorder": "#1A3D7C",
+        "errorBorder": "#DC2626",
+        "background": "#FFFFFF",
+        "placeholder": "#9CA3AF",
+        "requiredColor": "#DC2626"
+    },
+    "icons": {
+        "library": "lucide-react",
+        "defaultSize": 20,
+        "smallSize": 16,
+        "largeSize": 24,
+        "stroke": 2
+    },
+    "checkboxes": {
+        "size": 18,
+        "radius": 4,
+        "border": "#D1D5DB",
+        "selectedBackground": "#1A3D7C",
+        "selectedBorder": "#1A3D7C"
+    },
+    "tables": {
+        "rowHeight": 44,
+        "headerHeight": 40,
+        "cellPaddingX": 12,
+        "cellPaddingY": 10,
+        "headerFontSize": "12px",
+        "bodyFontSize": "14px",
+        "borderColor": "#E5E7EB"
+    },
+    "cards": {
+        "radius": 8,
+        "padding": 20,
+        "shadow": "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+        "border": "#E5E7EB",
+        "background": "#FFFFFF"
+    }
+}

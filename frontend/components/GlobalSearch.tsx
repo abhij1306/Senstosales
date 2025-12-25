@@ -18,10 +18,7 @@ export default function GlobalSearch() {
 
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-                e.preventDefault();
-                setIsOpen(true);
-            }
+            // Removed Ctrl+K - CommandBar handles it
             if (e.key === "Escape") setIsOpen(false);
         };
         document.addEventListener("keydown", handleKeyDown);
@@ -64,10 +61,13 @@ export default function GlobalSearch() {
         return (
             <button
                 onClick={() => setIsOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-blue-600 transition-colors"
+                className="flex items-center gap-3 px-4 py-2 bg-white/60 backdrop-blur-md rounded-xl shadow-md border border-white/40 hover:shadow-lg hover:bg-white/80 transition-all duration-300 min-w-[300px]"
             >
-                <Search className="w-3.5 h-3.5" />
-                <span>Search <span className="opacity-50 mx-1">⌘K</span></span>
+                <Search className="w-4 h-4 text-slate-400" />
+                <span className="text-sm text-slate-500 font-medium flex-1 text-left">Search for anything...</span>
+                <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-slate-200 bg-white px-2 font-mono text-[10px] font-bold text-slate-400 shadow-sm">
+                    ⌘K
+                </kbd>
             </button>
         );
     }

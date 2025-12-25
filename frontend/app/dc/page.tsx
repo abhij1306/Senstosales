@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Truck, CheckCircle, Clock, Download, ArrowRight, Activity, Layers } from "lucide-react";
+import { Truck, Plus, CheckCircle, Clock, Download, Layers, Activity } from "lucide-react";
 import { api, DCListItem, DCStats } from "@/lib/api";
 import { formatDate, formatIndianCurrency } from "@/lib/utils";
-import GlassCard from "@/components/ui/GlassCard";
-import { DenseTable } from "@/components/ui/DenseTable";
+import { ListPageTemplate } from "@/components/design-system/templates/ListPageTemplate";
+import { SearchBar as AtomicSearchBar } from "@/components/design-system/molecules/SearchBar";
+import { Accounting, TableCells, Body } from '@/components/design-system';
+import { Button } from "@/components/design-system/atoms/Button";
+import { Badge } from "@/components/design-system/atoms/Badge";
+import type { Column, SummaryCardProps } from "@/components/design-system";
 
 export default function DCListPage() {
   const router = useRouter();
@@ -17,7 +21,6 @@ export default function DCListPage() {
 
   useEffect(() => {
     const loadData = async () => {
-      setLoading(true);
       try {
         const [dcData, statsData] = await Promise.all([
           api.listDCs(),
@@ -34,158 +37,149 @@ export default function DCListPage() {
     loadData();
   }, []);
 
-  const filteredDCs = dcs.filter(dc =>
-    dc.dc_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (dc.po_number?.toString() || "").includes(searchQuery) ||
-    (dc.consignee_name && dc.consignee_name.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredDCs = useMemo(() => {
+    return dcs.filter(dc =>
+      dc.dc_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (dc.po_number?.toString() || "").includes(searchQuery) ||
+      (dc.consignee_name && dc.consignee_name.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+  }, [dcs, searchQuery]);
 
-  const columns = [
+  // Table columns
+  const columns: Column<DCListItem>[] = [
     {
-      header: "Dispatch ID",
-      accessorKey: "dc_number" as keyof DCListItem,
-      cell: (dc: DCListItem) => (
-        <div onClick={() => router.push(`/dc/view?id=${dc.dc_number}`)} className="link font-bold text-sm">{dc.dc_number}</div>
-      )
-    },
-    {
-      header: "Movement Date",
-      accessorKey: "dc_date" as keyof DCListItem,
-      cell: (dc: DCListItem) => <span className="text-meta font-bold uppercase">{formatDate(dc.dc_date)}</span>
-    },
-    {
-      header: "Consignee",
-      accessorKey: "consignee_name" as keyof DCListItem,
-      cell: (dc: DCListItem) => (
-        <div className="flex items-center gap-3 max-w-[250px] truncate">
-          <div className="w-8 h-8 rounded-lg bg-indigo-50/50 flex items-center justify-center text-indigo-700 font-black border border-indigo-100 uppercase shrink-0 text-[10px]">
-            {dc.consignee_name ? dc.consignee_name.substring(0, 2) : 'CN'}
-          </div>
-          <span className="text-slate-700 truncate text-xs font-semibold">{dc.consignee_name}</span>
+      key: "dc_number",
+      label: "DC Number",
+      sortable: true,
+      width: "15%",
+      render: (_value, dc) => (
+        <div
+          onClick={() => router.push(`/dc/${dc.dc_number}`)}
+          className="text-[#1A3D7C] font-medium cursor-pointer hover:underline"
+        >
+          {dc.dc_number}
         </div>
       )
     },
     {
-      header: "PO Reference",
-      accessorKey: "po_number" as keyof DCListItem,
-      cell: (dc: DCListItem) => (
-        <span className="badge-premium badge-blue">
-          {dc.po_number}
-        </span>
+      key: "dc_date",
+      label: "Date",
+      sortable: true,
+      width: "15%",
+      render: (_value, dc) => (
+        <span className="text-[#6B7280]">{formatDate(dc.dc_date)}</span>
       )
     },
     {
-      header: "Consignment Value",
-      accessorKey: "total_value" as keyof DCListItem,
-      className: "text-right",
-      cell: (dc: DCListItem) => (
-        <span className="text-accounting font-bold text-slate-800">
-          {dc.total_value > 0 ? formatIndianCurrency(dc.total_value) : 'NO VALUE'}
-        </span>
+      key: "consignee_name",
+      label: "Consignee",
+      sortable: true,
+      width: "25%",
+      render: (_value, dc) => (
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded bg-[#1A3D7C]/10 flex items-center justify-center text-[#1A3D7C] font-medium text-[10px] shrink-0">
+            {dc.consignee_name ? dc.consignee_name.substring(0, 2).toUpperCase() : 'CN'}
+          </div>
+          <Body className="truncate font-medium">{dc.consignee_name}</Body>
+        </div>
       )
     },
     {
-      header: "Logistics Status",
-      accessorKey: "status" as keyof DCListItem,
-      className: "text-right",
-      cell: (dc: DCListItem) => (
-        <span className={`badge-premium ${dc.status === 'Completed' ? 'badge-emerald' : 'badge-amber'}`}>
-          {dc.status.toUpperCase()}
-        </span>
+      key: "po_number",
+      label: "PO Reference",
+      sortable: true,
+      width: "15%",
+      render: (_value, dc) => (
+        <span className="text-[#6B7280]">{dc.po_number || 'N/A'}</span>
       )
     },
     {
-      header: "",
-      accessorKey: "dc_number" as keyof DCListItem,
-      className: "w-10",
-      cell: (dc: DCListItem) => (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            window.open(`${api.baseUrl}/api/dc/${dc.dc_number}/download`, '_blank');
-          }}
-          className="p-2 text-slate-400 hover:text-blue-600 transition-colors"
-          title="Export Ledger"
-        >
-          <Download className="w-4 h-4" />
-        </button>
+      key: "total_value",
+      label: "Total Value",
+      sortable: true,
+      align: "right",
+      width: "15%",
+      render: (_v, dc) => (
+        <Accounting className="text-slate-950 font-medium">{dc.total_value}</Accounting>
+      )
+    },
+    {
+      key: "status",
+      label: "Status",
+      sortable: true,
+      width: "15%",
+      render: (_value, dc) => (
+        <Badge variant={dc.status === 'Delivered' ? 'success' : 'warning'}>
+          {dc.status}
+        </Badge>
       )
     }
   ];
 
-  if (loading) return <div className="p-32 text-center animate-pulse text-purple-500 font-bold uppercase tracking-widest text-xs">Initializing Logistics Hub...</div>;
+  // Summary cards
+  const summaryCards: SummaryCardProps[] = [
+    {
+      title: 'Total Challans',
+      value: <Accounting className="text-xl text-white">{dcs.length}</Accounting>,
+      icon: <Truck size={24} />,
+      variant: 'primary',
+    },
+    {
+      title: 'Delivered',
+      value: <Accounting className="text-xl text-white">{stats?.completed_delivery || 0}</Accounting>,
+      icon: <Clock size={24} />,
+      variant: 'secondary'
+    },
+    {
+      title: 'In Transit',
+      value: <Accounting className="text-xl text-white">{stats?.pending_delivery || 0}</Accounting>,
+      icon: <Truck size={24} />,
+      variant: 'warning'
+    },
+    {
+      title: 'Total Challans',
+      value: <Accounting className="text-xl text-white">{stats?.total_challans || 0}</Accounting>,
+      icon: <Activity size={24} />,
+      variant: 'primary',
+      trend: {
+        value: '+8.2%',
+        direction: 'up'
+      }
+    }
+  ];
 
-  return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-purple-50/20 p-6 space-y-6 pb-24 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div>
-          <h1 className="heading-xl flex items-center gap-4">
-            <Truck className="w-8 h-8 text-purple-600" />
-            Delivery Challan
-          </h1>
-          <p className="text-sm text-slate-500 mt-1 font-medium italic">Manage outbound dispatches</p>
-        </div>
-        <button
-          onClick={() => router.push("/dc/create")}
-          className="btn-premium btn-primary shadow-xl bg-gradient-to-r from-purple-600 to-indigo-600"
-        >
-          <Plus className="w-4 h-4" />
-          Create DC
-        </button>
+  // Toolbar with search and actions
+  const toolbar = (
+    <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+      <div className="flex-1 w-full max-w-md">
+        <AtomicSearchBar
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Search by DC number, PO, or consignee..."
+        />
       </div>
-
-      {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <KpiCard title="Total DC" value={stats.total_challans} icon={Layers} color="purple" trend="Total" />
-          <KpiCard title="Pending" value={stats.pending_delivery} icon={Clock} color="amber" trend="In Transit" />
-          <KpiCard title="Completed" value={stats.completed_delivery} icon={CheckCircle} color="emerald" trend="Delivered" />
-        </div>
-      )}
-
-      <div className="space-y-4">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 px-2">
-          <h2 className="heading-md uppercase tracking-wider text-slate-800">Delivery Challans</h2>
-          <div className="relative w-full md:w-80">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-premium pl-12 font-bold uppercase tracking-widest text-[10px]"
-            />
-          </div>
-        </div>
-
-        <div className="glass-panel overflow-hidden">
-          <DenseTable
-            loading={loading}
-            data={filteredDCs}
-            columns={columns}
-            onRowClick={(dc) => router.push(`/dc/view?id=${dc.dc_number}`)}
-            className="bg-transparent border-none rounded-none"
-          />
-        </div>
+      <div className="flex items-center gap-3">
+        <Button variant="default" size="sm" onClick={() => router.push('/dc/create')}>
+          <Plus size={16} />
+          Create New
+        </Button>
       </div>
     </div>
   );
-}
 
-function KpiCard({ title, value, icon: Icon, color, trend }: any) {
   return (
-    <GlassCard className="p-6 h-[110px] flex flex-col justify-between group border-white/60">
-      <div className="flex justify-between items-start">
-        <div>
-          <span className="text-label uppercase opacity-60 m-0">{title}</span>
-          <div className="text-2xl font-black text-slate-800 tracking-tighter mt-1 group-hover:text-purple-600 transition-colors">{value.toLocaleString()}</div>
-        </div>
-        <div className={`p-2 rounded-xl bg-${color}-50/50 border border-${color}-100 group-hover:scale-110 transition-transform`}>
-          <Icon className={`w-4 h-4 text-${color}-600`} />
-        </div>
-      </div>
-      <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-400 uppercase mt-2">
-        <Activity className="w-3 h-3" /> {trend}
-      </div>
-    </GlassCard>
+    <ListPageTemplate
+      title="Delivery Challans"
+      subtitle="Manage and track all delivery documentation"
+      toolbar={toolbar}
+      summaryCards={summaryCards}
+      columns={columns}
+      data={filteredDCs}
+      keyField="dc_number"
+      exportable
+      onExport={() => window.open(`${api.baseUrl}/api/reports/register/dc?export=true`, '_blank')}
+      loading={loading}
+      emptyMessage="No delivery challans found"
+    />
   );
 }

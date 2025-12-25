@@ -162,26 +162,26 @@ def parse_srv_item_row(cells: List, headers: List[str]) -> Optional[Dict]:
         item["rejected_qty"] = parse_decimal(get_val(['REJ QTY', 'REJECTED QTY', 'REJECTED']))
         
         # Extract Accepted Quantity
-        item["accepted_qty"] = parse_decimal(get_val(['ACCEPTED QTY', 'ACCPT QTY', 'ACCEPTED']))
+        item["accepted_qty"] = parse_decimal(get_val(['ACCEPTED QTY', 'ACCPT QTY', 'ACCEPTED', 'ACCEPTED QUANTITY', 'OK QTY', 'QTY OK']))
         
         # Extract Challan Number
-        item["challan_no"] = get_val(['CHALLAN NO', 'CHALLAN', 'DC NO']) or None
+        item["challan_no"] = get_val(['CHALLAN NO', 'CHALLAN', 'DC NO', 'DC NUMBER', 'CHALLAN NUMBER']) or None
         
         # Extract Challan Date
-        item["challan_date"] = parse_date(get_val(['CHALLAN DATE', 'CHALLAN DT', 'DC DATE']))
+        item["challan_date"] = parse_date(get_val(['CHALLAN DATE', 'CHALLAN DT', 'DC DATE', 'DC DT']))
         
         # Extract Invoice Number (TAX INV)
-        item["invoice_no"] = get_val(['TAX INV', 'INVOICE NO', 'INV NO']) or None
+        item["invoice_no"] = get_val(['TAX INV', 'INVOICE NO', 'INV NO', 'TAX INVOICE NO', 'TAX INVOICE', 'GST INV NO']) or None
         
         # Extract Invoice Date (TAX INV DT)
-        item["invoice_date"] = parse_date(get_val(['TAX INV DT', 'INVOICE DATE', 'INV DT']))
+        item["invoice_date"] = parse_date(get_val(['TAX INV DT', 'INVOICE DATE', 'INV DT', 'TAX INVOICE DATE', 'TAX INV DATE']))
         
         # Extract Unit
         item["unit"] = get_val(['UNIT', 'UOM']) or None
         
         # Extract Quantities
-        item["order_qty"] = parse_decimal(get_val(['ORDER QTY', 'PO QTY']))
-        item["challan_qty"] = parse_decimal(get_val(['CHALLAN QTY', 'DC QTY']))
+        item["order_qty"] = parse_decimal(get_val(['ORDER QTY', 'PO QTY', 'ORDERED QTY', 'PO QUANTITY', 'ORDER QUANTITY']))
+        item["challan_qty"] = parse_decimal(get_val(['CHALLAN QTY', 'DC QTY', 'DC QUANTITY', 'CHALLAN QUANTITY']))
         
         # Extract Extended Fields
         item["div_code"] = get_val(['DIV', 'DIVISION']) or None

@@ -33,8 +33,7 @@ class InvoiceItemCreate(BaseModel):
     no_of_packets: Optional[int] = None
 
 class EnhancedInvoiceCreate(BaseModel):
-    # Will be auto-generated if not provided
-    invoice_number: Optional[str] = None
+    invoice_number: str
     invoice_date: str
     
     # DC reference (required)
@@ -138,21 +137,6 @@ def list_invoices(
 
 
 # IMPORTANT: Specific routes must come before parameterized routes
-@router.get("/preview-number")
-def preview_invoice_number(db: sqlite3.Connection = Depends(get_db)):
-    """
-    Preview the next auto-generated Invoice number
-    Returns: {"invoice_number": "INV/2024-25/001"}
-    """
-    from app.services.invoice import generate_invoice_number
-    try:
-        next_number = generate_invoice_number(db)
-        return {"invoice_number": next_number}
-    except Exception as e:
-        logger.error(f"Failed to preview Invoice number: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to generate invoice number: {str(e)}")
-
-
 @router.get("/{invoice_number:path}/download")
 def download_invoice_excel(invoice_number: str, db: sqlite3.Connection = Depends(get_db)):
     """Download Invoice as Excel"""

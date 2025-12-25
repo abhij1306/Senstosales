@@ -20,36 +20,8 @@ from app.models import DCCreate
 logger = logging.getLogger(__name__)
 
 def generate_dc_number(po_number: str, db: sqlite3.Connection) -> str:
-    """
-    Generate next DC number deterministically using atomic counter
-    Format: {po_number}-DC-{seq}
-    Example: PO123-DC-01, PO123-DC-02
-    """
-    seq_key = f"DC_{po_number}"
-    
-    try:
-        # Ensure sequence exists
-        db.execute(
-            "INSERT OR IGNORE INTO document_sequences (seq_key, current_val, prefix) VALUES (?, 0, 'DC')", 
-            (seq_key,)
-        )
-        
-        # Atomic Increment (SQLite 3.35+ supports RETURNING, but fallback to lock-based read is safe with WAL)
-        # We are inside a transaction (dependency injection ensures this), so this is safe.
-        db.execute("UPDATE document_sequences SET current_val = current_val + 1 WHERE seq_key = ?", (seq_key,))
-        
-        row = db.execute("SELECT current_val FROM document_sequences WHERE seq_key = ?", (seq_key,)).fetchone()
-        if not row:
-            # Should never happen if insert/update worked
-            raise Exception("Failed to retrieve sequence")
-            
-        seq = row[0]
-        return f"{po_number}-DC-{seq:02d}"
-        
-    except Exception as e:
-        logger.error(f"Failed to generate DC number: {e}")
-        # Fallback to random to prevent blocking, effectively 'failing safe' but non-sequential
-        return f"{po_number}-DC-{uuid.uuid4().hex[:4].upper()}"
+    """DISABLED - Manual numbering now required"""
+    raise NotImplementedError("Manual numbering is now required. Auto-generation is disabled.")
 
 
 
@@ -58,8 +30,10 @@ def validate_dc_header(dc: DCCreate) -> None:
     """
     Validate DC header fields
     Raises ValidationError if validation fails
-    Note: DC number is auto-generated, so not validated here
     """
+    if not dc.dc_number or dc.dc_number.strip() == "":
+        raise ValidationError("DC number is required")
+        
     if not dc.dc_date or dc.dc_date.strip() == "":
         raise ValidationError("DC date is required")
 
@@ -208,34 +182,31 @@ def check_dc_has_invoice(dc_number: str, db: sqlite3.Connection) -> Optional[str
 def create_dc(dc: DCCreate, items: List[dict], db: sqlite3.Connection) -> ServiceResult[Dict]:
     """
     Create new Delivery Challan
-    HTTP-agnostic - returns ServiceResult instead of raising HTTPException
-    
-    Args:
-        dc: DC header data
-        items: List of DC items
-        db: Database connection (must be in transaction)
-    
-    Returns:
-        ServiceResult with success status and dc_number
     """
     try:
-        # AUTO-GENERATE DC NUMBER to prevent duplicates
-        auto_dc_number = generate_dc_number(dc.po_number, db)
-        logger.info(f"Auto-generated DC number: {auto_dc_number}")
+        from app.core.utils import get_financial_year
+        fy = get_financial_year(dc.dc_date)
         
-        # Check for duplicate DC number (if user provided a custom number)
-        if dc.dc_number and dc.dc_number.strip():
-            existing = db.execute("SELECT 1 FROM delivery_challans WHERE dc_number = ?", (dc.dc_number,)).fetchone()
-            if existing:
-                raise ConflictError(
-                    f"DC number {dc.dc_number} already exists. Please use a different number or leave blank for auto-generation.",
-                    details={"dc_number": dc.dc_number, "action": "Use auto-generation or choose unique number"}
-                )
-            # Use user's custom number if provided
-            final_dc_number = dc.dc_number
-        else:
-            # Use auto-generated number
-            final_dc_number = auto_dc_number
+        # Financial year boundaries
+        year_start = fy.split('-')[0]
+        full_year_start = f"{year_start}-04-01"
+        year_end = f"20{fy.split('-')[1]}"
+        full_year_end = f"{year_end}-03-31"
+
+        # Check for duplicate DC number within the FY
+        existing = db.execute("""
+            SELECT 1 FROM delivery_challans 
+            WHERE dc_number = ? 
+            AND dc_date >= ? AND dc_date <= ?
+        """, (dc.dc_number, full_year_start, full_year_end)).fetchone()
+        
+        if existing:
+            raise ConflictError(
+                f"DC number {dc.dc_number} already exists in Financial Year {fy}.",
+                details={"dc_number": dc.dc_number, "financial_year": fy}
+            )
+        
+        final_dc_number = dc.dc_number
         
         # Validate
         validate_dc_header(dc)

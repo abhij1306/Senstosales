@@ -85,3 +85,17 @@ export function amountInWords(amount: number): string {
 
     return words;
 }
+
+export function getFinancialYear(dateStr?: string): string {
+    const date = dateStr ? new Date(dateStr) : new Date();
+    if (isNaN(date.getTime())) return getFinancialYear();
+
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1; // 1-12
+
+    if (month >= 4) {
+        return `${year}-${(year + 1).toString().slice(-2)}`;
+    } else {
+        return `${year - 1}-${year.toString().slice(-2)}`;
+    }
+}

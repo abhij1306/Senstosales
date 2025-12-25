@@ -96,6 +96,40 @@ def list_dcs(po: Optional[int] = None, db: sqlite3.Connection = Depends(get_db))
     return results
 
 
+
+@router.get("/{dc_number}/invoice")
+def check_dc_has_invoice_endpoint(dc_number: str, db: sqlite3.Connection = Depends(get_db)):
+    """Check if DC has an associated GST Invoice"""
+    invoice_number = check_dc_has_invoice(dc_number, db)
+    
+    if invoice_number:
+        return {
+            "has_invoice": True,
+            "invoice_number": invoice_number
+        }
+    else:
+        return {"has_invoice": False}
+
+
+@router.get("/{dc_number}/download")
+def download_dc_excel(dc_number: str, db: sqlite3.Connection = Depends(get_db)):
+    """Download DC as Excel"""
+    try:
+        logger.info(f"Downloading DC Excel: {dc_number}")
+        # Get full detail logic
+        dc_data = get_dc_detail(dc_number, db)
+        logger.info(f"DC data fetched successfully for {dc_number}")
+        
+        from app.services.excel_service import ExcelService
+        from fastapi.responses import StreamingResponse
+        
+        # Use exact generator
+        return ExcelService.generate_exact_dc_excel(dc_data['header'], dc_data['items'], db)
+
+    except Exception as e:
+        raise internal_error(f"Failed to generate Excel: {str(e)}", e)
+
+
 @router.get("/{dc_number}")
 def get_dc_detail(dc_number: str, db: sqlite3.Connection = Depends(get_db)):
     """Get Delivery Challan detail with items"""
@@ -167,22 +201,6 @@ def get_dc_detail(dc_number: str, db: sqlite3.Connection = Depends(get_db)):
     }
 
 
-
-@router.get("/preview-number/{po_number}")
-def preview_dc_number(po_number: int, db: sqlite3.Connection = Depends(get_db)):
-    """
-    Preview the next auto-generated DC number for a given PO
-    Returns: {"dc_number": "PO123-DC-01"}
-    """
-    from app.services.dc import generate_dc_number
-    try:
-        next_number = generate_dc_number(str(po_number), db)
-        return {"dc_number": next_number}
-    except Exception as e:
-        logger.error(f"Failed to preview DC number: {e}")
-        raise internal_error("Failed to generate DC number", e)
-
-
 @router.post("/")
 def create_dc(dc: DCCreate, items: List[dict], db: sqlite3.Connection = Depends(get_db)):
     """
@@ -236,18 +254,7 @@ def create_dc(dc: DCCreate, items: List[dict], db: sqlite3.Connection = Depends(
         raise internal_error(f"Database integrity error: {str(e)}", e)
 
 
-@router.get("/{dc_number}/invoice")
-def check_dc_has_invoice_endpoint(dc_number: str, db: sqlite3.Connection = Depends(get_db)):
-    """Check if DC has an associated GST Invoice"""
-    invoice_number = check_dc_has_invoice(dc_number, db)
-    
-    if invoice_number:
-        return {
-            "has_invoice": True,
-            "invoice_number": invoice_number
-        }
-    else:
-        return {"has_invoice": False}
+
 
 
 @router.put("/{dc_number}")
@@ -294,23 +301,7 @@ def update_dc(dc_number: str, dc: DCCreate, items: List[dict], db: sqlite3.Conne
         raise internal_error(f"Database integrity error: {str(e)}", e)
 
 
-@router.get("/{dc_number}/download")
-def download_dc_excel(dc_number: str, db: sqlite3.Connection = Depends(get_db)):
-    """Download DC as Excel"""
-    try:
-        logger.info(f"Downloading DC Excel: {dc_number}")
-        # Get full detail logic
-        dc_data = get_dc_detail(dc_number, db)
-        logger.info(f"DC data fetched successfully for {dc_number}")
-        
-        from app.services.excel_service import ExcelService
-        from fastapi.responses import StreamingResponse
-        
-        # Use exact generator
-        return ExcelService.generate_exact_dc_excel(dc_data['header'], dc_data['items'], db)
 
-    except Exception as e:
-        raise internal_error(f"Failed to generate Excel: {str(e)}", e)
 
 
 

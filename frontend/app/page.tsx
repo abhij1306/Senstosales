@@ -3,30 +3,33 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, DashboardSummary, ActivityItem } from "@/lib/api";
-import { FileText, Truck, Receipt, MoveUpRight, Clock, Sparkles, AlertCircle, BarChart3, ArrowRight, Plus, Activity } from "lucide-react";
-import GlassCard from "@/components/ui/GlassCard";
-import { DenseTable } from "@/components/ui/DenseTable";
-import { formatIndianCurrency } from "@/lib/utils";
+import { Receipt, Clock, Truck, Activity, Plus, BarChart3, ArrowRight, Users, FileText } from "lucide-react";
+import { formatIndianCurrency, cn } from "@/lib/utils";
+import { H1, H3, SmallText, Body } from "@/components/design-system/atoms/Typography";
+import { Button } from "@/components/design-system/atoms/Button";
+import { Card } from "@/components/design-system/atoms/Card";
+import { Badge } from "@/components/design-system/atoms/Badge";
+import { SummaryCards } from "@/components/design-system/organisms/SummaryCards";
+import { DataTable, Column } from "@/components/design-system/organisms/DataTable";
+import { Accounting } from "@/components/design-system";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [summary, setSummary] = useState<DashboardSummary | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadDashboard = async () => {
       try {
         const [summaryData, activityData] = await Promise.all([
           api.getDashboardSummary(),
-          api.getRecentActivity(15)
+          api.getRecentActivity(20)
         ]);
         setSummary(summaryData);
         setActivity(activityData);
       } catch (err) {
         console.error("Dashboard Load Error:", err);
-        setError("System synchronization failure. Please verify backend connectivity.");
       } finally {
         setLoading(false);
       }
@@ -34,199 +37,170 @@ export default function DashboardPage() {
     loadDashboard();
   }, []);
 
-  if (loading) return (
-    <div className="flex items-center justify-center min-h-[60vh] text-blue-500 font-bold animate-pulse uppercase tracking-widest text-xs">
-      Initialising Business Engine...
-    </div>
-  );
-
-  if (error || !summary) return (
-    <div className="p-12">
-      <GlassCard className="border-rose-200 bg-rose-50/50 text-rose-700 flex items-center gap-4 p-8">
-        <AlertCircle className="w-8 h-8" />
-        <div>
-          <h2 className="heading-md uppercase">Critical Interface Error</h2>
-          <p className="text-xs font-medium opacity-80">{error || "Data stream interrupted."}</p>
-        </div>
-      </GlassCard>
-    </div>
-  );
-
-  const activityColumns = [
+  // Table columns for recent activity (no description)
+  const activityColumns: Column<ActivityItem>[] = [
     {
-      header: "Movement ID",
-      accessorKey: "number" as keyof ActivityItem,
-      cell: (item: ActivityItem) => (
-        <div className="flex items-center gap-3 font-bold">
-          <div className={`p-1.5 rounded-lg ${item.type === 'Invoice' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
-            {item.type === 'Invoice' ? <Receipt className="w-3.5 h-3.5" /> : <Truck className="w-3.5 h-3.5" />}
+      key: "number",
+      label: "Record",
+      width: "25%",
+      render: (_value, item) => (
+        <div
+          className="flex items-center gap-2 cursor-pointer group"
+          onClick={() => {
+            const path = item.type === 'PO' ? `/po/${item.number}`
+              : item.type === 'DC' ? `/dc/${item.number}`
+                : `/invoice/${item.number}`;
+            router.push(path);
+          }}
+        >
+          <div className={cn(
+            "p-1.5 rounded-md transition-colors",
+            item.type === 'Invoice' ? 'bg-[#1A3D7C]/10 text-[#1A3D7C] group-hover:bg-[#1A3D7C]/20' :
+              item.type === 'PO' ? 'bg-slate-100 text-slate-600 group-hover:bg-slate-200' :
+                'bg-[#2BB7A0]/10 text-[#2BB7A0] group-hover:bg-[#2BB7A0]/20'
+          )}>
+            {item.type === 'Invoice' ? <Receipt size={14} /> : item.type === 'PO' ? <FileText size={14} /> : <Truck size={14} />}
           </div>
-          <span className="text-slate-800 tracking-tight">{item.number}</span>
+          <div className="font-medium truncate text-slate-950 group-hover:text-[#1A3D7C] transition-colors">{item.number}</div>
         </div>
       )
     },
     {
-      header: "Movement Date",
-      accessorKey: "date" as keyof ActivityItem,
-      cell: (item: ActivityItem) => <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">{new Date(item.date).toLocaleDateString()}</span>
+      key: "amount",
+      label: "Amount",
+      width: "25%",
+      align: "right",
+      render: (_value, item) => (
+        <Accounting isCurrency className="text-slate-900 font-medium">{item.amount}</Accounting>
+      )
     },
     {
-      header: "Gross Amount",
-      accessorKey: "amount" as keyof ActivityItem,
-      className: "text-right font-bold text-slate-800",
-      cell: (item: ActivityItem) => <span className="text-accounting">{item.amount ? formatIndianCurrency(item.amount) : 'N/A'}</span>
+      key: "status",
+      label: "Status",
+      width: "25%",
+      render: (_value, item) => (
+        <Badge variant={item.status === 'Completed' ? 'success' : 'warning'}>
+          {item.status}
+        </Badge>
+      )
     },
     {
-      header: "Execution Status",
-      accessorKey: "status" as keyof ActivityItem,
-      className: "text-right w-32",
-      cell: (item: ActivityItem) => (
-        <span className={`badge-premium ${item.status === 'Completed' ? 'badge-emerald' : item.status === 'Pending' ? 'badge-amber' : 'badge-blue'}`}>
-          {item.status.toUpperCase()}
-        </span>
+      key: "date",
+      label: "Date",
+      width: "25%",
+      align: "right",
+      render: (_value, item) => (
+        <span className="text-[#6B7280] text-[12px] whitespace-nowrap">{item.date}</span>
       )
     }
   ];
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <Body className="text-[#6B7280] animate-pulse">Loading dashboard...</Body>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-white to-blue-50/20 p-6 space-y-10 pb-32 animate-in fade-in slide-in-from-bottom-2 duration-500">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="heading-xl">Enterprise Overview</h1>
-          <p className="text-xs text-slate-500 mt-1 font-medium font-mono uppercase tracking-[0.2em]">
-            Live Sync: {new Date().toLocaleTimeString()} • {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase()}
-          </p>
+          <H1>Dashboard</H1>
+          <Body className="text-[#6B7280] mt-1">
+            Business intelligence overview
+          </Body>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={() => router.push('/reports')}
-            className="btn-premium btn-ghost"
-          >
-            <BarChart3 className="w-4 h-4" />
-            Analytical Ledger
-          </button>
-          <button
-            onClick={() => router.push('/po/create')}
-            className="btn-premium btn-primary shadow-xl"
-          >
-            <Plus className="w-4 h-4" />
-            Initiate Purchase
-          </button>
+        <div className="flex items-center gap-3">
+          <Button variant="secondary" size="sm" onClick={() => router.push('/reports')}>
+            <BarChart3 size={16} />
+            Analytics
+          </Button>
+          <Button variant="default" size="sm" onClick={() => router.push('/po/create')}>
+            <Plus size={16} />
+            New Purchase Order
+          </Button>
         </div>
       </div>
 
-      {/* KPI Display Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <KpiTile
-          title="Monthly Revenue"
-          value={formatIndianCurrency(summary.total_sales_month)}
-          trend={summary.sales_growth}
-          icon={Receipt}
-          color="blue"
-        />
-        <KpiTile
-          title="Open Procurement"
-          value={summary.pending_pos}
-          trend={`${summary.new_pos_today} New Today`}
-          icon={Clock}
-          color="amber"
-        />
-        <KpiTile
-          title="Dispatched Logistics"
-          value={summary.active_challans}
-          trend="In Transit Flow"
-          icon={Truck}
-          color="purple"
-        />
-        <KpiTile
-          title="YTD Volume"
-          value={formatIndianCurrency(summary.total_po_value)}
-          trend={summary.po_value_growth}
-          icon={Activity}
-          color="emerald"
-        />
-      </div>
+      {/* KPI Summary Cards */}
+      <SummaryCards
+        cards={[
+          {
+            title: 'Total Sales',
+            value: <Accounting isCurrency className="text-xl text-white">{summary?.total_sales_month || 0}</Accounting>,
+            icon: <Receipt size={20} />,
+            variant: 'primary',
+          },
+          {
+            title: 'Total Purchase',
+            value: <Accounting isCurrency className="text-xl text-white">{summary?.total_po_value || 0}</Accounting>,
+            icon: <Activity size={20} />,
+            variant: 'success',
+          },
+          {
+            title: 'Active POs',
+            value: <Accounting className="text-xl text-white">{summary?.active_po_count || 0}</Accounting>,
+            icon: <Activity size={20} />,
+            variant: 'warning',
+          },
+          {
+            title: 'Pipeline Volume',
+            value: <Accounting isCurrency className="text-xl text-white">{summary?.total_po_value || 0}</Accounting>,
+            icon: <Activity size={20} />,
+            variant: 'secondary',
+            trend: {
+              value: String(summary?.po_value_growth || "0%"),
+              direction: 'up'
+            }
+          }
+        ]}
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
-        {/* Activity Ledger (Left) */}
-        <div className="lg:col-span-8 space-y-6">
-          <div className="flex items-center justify-between px-2">
-            <h3 className="heading-md uppercase tracking-wider text-slate-800">Operational Real-time Feed</h3>
-            <button onClick={() => router.push('/reports')} className="text-[10px] font-extrabold text-blue-600 hover:text-blue-800 uppercase tracking-widest flex items-center gap-2 group">
-              Full System Audit <ArrowRight className="w-3 h-3 group-hover:translate-x-1 transition-transform" />
-            </button>
+      {/* Two-column layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Recent Activity Table */}
+        <div className="lg:col-span-8 space-y-4">
+          <div className="flex items-center justify-between">
+            <H3>Recent Activity</H3>
+            <Button variant="ghost" size="sm" onClick={() => router.push('/reports')}>
+              View All
+              <ArrowRight size={16} />
+            </Button>
           </div>
-          <div className="glass-panel overflow-hidden border-blue-50/50">
-            <DenseTable
-              data={activity}
-              columns={activityColumns}
-              className="bg-transparent border-none rounded-none"
-              onRowClick={(item) => {
-                if (item.type === 'PO') router.push(`/po/view?id=${item.number}`);
-                else if (item.type === 'DC') router.push(`/dc/view?id=${item.number}`);
-                else if (item.type === 'Invoice') router.push(`/invoice/view?id=${item.number}`);
-              }}
+
+          <DataTable
+            columns={activityColumns}
+            data={activity}
+            keyField="number"
+            pageSize={10}
+          />
+        </div>
+
+        {/* Quick Actions */}
+        <div className="lg:col-span-4 space-y-4">
+          <H3>Quick Actions</H3>
+          <div className="space-y-3">
+            <QuickActionCard
+              title="Create Purchase Order"
+              description="Initiate new procurement request"
+              icon={<Plus size={20} />}
+              onClick={() => router.push("/po/create")}
             />
-          </div>
-        </div>
-
-        {/* Global Strategy & Quick Actions (Right) */}
-        <div className="lg:col-span-4 space-y-8">
-          <div className="glass-panel p-6 bg-blue-600 text-white border-none shadow-blue-200/50">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-white/20 rounded-lg">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <h3 className="text-sm font-bold uppercase tracking-widest">Business Integrity</h3>
-            </div>
-            <div className="space-y-4 mb-8">
-              <div className="flex justify-between items-end border-b border-white/10 pb-2">
-                <span className="text-[10px] font-bold uppercase opacity-60">Ordered</span>
-                <span className="text-lg font-bold tracking-tighter">{(summary.total_ordered || 0).toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-end border-b border-white/10 pb-2">
-                <span className="text-[10px] font-bold uppercase opacity-60">Delivered</span>
-                <span className="text-lg font-bold tracking-tighter">{(summary.total_delivered || 0).toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between items-end">
-                <span className="text-[10px] font-bold uppercase opacity-60">Fulfilled</span>
-                <span className="text-lg font-bold tracking-tighter">{(summary.total_received || 0).toLocaleString()}</span>
-              </div>
-            </div>
-            <button
-              onClick={() => router.push('/reports')}
-              className="w-full py-3 bg-white text-blue-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-white/90 transition-all shadow-lg active:scale-95"
-            >
-              Run Integrity Audit
-            </button>
-          </div>
-
-          <div className="space-y-4">
-            <h3 className="heading-md uppercase tracking-wider text-slate-800 px-2">Rapid Execution</h3>
-            <div className="grid grid-cols-1 gap-3">
-              <ActionTile
-                title="Draft PO"
-                desc="Generate new supply chain order"
-                icon={FileText}
-                color="blue"
-                onClick={() => router.push("/po/create")}
-              />
-              <ActionTile
-                title="Log Dispatch"
-                desc="Execute material movement"
-                icon={Truck}
-                color="purple"
-                onClick={() => router.push("/dc/create")}
-              />
-              <ActionTile
-                title="Issue Invoice"
-                desc="Finalize financial billing cycle"
-                icon={Receipt}
-                color="emerald"
-                onClick={() => router.push("/invoice/create")}
-              />
-            </div>
+            <QuickActionCard
+              title="Create Delivery Challan"
+              description="Generate shipping documentation"
+              icon={<Truck size={20} />}
+              onClick={() => router.push("/dc/create")}
+            />
+            <QuickActionCard
+              title="Create Invoice"
+              description="Issue billing document"
+              icon={<Receipt size={20} />}
+              onClick={() => router.push("/invoice/create")}
+            />
           </div>
         </div>
       </div>
@@ -234,44 +208,34 @@ export default function DashboardPage() {
   );
 }
 
-function KpiTile({ title, value, trend, icon: Icon, color }: any) {
+// Quick Action Card Component
+function QuickActionCard({
+  title,
+  description,
+  icon,
+  onClick
+}: {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  onClick: () => void
+}) {
   return (
-    <GlassCard className="p-6 flex flex-col justify-between h-[130px] group border-white/60">
-      <div className="flex justify-between items-start">
-        <div className="space-y-1">
-          <span className="text-label mb-0">{title}</span>
-          <div className="text-2xl font-black text-slate-900 tracking-tighter group-hover:text-blue-600 transition-colors uppercase">{value}</div>
-        </div>
-        <div className={`p-2 rounded-xl bg-${color}-50/50 border border-${color}-100 group-hover:scale-110 transition-transform`}>
-          <Icon className={`w-4 h-4 text-${color}-600`} />
-        </div>
-      </div>
-      <div className="text-[10px] font-bold flex items-center gap-1.5 text-slate-400 mt-2">
-        {trend && (typeof trend === 'number' || trend.includes('%')) && (
-          <div className="flex items-center gap-1 text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-            <MoveUpRight className="w-2.5 h-2.5" />
-            <span>{trend}</span>
-          </div>
-        )}
-        {!trend?.toString().includes('%') && <span>{trend}</span>}
-      </div>
-    </GlassCard>
-  );
-}
-
-function ActionTile({ title, desc, icon: Icon, color, onClick }: any) {
-  return (
-    <button
+    <Card
+      className={cn(
+        "p-4 flex items-center gap-4 cursor-pointer transition-all duration-200",
+        "hover:shadow-lg hover:border-[#1A3D7C]/20"
+      )}
       onClick={onClick}
-      className="glass-panel glass-panel-interactive w-full text-left flex items-center gap-4 p-4 group"
     >
-      <div className={`p-3 rounded-xl bg-${color}-50 text-${color}-600 border border-${color}-100 group-hover:bg-white group-hover:shadow-md transition-all`}>
-        <Icon className="w-5 h-5" />
+      <div className="p-3 rounded-lg bg-[#1A3D7C]/10 text-[#1A3D7C] shrink-0">
+        {icon}
       </div>
-      <div>
-        <div className="text-xs font-black text-slate-800 uppercase tracking-tighter">{title}</div>
-        <div className="text-[10px] text-slate-400 font-medium italic mt-0.5">{desc}</div>
+      <div className="flex-1 min-w-0">
+        <div className="text-[14px] font-medium text-slate-950">{title}</div>
+        <SmallText className="text-[#6B7280] mt-0.5">{description}</SmallText>
       </div>
-    </button>
+      <ArrowRight size={16} className="text-[#9CA3AF] shrink-0" />
+    </Card>
   );
 }

@@ -100,6 +100,11 @@ def get_srv_list(
             COALESCE(s.po_found, 1) as po_found,
             COALESCE(SUM(si.received_qty), 0) as total_received_qty,
             COALESCE(SUM(si.rejected_qty), 0) as total_rejected_qty,
+            COALESCE(SUM(si.order_qty), 0) as total_order_qty,
+            COALESCE(SUM(si.challan_qty), 0) as total_challan_qty,
+            COALESCE(SUM(si.accepted_qty), 0) as total_accepted_qty,
+            GROUP_CONCAT(DISTINCT si.challan_no) as challan_numbers,
+            GROUP_CONCAT(DISTINCT si.invoice_no) as invoice_numbers,
             s.created_at
         FROM srvs s
         LEFT JOIN srv_items si ON s.srv_number = si.srv_number
@@ -132,6 +137,11 @@ def get_srv_list(
             "po_number": row['po_number'],
             "total_received_qty": float(row['total_received_qty']),
             "total_rejected_qty": float(row['total_rejected_qty']),
+            "total_order_qty": float(row['total_order_qty']),
+            "total_challan_qty": float(row['total_challan_qty']),
+            "total_accepted_qty": float(row['total_accepted_qty']),
+            "challan_numbers": row['challan_numbers'],
+            "invoice_numbers": row['invoice_numbers'],
             "po_found": po_found,
             "warning_message": warning_msg,
             "created_at": row['created_at']
@@ -219,7 +229,12 @@ def get_srvs_for_po(po_number: str, db: sqlite3.Connection = Depends(get_db)):
             SELECT 
                 s.srv_number, s.srv_date, s.po_number, s.srv_status, s.created_at, s.po_found,
                 COALESCE(SUM(si.received_qty), 0) as total_received_qty,
-                COALESCE(SUM(si.rejected_qty), 0) as total_rejected_qty
+                COALESCE(SUM(si.rejected_qty), 0) as total_rejected_qty,
+                COALESCE(SUM(si.order_qty), 0) as total_order_qty,
+                COALESCE(SUM(si.challan_qty), 0) as total_challan_qty,
+                COALESCE(SUM(si.accepted_qty), 0) as total_accepted_qty,
+                GROUP_CONCAT(DISTINCT si.challan_no) as challan_numbers,
+                GROUP_CONCAT(DISTINCT si.invoice_no) as invoice_numbers
             FROM srvs s
             LEFT JOIN srv_items si ON s.srv_number = si.srv_number
             WHERE s.po_number = ?
@@ -237,6 +252,11 @@ def get_srvs_for_po(po_number: str, db: sqlite3.Connection = Depends(get_db)):
             "po_number": row['po_number'],
             "total_received_qty": float(row['total_received_qty']),
             "total_rejected_qty": float(row['total_rejected_qty']),
+            "total_order_qty": float(row['total_order_qty']),
+            "total_challan_qty": float(row['total_challan_qty']),
+            "total_accepted_qty": float(row['total_accepted_qty']),
+            "challan_numbers": row['challan_numbers'],
+            "invoice_numbers": row['invoice_numbers'],
             "po_found": bool(row['po_found']),
             "created_at": row['created_at']
         })

@@ -1,0 +1,232 @@
+"use client";
+
+import React, { useEffect, useState, Suspense } from "react";
+import { useRouter, useParams } from "next/navigation";
+import {
+    ArrowLeft, Printer, FileText, Download, Edit2, Calendar, Receipt
+} from "lucide-react";
+import { api, API_BASE_URL } from "@/lib/api";
+import { formatDate, formatIndianCurrency, amountInWords } from "@/lib/utils";
+import {
+    H1, H3, Body, SmallText, Label,
+    Accounting, DocumentJourney, DocumentTemplate,
+    Button, Badge, Card,
+    Tabs, TabsList, TabsTrigger, TabsContent,
+    Column
+} from "@/components/design-system";
+import { DataTable } from "@/components/design-system/organisms/DataTable";
+
+function InvoiceDetailContent() {
+    const router = useRouter();
+    const params = useParams();
+    const invoiceId = params.id as string;
+    const [data, setData] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!invoiceId) return;
+        const loadData = async () => {
+            try {
+                const invoiceData = await api.getInvoiceDetail(decodeURIComponent(invoiceId));
+                setData(invoiceData);
+            } catch (err) {
+                console.error("Invoice Error:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        loadData();
+    }, [invoiceId]);
+
+    if (loading) return <div className="p-32 text-center"><Body className="text-[#6B7280] animate-pulse">Loading...</Body></div>;
+
+    if (!data || !data.header) return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
+            <Receipt className="w-16 h-16 text-[#D1D5DB]" />
+            <H1 className="text-[#6B7280]">Record Not Found</H1>
+            <Button variant="default" onClick={() => router.push('/invoice')}>Return to List</Button>
+        </div>
+    );
+
+    const { header, items = [], linked_dcs = [] } = data;
+
+    const topActions = (
+        <div className="flex gap-3">
+            <Button variant="outline" size="sm" asChild>
+                <a href={`${API_BASE_URL}/api/invoice/${encodeURIComponent(header.invoice_number)}/download`} target="_blank" rel="noreferrer">
+                    <Download size={16} />
+                    Excel
+                </a>
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => window.print()}>
+                <Printer size={16} />
+                Print
+            </Button>
+            <Button variant="default" size="sm" onClick={() => router.push(`/invoice/edit?id=${encodeURIComponent(header.invoice_number)}`)}>
+                <Edit2 size={16} />
+                Edit
+            </Button>
+        </div>
+    );
+
+    const itemColumns: Column<any>[] = [
+        { key: "material_code", label: "Code", width: "12%", render: (v) => <Accounting className="text-[12px]">{v}</Accounting> },
+        {
+            key: "description",
+            label: "Description",
+            width: "28%",
+            render: (_v, row) => (
+                <div className="space-y-0.5">
+                    <div className="font-medium text-slate-950">{row.material_description || row.description}</div>
+                    {row.drg_no && <div className="text-[10px] text-[#1A3D7C] font-medium uppercase tracking-tight">DRG: {row.drg_no}</div>}
+                </div>
+            )
+        },
+        { key: "linked_dc", label: "Linked DC", width: "12%", render: (v) => <Accounting className="text-slate-500">{v || '-'}</Accounting> },
+        { key: "ordered_quantity", label: "Ord", align: "center", width: "8%", render: (v) => <Accounting className="text-[12px]">{v}</Accounting> },
+        { key: "dispatched_quantity", label: "Dlv", align: "center", width: "8%", render: (v) => <Accounting className="text-[12px]">{v}</Accounting> },
+        { key: "quantity", label: "Inv", align: "center", width: "8%", render: (v) => <Accounting className="text-[12px] text-emerald-930">{v || 0}</Accounting> },
+        { key: "unit", label: "Unit", width: "6%", render: (v) => <span className="text-[11px] font-medium text-slate-600 uppercase">{v}</span> },
+        { key: "rate", label: "Rate", align: "right", width: "10%", render: (v) => <Accounting className="text-[12px]">{formatIndianCurrency(v)}</Accounting> },
+        { key: "amount", label: "Amount", align: "right", width: "10%", render: (v) => <Accounting className="text-[12px]">{formatIndianCurrency(v)}</Accounting> },
+    ];
+
+    return (
+        <DocumentTemplate
+            title={`Invoice #${header.invoice_number}`}
+            description={`${header.buyer_name} • ${formatDate(header.invoice_date)}`}
+            actions={topActions}
+        >
+            <div className="space-y-6">
+                <DocumentJourney currentStage="Invoice" className="mb-2" />
+
+                {/* Invoice Info Tabs */}
+                <Tabs defaultValue="buyer">
+                    <TabsList className="mb-4 bg-slate-100/30 p-1 rounded-xl">
+                        <TabsTrigger value="buyer" className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930">Buyer</TabsTrigger>
+                        <TabsTrigger value="references" className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930">Order Refs</TabsTrigger>
+                        <TabsTrigger value="logistics" className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930">Logistics</TabsTrigger>
+                    </TabsList>
+
+                    <Card className="p-6 mt-4 border-none shadow-sm bg-white/50 backdrop-blur-sm">
+                        <TabsContent value="buyer" className="mt-0">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600">Buyer Name</Label>
+                                    <Body className="text-slate-930 font-medium">{header.buyer_name || '-'}</Body>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600">Buyer GSTIN</Label>
+                                    <Accounting>{header.buyer_gstin || '-'}</Accounting>
+                                </div>
+                                <div className="space-y-1.5 col-span-2">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600">Buyer Address</Label>
+                                    <Body className="text-slate-930 font-medium text-[13px]">{header.buyer_address || '-'}</Body>
+                                </div>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="references" className="mt-0">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600">Buyer's Order No</Label>
+                                    <Accounting>{header.buyers_order_no || '-'}</Accounting>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600">Order Date</Label>
+                                    <Body className="text-slate-930 font-medium">{header.buyers_order_date ? formatDate(header.buyers_order_date) : '-'}</Body>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600">Challan Number</Label>
+                                    <Accounting className="text-[#1A3D7C] cursor-pointer hover:underline" onClick={() => router.push(`/dc/${header.dc_number}`)}>
+                                        {header.dc_number || '-'}
+                                    </Accounting>
+                                </div>
+                            </div>
+                        </TabsContent>
+
+                        <TabsContent value="logistics" className="mt-0">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600">Dispatch Through</Label>
+                                    <Body className="text-slate-930 font-medium">{header.dispatch_through || '-'}</Body>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600">Destination</Label>
+                                    <Body className="text-slate-930 font-medium">{header.destination || '-'}</Body>
+                                </div>
+                                <div className="space-y-1.5 col-span-2">
+                                    <Label className="text-[10px] uppercase tracking-widest text-slate-600">Terms of Delivery</Label>
+                                    <Body className="text-slate-930 font-medium text-[13px]">{header.terms_of_delivery || '-'}</Body>
+                                </div>
+                            </div>
+                        </TabsContent>
+                    </Card>
+                </Tabs>
+
+                {/* Items Table */}
+                <div className="space-y-2">
+                    <H3 className="px-1 text-[13px] font-medium text-slate-600 uppercase tracking-widest">Invoice Items ({items.length})</H3>
+                    <DataTable
+                        columns={itemColumns}
+                        data={items}
+                        keyField="id"
+                    />
+                </div>
+
+                {/* Totals */}
+                <Card className="p-6 bg-slate-50/50 border-none shadow-sm">
+                    <div className="grid grid-cols-2 gap-4 max-w-sm ml-auto">
+                        <Label className="text-[10px] uppercase tracking-widest text-slate-600 flex items-center">Taxable Value:</Label>
+                        <Accounting className="text-right">{formatIndianCurrency(header.total_taxable_value)}</Accounting>
+
+                        <Label className="text-[10px] uppercase tracking-widest text-slate-600 flex items-center">CGST @ 9%:</Label>
+                        <Accounting className="text-right">{formatIndianCurrency(header.cgst_total)}</Accounting>
+
+                        <Label className="text-[10px] uppercase tracking-widest text-slate-600 flex items-center">SGST @ 9%:</Label>
+                        <Accounting className="text-right">{formatIndianCurrency(header.sgst_total)}</Accounting>
+
+                        <div className="col-span-2 border-t border-slate-200 my-2" />
+
+                        <Label className="text-[11px] font-medium text-slate-500 uppercase tracking-widest flex items-center">Grand Total:</Label>
+                        <Accounting className="text-right text-[16px] text-blue-930">{formatIndianCurrency(header.total_invoice_value)}</Accounting>
+
+                        <div className="col-span-2 mt-4 space-y-1 bg-white/50 p-3 rounded-lg border border-slate-100">
+                            <Label className="text-[9px] uppercase tracking-[0.2em] text-slate-400">Amount in words</Label>
+                            <Body className="text-[11px] text-slate-500 italic lowercase first-letter:uppercase">
+                                {amountInWords(header.total_invoice_value)} Only
+                            </Body>
+                        </div>
+                    </div>
+                </Card>
+
+                {/* Linked DCs */}
+                {linked_dcs && linked_dcs.length > 0 && (
+                    <Card className="p-6 border-none shadow-sm bg-slate-50/30">
+                        <H3 className="mb-4 text-[13px] font-medium text-slate-600 uppercase tracking-widest">Linked Delivery Challans</H3>
+                        <div className="flex gap-2 flex-wrap">
+                            {linked_dcs.map((dc: any) => (
+                                <Badge
+                                    key={dc.dc_number}
+                                    variant="outline"
+                                    className="cursor-pointer hover:bg-slate-200 transition-colors font-medium text-slate-600"
+                                    onClick={() => router.push(`/dc/${dc.dc_number}`)}
+                                >
+                                    {dc.dc_number}
+                                </Badge>
+                            ))}
+                        </div>
+                    </Card>
+                )}
+            </div>
+        </DocumentTemplate>
+    );
+}
+
+export default function InvoiceDetailPage() {
+    return (
+        <Suspense fallback={<div className="p-32 text-center"><Body className="text-[#6B7280] animate-pulse">Loading...</Body></div>}>
+            <InvoiceDetailContent />
+        </Suspense>
+    );
+}
