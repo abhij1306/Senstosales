@@ -1,6 +1,6 @@
 # SenstoSales ERP - Supplier Management System
 
-**Version**: 3.0.0  
+**Version**: 3.1.0  
 **Status**: Production Ready  
 **Last Updated**: December 25, 2025
 
