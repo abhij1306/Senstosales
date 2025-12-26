@@ -63,9 +63,11 @@ Professional "Glassmorphism" for high-density business intelligence, built on **
   3.  **Content**: Charts, Tables, or Forms.
 
 ## 6. Motion & Interaction
-- **Transitions**: `duration-200` ease-out.
+- **Transitions**: Global page transitions use `mode="wait"` with `AnimatePresence`. Initial position: `opacity: 0, scale: 0.98, y: 10`. Exit position: `opacity: 0, scale: 1.02, y: -10`.
+- **Performance**: High-viscosity movement is enforced using `will-change: transform, opacity`.
 - **Hover Effects**: Subtle lift and shadow (`hover:-translate-y-0.5 hover:shadow-lg`).
-- **Tab Switching**: `AnimatePresence` with cross-fade (Opactiy 0->1, Y 10->0).
+- **Tab Switching**: Internal `AnimatePresence` with cross-fade (Opactiy 0->1, Y 10->0).
+- **Skeletal Stabilization**: Mandatory. Structural shells (`DocumentTemplate`, `ListPageTemplate`) MUST render immediately during data fetching to prevent layout shifts ("Double Flicker").
 - **Flicker Prevention**: Inactive tabs have transparent borders to prevent layout shifts.
 
 ## 7. Prohibited Practices

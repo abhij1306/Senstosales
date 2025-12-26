@@ -243,6 +243,8 @@ export default function POListPage() {
   const toolbar = (
     <div className="flex items-center gap-3">
       <Input
+        id="po-search"
+        name="po-search"
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
         placeholder="Search POs..."
@@ -293,11 +295,6 @@ export default function POListPage() {
         onPageChange={(newPage) => setPage(newPage)}
         loading={loading}
         emptyMessage="No purchase orders found"
-        className={
-          loading
-            ? "opacity-50 transition-opacity duration-300"
-            : "opacity-100 transition-opacity duration-300"
-        }
       />
 
       <Dialog

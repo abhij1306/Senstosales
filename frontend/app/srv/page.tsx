@@ -347,6 +347,8 @@ export default function SRVPage() {
     <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
       <div className="flex-1 w-full max-w-md">
         <AtomicSearchBar
+          id="srv-search"
+          name="srv-search"
           value={searchQuery}
           onChange={setSearchQuery}
           placeholder="Search by SRV number or PO..."
@@ -428,11 +430,6 @@ export default function SRVPage() {
       keyField="srv_number"
       loading={loading}
       emptyMessage="No store receipt vouchers found"
-      className={
-        loading
-          ? "opacity-50 transition-opacity duration-300"
-          : "opacity-100 transition-opacity duration-300"
-      }
     />
   );
 }

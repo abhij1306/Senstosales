@@ -183,6 +183,8 @@ export default function DCListPage() {
     <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
       <div className="flex-1 w-full max-w-md">
         <AtomicSearchBar
+          id="dc-search"
+          name="dc-search"
           value={searchQuery}
           onChange={setSearchQuery}
           placeholder="Search by DC number, PO, or consignee..."
@@ -223,11 +225,6 @@ export default function DCListPage() {
       }
       loading={loading}
       emptyMessage="No delivery challans found"
-      className={
-        loading
-          ? "opacity-50 transition-opacity duration-300"
-          : "opacity-100 transition-opacity duration-300"
-      }
     />
   );
 }

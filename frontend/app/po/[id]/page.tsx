@@ -212,32 +212,25 @@ function PODetailContent() {
     setData({ ...data, items: newItems });
   };
 
-  if (loading)
+  if (loading || !data || !data.header) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh] text-primary font-semibold animate-pulse uppercase tracking-[0.3em] text-[10px]">
-        SYNCHRONIZING RECORD DATA...
-      </div>
-    );
-
-  if (!data || !data.header)
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
-        <div className="w-16 h-16 rounded-3xl bg-rose-50 flex items-center justify-center text-rose-500 neo-flat">
-          <AlertCircle className="w-8 h-8" />
+      <DocumentTemplate
+        title={loading ? "Synchronizing..." : "Contract Not Found"}
+        description={
+          loading
+            ? "Retrieving record data from ledger"
+            : "Traceback failure in record retrieval"
+        }
+        onBack={() => router.push("/po")}
+      >
+        <div className="space-y-6">
+          <div className="h-8 w-64 bg-slate-100 rounded-full animate-pulse" />
+          <div className="h-10 w-full bg-slate-100 rounded-xl animate-pulse" />
+          <div className="h-[200px] w-full bg-slate-50 rounded-xl border border-slate-100 animate-pulse" />
         </div>
-        <div className="text-center space-y-2">
-          <H3 className="text-rose-900 m-0 uppercase tracking-tighter">
-            Contract Not Found
-          </H3>
-          <SmallText className="m-0 uppercase tracking-widest opacity-50">
-            Traceback failed to locate record ID {poId}
-          </SmallText>
-        </div>
-        <Button variant="outline" onClick={() => router.push("/po")}>
-          RETURN TO PROCUREMENT
-        </Button>
-      </div>
+      </DocumentTemplate>
     );
+  }
 
   const { header, items } = data;
 
@@ -349,6 +342,8 @@ function PODetailContent() {
       actions={topActions}
       onBack={() => router.back()}
       layoutId={`po-title-${header.po_number}`}
+      icon={<FileText size={20} className="text-slate-500" />}
+      iconLayoutId={`po-icon-${header.po_number}`}
     >
       <div className="space-y-6">
         {/* Document Journey */}

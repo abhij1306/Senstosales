@@ -251,6 +251,8 @@ export default function InvoicePage() {
     <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
       <div className="flex-1 w-full max-w-md">
         <AtomicSearchBar
+          id="invoice-search"
+          name="invoice-search"
           value={searchQuery}
           onChange={setSearchQuery}
           placeholder="Search by invoice number or GSTIN..."
@@ -291,11 +293,6 @@ export default function InvoicePage() {
       }
       loading={loading}
       emptyMessage="No invoices found"
-      className={
-        loading
-          ? "opacity-50 transition-opacity duration-300"
-          : "opacity-100 transition-opacity duration-300"
-      }
     />
   );
 }

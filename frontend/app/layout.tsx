@@ -59,8 +59,8 @@ export default function RootLayout({
               </header>
 
               {/* Main Content Area - Shifted Up */}
-              <main className="flex-1 overflow-auto scrollbar-thin scrollbar-thumb-muted-foreground/10 hover:scrollbar-thumb-muted-foreground/20 px-8 pb-32 pt-6">
-                <div className="mx-auto max-w-[1400px] w-full">
+              <main className="flex-1 overflow-y-scroll overflow-x-hidden scrollbar-thin scrollbar-thumb-muted-foreground/10 hover:scrollbar-thumb-muted-foreground/20 px-8 pb-32 pt-6">
+                <div className="mx-auto max-w-[1400px] w-full relative min-h-[calc(100vh-140px)]">
                   <PageTransition>{children}</PageTransition>
                 </div>
               </main>

@@ -137,6 +137,21 @@ export const SpotlightCard = ({ children, className }: { children: React.ReactNo
     });
     ```
 
+### 2.4 Integrated Stability Pattern (The "No Flicker" Rule)
+*   **Wait for Exit**: Global `PageTransition` and internal `AnimatePresence` must use `mode="wait"`. This ensures the exiting component unmounts completely before the new one mounts, preventing layout overlaps.
+*   **GPU Acceleration**: Use `style={{ willChange: "transform, opacity" }}` on transition containers to ensure high-viscosity movement.
+*   **Skeletal Templates**: When loading document details (PO, DC, Invoice), render the `DocumentTemplate` shell *immediately* with skeletal children. The title and icons should be persistent while the body content cross-fades in.
+    ```tsx
+    if (loading) return (
+      <DocumentTemplate title="Synchronizing..." description="Retrieving data...">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 w-64 bg-slate-100 rounded-full" />
+          <div className="h-[200px] w-full bg-slate-50 rounded-xl" />
+        </div>
+      </DocumentTemplate>
+    );
+    ```
+
 ---
 
 ## Phase 3: Implementation Guidelines for Features

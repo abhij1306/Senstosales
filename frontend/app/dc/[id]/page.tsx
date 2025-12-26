@@ -309,12 +309,25 @@ function DCDetailContent() {
     </div>
   );
 
-  if (loading)
+  if (loading || !formData.dc_number) {
     return (
-      <div className="p-32 text-center">
-        <Body className="text-[#6B7280] animate-pulse">Loading...</Body>
-      </div>
+      <DocumentTemplate
+        title={loading ? "Synchronizing..." : "Challan Not Found"}
+        description={
+          loading
+            ? "Retrieving record data from ledger"
+            : "Traceback failure in record retrieval"
+        }
+        onBack={() => router.push("/dc")}
+      >
+        <div className="space-y-6">
+          <div className="h-8 w-64 bg-slate-100 rounded-full animate-pulse" />
+          <div className="h-10 w-full bg-slate-100 rounded-xl animate-pulse" />
+          <div className="h-[200px] w-full bg-slate-50 rounded-xl border border-slate-100 animate-pulse" />
+        </div>
+      </DocumentTemplate>
     );
+  }
 
   return (
     <DocumentTemplate
@@ -323,6 +336,8 @@ function DCDetailContent() {
       actions={topActions}
       onBack={() => router.back()}
       layoutId={`dc-title-${formData.dc_number}`}
+      icon={<Truck size={20} className="text-emerald-700" />}
+      iconLayoutId={`dc-icon-${formData.dc_number}`}
     >
       <div className="space-y-6">
         <DocumentJourney currentStage="DC" className="mb-2" />

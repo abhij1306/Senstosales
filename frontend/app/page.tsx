@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { api, DashboardSummary, ActivityItem } from "@/lib/api";
 import {
   Receipt,
@@ -55,7 +56,14 @@ const createActivityColumns = (router: any): Column<ActivityItem>[] => [
           router.push(path);
         }}
       >
-        <div
+        <motion.div
+          layoutId={
+            item.type === "PO"
+              ? `po-icon-${item.number}`
+              : item.type === "DC"
+                ? `dc-icon-${item.number}`
+                : `inv-icon-${item.number}`
+          }
           className={cn(
             "p-2 rounded-lg transition-colors border shrink-0",
             "border-transparent group-hover:border-slate-200",
@@ -73,10 +81,19 @@ const createActivityColumns = (router: any): Column<ActivityItem>[] => [
           ) : (
             <Truck size={16} />
           )}
-        </div>
-        <div className="font-semibold text-sm text-slate-900 group-hover:text-blue-700 transition-colors whitespace-nowrap">
+        </motion.div>
+        <motion.div
+          layoutId={
+            item.type === "PO"
+              ? `po-title-${item.number}`
+              : item.type === "DC"
+                ? `dc-title-${item.number}`
+                : `inv-title-${item.number}`
+          }
+          className="font-semibold text-sm text-slate-900 group-hover:text-blue-700 transition-colors whitespace-nowrap"
+        >
           {item.number}
-        </div>
+        </motion.div>
       </div>
     ),
   },
@@ -187,55 +204,57 @@ export default function DashboardPage() {
       </div>
 
       {/* KPI Summary Cards */}
-      <SummaryCards
-        cards={[
-          {
-            title: "Total Sales",
-            value: (
-              <Accounting isCurrency short className="text-xl text-white">
-                {summary?.total_sales_month || 0}
-              </Accounting>
-            ),
-            icon: <Receipt size={20} />,
-            variant: "primary",
-          },
-          {
-            title: "Total Purchase",
-            value: (
-              <Accounting isCurrency short className="text-xl text-white">
-                {summary?.total_po_value || 0}
-              </Accounting>
-            ),
-            icon: <Activity size={20} />,
-            variant: "success",
-          },
-          {
-            title: "Active POs",
-            value: (
-              <Accounting className="text-xl text-white">
-                {summary?.active_po_count || 0}
-              </Accounting>
-            ),
-            icon: <Activity size={20} />,
-            variant: "warning",
-          },
-          {
-            title: "Pipeline Volume",
-            value: (
-              <Accounting isCurrency short className="text-xl text-white">
-                {summary?.total_po_value || 0}
-              </Accounting>
-            ),
-            icon: <Activity size={20} />,
-            variant: "secondary",
-            trend: {
-              value: String(summary?.po_value_growth || "0%"),
-              direction: "up",
+      <div className="min-h-[140px]">
+        <SummaryCards
+          cards={[
+            {
+              title: "Total Sales",
+              value: (
+                <Accounting isCurrency short className="text-xl text-white">
+                  {summary?.total_sales_month || 0}
+                </Accounting>
+              ),
+              icon: <Receipt size={20} />,
+              variant: "primary",
             },
-          },
-        ]}
-        loading={loading || !isMounted}
-      />
+            {
+              title: "Total Purchase",
+              value: (
+                <Accounting isCurrency short className="text-xl text-white">
+                  {summary?.total_po_value || 0}
+                </Accounting>
+              ),
+              icon: <Activity size={20} />,
+              variant: "success",
+            },
+            {
+              title: "Active POs",
+              value: (
+                <Accounting className="text-xl text-white">
+                  {summary?.active_po_count || 0}
+                </Accounting>
+              ),
+              icon: <Activity size={20} />,
+              variant: "warning",
+            },
+            {
+              title: "Pipeline Volume",
+              value: (
+                <Accounting isCurrency short className="text-xl text-white">
+                  {summary?.total_po_value || 0}
+                </Accounting>
+              ),
+              icon: <Activity size={20} />,
+              variant: "secondary",
+              trend: {
+                value: String(summary?.po_value_growth || "0%"),
+                direction: "up",
+              },
+            },
+          ]}
+          loading={loading}
+        />
+      </div>
 
       {/* Two-column layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -253,22 +272,24 @@ export default function DashboardPage() {
             </Button>
           </div>
 
-          {loading || !isMounted ? (
-            <Card className="p-0 overflow-hidden">
-              <TableRowSkeleton columns={4} />
-              <TableRowSkeleton columns={4} />
-              <TableRowSkeleton columns={4} />
-              <TableRowSkeleton columns={4} />
-              <TableRowSkeleton columns={4} />
-            </Card>
-          ) : (
-            <DataTable
-              columns={activityColumns}
-              data={activity}
-              keyField="number"
-              pageSize={10}
-            />
-          )}
+          <div className="min-h-[400px]">
+            {loading ? (
+              <Card className="p-0 overflow-hidden">
+                <TableRowSkeleton columns={4} />
+                <TableRowSkeleton columns={4} />
+                <TableRowSkeleton columns={4} />
+                <TableRowSkeleton columns={4} />
+                <TableRowSkeleton columns={4} />
+              </Card>
+            ) : (
+              <DataTable
+                columns={activityColumns}
+                data={activity}
+                keyField="number"
+                pageSize={10}
+              />
+            )}
+          </div>
         </div>
 
         {/* Quick Actions */}
@@ -280,18 +301,21 @@ export default function DashboardPage() {
               description="Initiate new procurement request"
               icon={<Plus size={20} />}
               onClick={() => router.push("/po/create")}
+              layoutId="create-po-icon"
             />
             <QuickActionCard
               title="Create Delivery Challan"
               description="Generate shipping documentation"
               icon={<Truck size={20} />}
               onClick={() => router.push("/dc/create")}
+              layoutId="create-dc-icon"
             />
             <QuickActionCard
               title="Create Invoice"
               description="Issue billing document"
               icon={<Receipt size={20} />}
               onClick={() => router.push("/invoice/create")}
+              layoutId="create-invoice-icon"
             />
           </div>
         </div>
@@ -306,11 +330,13 @@ function QuickActionCard({
   description,
   icon,
   onClick,
+  layoutId,
 }: {
   title: string;
   description: string;
   icon: React.ReactNode;
   onClick: () => void;
+  layoutId?: string;
 }) {
   return (
     <Card
@@ -320,9 +346,12 @@ function QuickActionCard({
       )}
       onClick={onClick}
     >
-      <div className="p-3 rounded-lg bg-[#1A3D7C]/10 text-[#1A3D7C] shrink-0">
+      <motion.div
+        layoutId={layoutId}
+        className="p-3 rounded-lg bg-[#1A3D7C]/10 text-[#1A3D7C] shrink-0"
+      >
         {icon}
-      </div>
+      </motion.div>
       <div className="flex-1 min-w-0">
         <div className="text-[14px] font-medium text-slate-950">{title}</div>
         <SmallText className="text-[#6B7280] mt-0.5">{description}</SmallText>

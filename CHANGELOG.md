@@ -5,6 +5,18 @@ All notable changes to SenstoSales ERP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.4.0] - 2025-12-27
+
+### Added
+- **Integrated Stability Pattern**: Rolled out a new stability standard across all Document and List modules to eliminate "After-Pop" flickering.
+- **Master Prompt Update**: codified the "No Flicker" rule in `docs/ATOMIC_DESIGN_MASTER_PROMPT.md` for all future AI-generated features.
+
+### Fixed
+- **Global Transitions**: Refined `PageTransition.tsx` with `mode="wait"`, GPU acceleration hints (`will-change`), and tuned viscous cubic-bezier easing.
+- **Layout Stabilization**: Forced persistent vertical scrollbars in `RootLayout` to prevent horizontal layout shifts during navigation.
+- **Module Rollout**: Applied structural stabilization to Dashboard, PO, DC, Invoice, and SRV modules, ensuring headers remain persistent while data loads into skeletal shells.
+- **Redundancy Cleanup**: Removed conflicting `PageAnimatePresence` wrapper from `Providers.tsx` to centralize animation logic.
+
 ## [3.3.0] - 2025-12-26
 
 ### Added

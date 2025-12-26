@@ -89,23 +89,25 @@ function InvoiceDetailContent() {
     loadData();
   }, [invoiceId]);
 
-  if (loading)
+  if (loading || !data || !data.header) {
     return (
-      <div className="p-32 text-center">
-        <Body className="text-[#6B7280] animate-pulse">Loading...</Body>
-      </div>
+      <DocumentTemplate
+        title={loading ? "Synchronizing..." : "Invoice Not Found"}
+        description={
+          loading
+            ? "Retrieving record data from ledger"
+            : "Traceback failure in record retrieval"
+        }
+        onBack={() => router.push("/invoice")}
+      >
+        <div className="space-y-6">
+          <div className="h-8 w-64 bg-slate-100 rounded-full animate-pulse" />
+          <div className="h-10 w-full bg-slate-100 rounded-xl animate-pulse" />
+          <div className="h-[200px] w-full bg-slate-50 rounded-xl border border-slate-100 animate-pulse" />
+        </div>
+      </DocumentTemplate>
     );
-
-  if (!data || !data.header)
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-6">
-        <Receipt className="w-16 h-16 text-[#D1D5DB]" />
-        <H1 className="text-[#6B7280]">Record Not Found</H1>
-        <Button variant="default" onClick={() => router.push("/invoice")}>
-          Return to List
-        </Button>
-      </div>
-    );
+  }
 
   const { header, items = [], linked_dcs = [] } = data;
 
@@ -235,6 +237,8 @@ function InvoiceDetailContent() {
       actions={topActions}
       onBack={() => router.back()}
       layoutId={`inv-title-${header.invoice_number}`}
+      icon={<Receipt size={20} className="text-blue-700" />}
+      iconLayoutId={`inv-icon-${header.invoice_number}`}
     >
       <div className="space-y-6">
         <DocumentJourney currentStage="Invoice" className="mb-2" />
