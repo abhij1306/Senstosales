@@ -344,8 +344,7 @@ export default function ReportsPage() {
       const finalData = Array.isArray(result)
         ? result.map((item: any, index: number) => ({
             ...item,
-            // Use a stable key prefix based on tab/page if possible, but random is okay for fetch-only
-            unique_id: `${activeTab}-${index}-${Math.random().toString(36).substr(2, 9)}`,
+            unique_id: `${activeTab}-${index}-${item.id || item.number || item.po_number || item.dc_number || item.invoice_number || ""}`,
           }))
         : [];
 

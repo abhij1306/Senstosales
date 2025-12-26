@@ -97,14 +97,14 @@ const DataTableComponent = <T extends Record<string, any>>({
   const currentSortDirection = sortDirection || internalSort?.direction;
 
   // Calculate pagination
-  const total = totalItems || data.length;
+  const total = totalItems || data?.length || 0;
   const totalPages = Math.ceil(total / pageSize);
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = Math.min(startIndex + pageSize, total);
 
   // Sorted and paginated data
   const processedData = useMemo(() => {
-    let result = [...data];
+    let result = data ? [...data] : [];
 
     // Sort
     if (currentSortKey) {

@@ -20,6 +20,9 @@ from app.routers import (
     reports,
     srv,
     common,
+    search,
+    buyers,
+    reconciliation
 )
 
 # Setup structured logging
@@ -27,7 +30,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title=settings.PROJECT_NAME, description="SenstoSales ERP API", version="2.0.0"
+    title=settings.PROJECT_NAME, description="SenstoSales ERP API", version="3.4.0"
 )
 
 # CORS Configuration
@@ -51,8 +54,11 @@ app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
 app.include_router(settings_router.router, prefix="/api/settings", tags=["Settings"])
 app.include_router(po_notes.router, prefix="/api/po-notes", tags=["PO Notes"])
 app.include_router(common.router, prefix="/api/common", tags=["Common"])
+app.include_router(search.router, prefix="/api/search", tags=["Search"])
+app.include_router(buyers.router)
+app.include_router(reconciliation.router, prefix="/api/reconciliation", tags=["Reconciliation"])
 
 
 @app.get("/")
 def root():
-    return {"status": "active", "version": "2.0.0"}
+    return {"status": "active", "version": "3.4.0"}

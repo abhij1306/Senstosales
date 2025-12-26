@@ -215,7 +215,7 @@ class ExcelService:
         Consistently writes the Buyer/Consignee block.
         Fetches from DB settings as default, overriden by specific record header if available.
         """
-        # Fetch settings from DB
+        # Fetch Supplier Settings
         try:
             rows = db.execute("SELECT key, value FROM business_settings").fetchall()
             settings = {row["key"]: row["value"] for row in rows}
@@ -223,19 +223,32 @@ class ExcelService:
             logger.error(f"Failed to fetch business settings for buyer block: {e}")
             settings = {}
 
-        # Default Buyer Info
-        b_name = header.get("consignee_name") or settings.get(
-            "buyer_name", "M/S Bharat Heavy Electricals Ltd."
-        )
-        b_addr = header.get("consignee_address") or settings.get(
-            "buyer_address", "Bhopal, MP"
-        )
-        b_gst = header.get("consignee_gstin") or settings.get(
-            "buyer_gstin", "23AAACB4146P1ZN"
-        )
-        b_state = settings.get("buyer_state", "MP")
-        settings.get("buyer_state_code", "23")
-        b_pos = settings.get("buyer_place_of_supply", "BHOPAL, MP")
+        # Fetch Default Buyer if not provided in header
+        default_buyer = {}
+        if not header.get("consignee_name"):
+            try:
+                buyer_row = db.execute(
+                    "SELECT name, billing_address, gstin, place_of_supply FROM buyers WHERE is_default = 1 AND is_active = 1 LIMIT 1"
+                ).fetchone()
+                if buyer_row:
+                    default_buyer = dict(buyer_row)
+            except Exception as e:
+                logger.error(f"Failed to fetch default buyer: {e}")
+
+        # Default Buyer Info logic: Header > Default Buyer > Hardcoded Fallback
+        b_name = header.get("consignee_name") or default_buyer.get("name") or "M/S Bharat Heavy Electricals Ltd."
+        b_addr = header.get("consignee_address") or default_buyer.get("billing_address") or "Bhopal, MP"
+        b_gst = header.get("consignee_gstin") or default_buyer.get("gstin") or "23AAACB4146P1ZN"
+        
+        # Parse Place of Supply if needed
+        b_pos_raw = header.get("place_of_supply") or default_buyer.get("place_of_supply") or "BHOPAL, MP"
+        b_pos = b_pos_raw
+        
+        # State logic (simple extraction if not provided)
+        b_state = header.get("buyer_state") or "MP"
+        if not header.get("buyer_state") and default_buyer.get("place_of_supply"):
+             # Simple heuristic: last word or known states. For now defaulting to MP or extracting from POS
+             pass
 
         # Formats - ALL buyer details should be BOLD with borders
         bold_border_fmt = workbook.add_format(
@@ -452,18 +465,26 @@ class ExcelService:
         worksheet.merge_range(3, 14, 3, 16, "Mode/Terms of Payment", header_bold)
         worksheet.merge_range(3, 17, 3, 19, payment_mode, cell_center)
 
+        # Default Buyer logic
+        default_buyer = {}
+        if not header.get("buyer_name"):
+             try:
+                buyer_row = db.execute(
+                    "SELECT name, billing_address, gstin, place_of_supply FROM buyers WHERE is_default = 1 AND is_active = 1 LIMIT 1"
+                ).fetchone()
+                if buyer_row:
+                    default_buyer = dict(buyer_row)
+             except Exception as e:
+                logger.error(f"Failed to fetch default buyer for invoice: {e}")
+
         # Buyer - Multi-line with proper label
         b_contact = header.get("buyer_contact") or "Sr. Accounts Officer (PB)"
-        b_name = header.get("buyer_name") or settings.get(
-            "buyer_name", "M/S Bharat Heavy Electrical Ltd."
-        )
-        b_gst = header.get("buyer_gstin") or settings.get(
-            "buyer_gstin", "23AAACB4146P1ZN"
-        )
-        b_state = header.get("buyer_state") or settings.get("buyer_state", "MP")
-        b_pos = header.get("place_of_supply") or settings.get(
-            "buyer_place_of_supply", "BHOPAL, MP"
-        )
+        b_name = header.get("buyer_name") or default_buyer.get("name") or "M/S Bharat Heavy Electrical Ltd."
+        b_gst = header.get("buyer_gstin") or default_buyer.get("gstin") or "23AAACB4146P1ZN"
+        
+        # Parse state/pos
+        b_pos = header.get("place_of_supply") or default_buyer.get("place_of_supply") or "BHOPAL, MP"
+        b_state = header.get("buyer_state") or "MP" # Simplify state logic for now
 
         # Buyer block - each field on separate row (rows 7-12)
         worksheet.merge_range(7, 0, 7, 7, "Buyer", header_bold)

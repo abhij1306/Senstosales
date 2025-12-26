@@ -60,6 +60,7 @@ class EnhancedInvoiceCreate(BaseModel):
 
     # Optional fields
     gemc_number: Optional[str] = None
+    gemc_date: Optional[str] = None
     mode_of_payment: Optional[str] = None
     payment_terms: str = "45 Days"
     despatch_doc_no: Optional[str] = None

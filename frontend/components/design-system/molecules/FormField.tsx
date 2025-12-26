@@ -22,7 +22,7 @@ export const FormField = React.forwardRef<HTMLInputElement, FormFieldProps>(
     return (
       <div className={cn("space-y-1.5", className)}>
         {label && (
-          <Label className="block">
+          <Label htmlFor={inputProps.id} className="block">
             {label}
             {required && <span className="text-[#DC2626] ml-1">*</span>}
           </Label>

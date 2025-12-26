@@ -1,10 +1,18 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Save, Building, UserCheck, AlertOctagon } from "lucide-react";
+import {
+  Save,
+  Building,
+  UserCheck,
+  AlertOctagon,
+  Mail,
+  Phone,
+  MapPin,
+  Fingerprint,
+} from "lucide-react";
 import ResetDatabase from "@/components/ResetDatabase";
 import {
-  H1,
   H3,
   Body,
   SmallText,
@@ -12,8 +20,11 @@ import {
 } from "@/components/design-system/atoms/Typography";
 import { Button } from "@/components/design-system/atoms/Button";
 import { Card } from "@/components/design-system/atoms/Card";
+import { SpotlightCard } from "@/components/design-system/atoms/SpotlightCard";
 import { Input } from "@/components/design-system/atoms/Input";
-import { DocumentTemplate } from "@/components/design-system/templates/DocumentTemplate";
+import { DetailField } from "@/components/design-system/molecules/DetailField";
+import { FormField } from "@/components/design-system/molecules/FormField";
+import { api, Buyer } from "@/lib/api";
 
 interface Settings {
   supplier_name: string;
@@ -23,13 +34,6 @@ interface Settings {
   supplier_contact: string;
   supplier_state: string;
   supplier_state_code: string;
-  buyer_name: string;
-  buyer_address: string;
-  buyer_gstin: string;
-  buyer_state: string;
-  buyer_state_code: string;
-  buyer_place_of_supply: string;
-  buyer_designation: string;
 }
 
 const defaultSettings: Settings = {
@@ -40,17 +44,11 @@ const defaultSettings: Settings = {
   supplier_contact: "",
   supplier_state: "",
   supplier_state_code: "",
-  buyer_name: "",
-  buyer_address: "",
-  buyer_gstin: "",
-  buyer_state: "",
-  buyer_state_code: "",
-  buyer_place_of_supply: "",
-  buyer_designation: "",
 };
 
 export default function MyDetailsPage() {
   const [settings, setSettings] = useState<Settings>(defaultSettings);
+  const [defaultBuyer, setDefaultBuyer] = useState<Buyer | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState<{
@@ -64,11 +62,15 @@ export default function MyDetailsPage() {
 
   const fetchSettings = async () => {
     try {
-      const response = await fetch("http://localhost:8000/api/settings/");
+      const response = await fetch(`${api.baseUrl}/api/settings/`);
       if (response.ok) {
         const data = await response.json();
         setSettings(data);
       }
+
+      const buyers = await api.getBuyers();
+      const def = buyers.find((b) => b.is_default);
+      setDefaultBuyer(def || null);
     } catch (error) {
       console.error("Failed to fetch settings:", error);
     } finally {
@@ -86,20 +88,11 @@ export default function MyDetailsPage() {
         key,
         value,
       }));
-      const response = await fetch("http://localhost:8000/api/settings/batch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(batch),
-      });
-
-      if (response.ok) {
-        setMessage({ type: "success", text: "Settings updated successfully." });
-        setTimeout(() => setMessage(null), 3000);
-      } else {
-        setMessage({ type: "error", text: "Failed to update settings." });
-      }
+      await api.updateSettingsBatch(batch);
+      setMessage({ type: "success", text: "Settings updated successfully." });
+      setTimeout(() => setMessage(null), 3000);
     } catch (error) {
-      setMessage({ type: "error", text: "Network error occurred." });
+      setMessage({ type: "error", text: "Failed to update settings." });
     } finally {
       setIsSaving(false);
     }
@@ -107,302 +100,248 @@ export default function MyDetailsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <Body className="text-[#6B7280] animate-pulse">
-          Loading settings...
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Body className="text-slate-400 animate-pulse">
+          Loading system settings...
         </Body>
       </div>
     );
   }
 
-  const actions = (
-    <div className="flex items-center gap-4">
-      {message && (
-        <div
-          className={`px-4 py-2 rounded-lg border flex items-center gap-2 ${message.type === "success" ? "bg-[#16A34A]/10 border-[#16A34A]/20 text-[#16A34A]" : "bg-[#DC2626]/10 border-[#DC2626]/20 text-[#DC2626]"}`}
-        >
-          <SmallText className="font-semibold">{message.text}</SmallText>
-        </div>
-      )}
-      <Button
-        onClick={() => handleUpdate()}
-        variant="default"
-        disabled={isSaving}
-      >
-        <Save size={16} className={isSaving ? "animate-spin" : ""} />
-        {isSaving ? "Saving..." : "Save Changes"}
-      </Button>
-    </div>
-  );
-
   return (
-    <DocumentTemplate
-      title="Global Settings"
-      description="Master configuration for financial documentation"
-      actions={actions}
-      className="space-y-8"
-    >
-      {/* Section: Identity & Location */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Supplier Identity */}
-        <Card className="overflow-hidden border-none shadow-premium bg-white/80 backdrop-blur-md">
-          <div className="px-6 py-5 bg-gradient-to-r from-[#1A3D7C] to-[#2E5B9E] flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-              <Building className="w-5 h-5 text-white" />
+    <div className="space-y-10">
+      {/* 1. Supplier Identity Section */}
+      <SpotlightCard className="overflow-hidden border-none shadow-premium bg-white/40 backdrop-blur-xl">
+        <div className="px-8 py-6 border-b border-white/20 bg-gradient-to-r from-slate-900/5 to-transparent flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="p-2.5 bg-blue-600/10 rounded-xl text-blue-600">
+              <Building size={22} />
             </div>
-            <H3 className="text-white">Supplier Profile</H3>
+            <div>
+              <H3 className="text-[18px]">Supplier Profile</H3>
+              <SmallText className="text-slate-500">
+                Your registered business identity for invoices
+              </SmallText>
+            </div>
           </div>
+          <Button
+            onClick={() => handleUpdate()}
+            disabled={isSaving}
+            className="shadow-lg shadow-blue-600/20"
+          >
+            {isSaving ? "Saving..." : "Save Changes"}
+          </Button>
+        </div>
 
-          <div className="p-8 space-y-8">
-            <div className="grid grid-cols-1 gap-6">
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-slate-500">
-                  Business Name
-                </Label>
-                <Input
-                  value={settings.supplier_name}
-                  onChange={(e) =>
-                    setSettings({ ...settings, supplier_name: e.target.value })
-                  }
-                  className="bg-slate-50/50 border-slate-200"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-slate-500">
-                  Tagline / Description
-                </Label>
-                <Input
-                  value={settings.supplier_description}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      supplier_description: e.target.value,
-                    })
-                  }
-                  className="bg-slate-50/50 border-slate-200"
-                />
-              </div>
+        <div className="p-8 grid grid-cols-1 lg:grid-cols-12 gap-10">
+          {/* Form Fields */}
+          <div className="lg:col-span-8 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                id="supplier_name"
+                name="supplier_name"
+                label="Entity Name"
+                value={settings.supplier_name}
+                onChange={(e) =>
+                  setSettings({ ...settings, supplier_name: e.target.value })
+                }
+                icon={<Building size={14} />}
+              />
+              <FormField
+                id="supplier_gstin"
+                name="supplier_gstin"
+                label="Tax Identity (GSTIN)"
+                value={settings.supplier_gstin}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    supplier_gstin: e.target.value.toUpperCase(),
+                  })
+                }
+                className="font-mono tracking-widest"
+                icon={<Fingerprint size={14} />}
+              />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-widest text-slate-500">
-                Registered Address
+              <Label htmlFor="supplier_description">Business Description</Label>
+              <Input
+                id="supplier_description"
+                name="supplier_description"
+                value={settings.supplier_description}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    supplier_description: e.target.value,
+                  })
+                }
+                placeholder="e.g. Precision Engineering & Manufacturing"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="supplier_address">
+                Registered Office Address
               </Label>
               <textarea
+                id="supplier_address"
+                name="supplier_address"
                 value={settings.supplier_address}
                 onChange={(e) =>
                   setSettings({ ...settings, supplier_address: e.target.value })
                 }
-                rows={4}
-                className="w-full px-4 py-3 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#1A3D7C]/20 focus:border-[#1A3D7C] bg-slate-50/50 transition-all resize-none"
+                rows={3}
+                className="w-full px-4 py-3 text-[13px] font-medium border border-slate-200 rounded-xl bg-slate-50/50 focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all resize-none"
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-slate-500">
-                  Tax Identity (GSTIN)
-                </Label>
-                <Input
-                  value={settings.supplier_gstin}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      supplier_gstin: e.target.value.toUpperCase(),
-                    })
-                  }
-                  className="bg-slate-50/50 border-slate-200 font-mono tracking-wider"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-slate-500">
-                  Support Contact
-                </Label>
-                <Input
-                  value={settings.supplier_contact}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      supplier_contact: e.target.value,
-                    })
-                  }
-                  className="bg-slate-50/50 border-slate-200"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-slate-500">
-                  Jurisdiction (State)
-                </Label>
-                <Input
-                  value={settings.supplier_state}
-                  onChange={(e) =>
-                    setSettings({ ...settings, supplier_state: e.target.value })
-                  }
-                  className="bg-slate-50/50 border-slate-200"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-slate-500">
-                  State Code
-                </Label>
-                <Input
-                  value={settings.supplier_state_code}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      supplier_state_code: e.target.value,
-                    })
-                  }
-                  className="bg-slate-50/50 border-slate-200"
-                />
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Buyer Details */}
-        <Card className="overflow-hidden border-none shadow-premium bg-white/80 backdrop-blur-md">
-          <div className="px-6 py-5 bg-gradient-to-r from-[#2BB7A0] to-[#269E8A] flex items-center gap-3">
-            <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
-              <UserCheck className="w-5 h-5 text-white" />
-            </div>
-            <H3 className="text-white">Buyer Information</H3>
-          </div>
-
-          <div className="p-8 space-y-8">
-            <div className="grid grid-cols-1 gap-6">
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-slate-500">
-                  Customer Legal Name
-                </Label>
-                <Input
-                  value={settings.buyer_name}
-                  onChange={(e) =>
-                    setSettings({ ...settings, buyer_name: e.target.value })
-                  }
-                  className="bg-slate-50/50 border-slate-200"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-slate-500">
-                  Authorized Designation
-                </Label>
-                <Input
-                  value={settings.buyer_designation}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      buyer_designation: e.target.value,
-                    })
-                  }
-                  className="bg-slate-50/50 border-slate-200"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-[10px] uppercase tracking-widest text-slate-500">
-                Ship-to Address
-              </Label>
-              <textarea
-                value={settings.buyer_address}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <FormField
+                id="supplier_state"
+                name="supplier_state"
+                label="State Name"
+                value={settings.supplier_state}
                 onChange={(e) =>
-                  setSettings({ ...settings, buyer_address: e.target.value })
+                  setSettings({ ...settings, supplier_state: e.target.value })
                 }
-                rows={4}
-                className="w-full px-4 py-3 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-[#2BB7A0]/20 focus:border-[#2BB7A0] bg-slate-50/50 transition-all resize-none"
+              />
+              <FormField
+                id="supplier_state_code"
+                name="supplier_state_code"
+                label="State Code"
+                value={settings.supplier_state_code}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    supplier_state_code: e.target.value,
+                  })
+                }
+              />
+              <FormField
+                id="supplier_contact"
+                name="supplier_contact"
+                label="Contact Info"
+                value={settings.supplier_contact}
+                onChange={(e) =>
+                  setSettings({ ...settings, supplier_contact: e.target.value })
+                }
+                icon={<Phone size={14} />}
               />
             </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-slate-500">
-                  Customer GSTIN
-                </Label>
-                <Input
-                  value={settings.buyer_gstin}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      buyer_gstin: e.target.value.toUpperCase(),
-                    })
-                  }
-                  className="bg-slate-50/50 border-slate-200 font-mono tracking-wider"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-slate-500">
-                  Place of Supply
-                </Label>
-                <Input
-                  value={settings.buyer_place_of_supply}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      buyer_place_of_supply: e.target.value,
-                    })
-                  }
-                  className="bg-slate-50/50 border-slate-200"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-slate-500">
-                  Customer State
-                </Label>
-                <Input
-                  value={settings.buyer_state}
-                  onChange={(e) =>
-                    setSettings({ ...settings, buyer_state: e.target.value })
-                  }
-                  className="bg-slate-50/50 border-slate-200"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-[10px] uppercase tracking-widest text-slate-500">
-                  State Code
-                </Label>
-                <Input
-                  value={settings.buyer_state_code}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      buyer_state_code: e.target.value,
-                    })
-                  }
-                  className="bg-slate-50/50 border-slate-200"
-                />
-              </div>
+          {/* Visual Sidebar Preview */}
+          <div className="lg:col-span-4 bg-slate-50/50 rounded-2xl border border-slate-200/60 p-6 space-y-6">
+            <Label className="text-blue-600">Document Header Preview</Label>
+            <Card className="p-4 border-dashed border-slate-300 bg-white shadow-sm space-y-3">
+              <div className="h-4 w-2/3 bg-slate-200 rounded animate-pulse" />
+              <div className="h-3 w-full bg-slate-100 rounded" />
+              <div className="h-3 w-1/2 bg-slate-100 rounded" />
+            </Card>
+            <div className="space-y-4 pt-4">
+              <DetailField
+                label="State Presence"
+                value={settings.supplier_state || "---"}
+                icon={<MapPin size={14} />}
+              />
+              <DetailField
+                label="Direct Link"
+                value={settings.supplier_contact || "---"}
+                icon={<Mail size={14} />}
+              />
             </div>
           </div>
-        </Card>
-      </div>
-
-      {/* Danger Zone */}
-      <div className="pt-8 border-t border-[#E5E7EB]">
-        <div className="flex items-center gap-3 mb-4">
-          <AlertOctagon className="w-5 h-5 text-[#DC2626]" />
-          <H3 className="text-[#DC2626]">Danger Zone</H3>
         </div>
-        <Card className="p-6 border-[#DC2626]/20 bg-[#DC2626]/5">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+      </SpotlightCard>
+
+      {/* 2. Default Buyer Section */}
+      <Card className="overflow-hidden border-none shadow-premium bg-white/40 backdrop-blur-xl">
+        <div className="px-8 py-5 bg-gradient-to-r from-emerald-600/10 to-transparent border-b border-white/20 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-emerald-600/10 rounded-xl text-emerald-600">
+              <UserCheck size={20} />
+            </div>
             <div>
-              <H3 className="text-[14px] mb-1">System Hard Reset</H3>
-              <SmallText className="text-[#6B7280] leading-relaxed">
-                This action will permanently erase all ledgers, procurement
-                contracts, and logistic records. Data recovery is impossible
-                once initiated.
+              <H3>Primary Invoice Entity</H3>
+              <SmallText className="text-slate-500">
+                The buyer profile applied to new invoices by default
+              </SmallText>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            className="text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
+            onClick={() => (window.location.href = "/settings/buyers")}
+          >
+            Entity Manager
+          </Button>
+        </div>
+
+        <div className="p-8">
+          {defaultBuyer ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <DetailField label="Organization" value={defaultBuyer.name} />
+              <DetailField
+                label="Tax Code (GST)"
+                value={defaultBuyer.gstin}
+                className="font-mono"
+              />
+              <DetailField
+                label="Auth Person"
+                value={defaultBuyer.designation}
+              />
+
+              <div className="md:col-span-3 pt-6 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <DetailField
+                  label="Invoicing Address"
+                  value={defaultBuyer.billing_address}
+                />
+                <DetailField
+                  label="Place of Supply"
+                  value={defaultBuyer.place_of_supply}
+                />
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-10 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+              <Body className="text-slate-400 mb-4">
+                No default billing entity selected.
+              </Body>
+              <Button
+                variant="outline"
+                onClick={() => (window.location.href = "/settings/buyers")}
+              >
+                Assign Primary Entity
+              </Button>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* 3. Danger Zone */}
+      <div className="pt-2">
+        <div className="flex items-center gap-3 mb-4 px-2">
+          <AlertOctagon className="w-5 h-5 text-red-500" />
+          <H3 className="text-red-500 uppercase tracking-wider text-[11px] font-bold">
+            System Governance
+          </H3>
+        </div>
+        <Card className="p-8 border-red-500/20 bg-red-50/30 backdrop-blur-sm">
+          <div className="flex flex-col md:flex-row items-start justify-between gap-8">
+            <div className="max-w-2xl">
+              <H3 className="text-[14px] text-red-900 mb-2">
+                Nuclear Hard Reset
+              </H3>
+              <SmallText className="text-red-700/70 leading-relaxed font-medium">
+                This operation will purge all databases including historic POs,
+                Challans, and Invoices. This action is cryptographic and
+                non-reversible. Proceed with absolute caution.
               </SmallText>
             </div>
             <ResetDatabase />
           </div>
         </Card>
       </div>
-    </DocumentTemplate>
+    </div>
   );
 }

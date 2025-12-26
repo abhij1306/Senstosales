@@ -1,191 +1,151 @@
-"""
-Search Router - Smart Global Search
-"""
-
 from fastapi import APIRouter, Depends, Query
-from app.db import get_db
-from typing import Optional
+from typing import List, Optional, Union
+from pydantic import BaseModel
 import sqlite3
+from app.db import get_db
 
 router = APIRouter()
 
+class SearchResult(BaseModel):
+    type: str
+    id: Union[str, int]
+    number: str
+    party: str
+    amount: Optional[float] = None
+    status: Optional[str] = None
+    date: Optional[str] = None
+    type_label: str
 
-@router.get("/")
-def global_search(
+class SearchResponse(BaseModel):
+    results: List[SearchResult]
+
+# Setup logger
+import logging
+logger = logging.getLogger(__name__)
+
+@router.get("/", response_model=SearchResponse)
+def search_global(
     q: str = Query(..., min_length=1),
-    type_filter: Optional[str] = None,
-    db: sqlite3.Connection = Depends(get_db),
+    db: sqlite3.Connection = Depends(get_db)
 ):
-    """
-    Global search across PO, DC, and Invoice
-    Supports filters: type:po, type:dc, type:invoice
-    """
-
+    query_str = f"%{q}%"
     results = []
-    query = f"%{q}%"
+    logger.info(f"Global search for: {q}")
 
-    # Search POs (if not filtered or filtered to PO)
-    if not type_filter or type_filter == "po":
-        po_rows = db.execute(
-            """
-            SELECT 
-                po_number as id,
-                'PO' as type,
-                po_number as number,
-                po_date as date,
-                supplier_name as party,
-                po_value as value,
-                'Purchase Order' as type_label
+    # 1. Search Purchase Orders
+    try:
+        po_rows = db.execute("""
+            SELECT rowid as id, po_number, supplier_name, po_value, po_status, po_date
             FROM purchase_orders
-            WHERE 
-                CAST(po_number AS TEXT) LIKE ?
-                OR supplier_name LIKE ?
-                OR supplier_code LIKE ?
-            LIMIT 10
-        """,
-            (query, query, query),
-        ).fetchall()
-        results.extend([dict(row) for row in po_rows])
+            WHERE po_number LIKE ? OR supplier_name LIKE ?
+            ORDER BY po_date DESC LIMIT 5
+        """, (query_str, query_str)).fetchall()
 
-    # Search DCs
-    if not type_filter or type_filter == "dc":
-        dc_rows = db.execute(
-            """
-            SELECT 
-                dc_number as id,
-                'DC' as type,
-                dc_number as number,
-                dc_date as date,
-                consignee_name as party,
-                NULL as value,
-                'Delivery Challan' as type_label
+        for row in po_rows:
+            results.append(SearchResult(
+                type="PO",
+                id=row["id"],
+                number=str(row["po_number"]),
+                party=row["supplier_name"],
+                amount=row["po_value"] if row["po_value"] else 0.0,
+                status=row["po_status"],
+                date=str(row["po_date"]) if row["po_date"] else None,
+                type_label="Purchase Order"
+            ))
+    except Exception as e:
+        logger.error(f"Error searching POs: {e}", exc_info=True)
+
+    # 2. Search Delivery Challans
+    try:
+        dc_rows = db.execute("""
+            SELECT rowid as id, dc_number, po_number, dc_status, dc_date
             FROM delivery_challans
-            WHERE 
-                dc_number LIKE ?
-                OR consignee_name LIKE ?
-                OR CAST(po_number AS TEXT) LIKE ?
-            LIMIT 10
-        """,
-            (query, query, query),
-        ).fetchall()
-        results.extend([dict(row) for row in dc_rows])
+            WHERE dc_number LIKE ? OR po_number LIKE ?
+            ORDER BY dc_date DESC LIMIT 5
+        """, (query_str, query_str)).fetchall()
 
-    # Search Invoices
-        inv_rows = db.execute(
-            """
-            SELECT 
-                invoice_number as id,
-                'INVOICE' as type,
-                invoice_number as number,
-                invoice_date as date,
-                customer_gstin as party,
-                total_invoice_value as value,
-                'GST Invoice' as type_label
+        for row in dc_rows:
+            results.append(SearchResult(
+                type="DC",
+                id=row["id"],
+                number=str(row["dc_number"]),
+                party=str(row["po_number"]) if row["po_number"] else "Unknown", # Use PO Number as proxy for party
+                amount=None,
+                status=row["dc_status"],
+                date=str(row["dc_date"]) if row["dc_date"] else None,
+                type_label="Delivery Challan"
+            ))
+    except Exception as e:
+        logger.error(f"Error searching DCs: {e}", exc_info=True)
+
+    # 3. Search Invoices
+    try:
+        # Table is gst_invoices. Columns: invoice_number, customer_gstin, total_invoice_value, invoice_date
+        inv_rows = db.execute("""
+            SELECT rowid as id, invoice_number, customer_gstin, total_invoice_value, invoice_date
             FROM gst_invoices
-            WHERE 
-                invoice_number LIKE ?
-                OR po_numbers LIKE ?
-                OR linked_dc_numbers LIKE ?
-            LIMIT 10
-        """,
-            (query, query, query),
-        ).fetchall()
-        results.extend([dict(row) for row in inv_rows])
+            WHERE invoice_number LIKE ? OR customer_gstin LIKE ?
+            ORDER BY invoice_date DESC LIMIT 5
+        """, (query_str, query_str)).fetchall()
 
-    # Search SRVs (Stores Receipt Vouchers)
-    if not type_filter or type_filter == "srv":
-        srv_rows = db.execute(
-            """
-            SELECT 
-                srv_number as id,
-                'SRV' as type,
-                srv_number as number,
-                srv_date as date,
-                po_number as party,
-                NULL as value,
-                'Receipt Voucher' as type_label
+        for row in inv_rows:
+            results.append(SearchResult(
+                type="Invoice",
+                id=row["id"],
+                number=str(row["invoice_number"]),
+                party=row["customer_gstin"] if row["customer_gstin"] else "BHEL", # Use GSTIN or default
+                amount=row["total_invoice_value"] if row["total_invoice_value"] else 0.0,
+                status="Generated", # Invoice status column not consistent, defaulting
+                date=str(row["invoice_date"]) if row["invoice_date"] else None,
+                type_label="Invoice"
+            ))
+    except Exception as e:
+        logger.error(f"Error searching Invoices: {e}", exc_info=True)
+
+    # 4. Search SRVs
+    try:
+        # Using rowid as id since srv table might not have explicit id column (srv_number is PK)
+        srv_rows = db.execute("""
+            SELECT rowid as id, srv_number, created_at
             FROM srvs
-            WHERE 
-                srv_number LIKE ?
-                OR po_number LIKE ?
-            LIMIT 10
-        """,
-            (query, query),
-        ).fetchall()
-        results.extend([dict(row) for row in srv_rows])
+            WHERE srv_number LIKE ?
+            ORDER BY created_at DESC LIMIT 5
+        """, (query_str,)).fetchall()
 
-    return {
-        "query": q,
-        "total_results": len(results),
-        "results": results[:20],  # Limit to top 20
-    }
+        for row in srv_rows:
+            # Handle potential missing CreatedAt
+            date_str = None
+            if row["created_at"]:
+                date_str = str(row["created_at"])[:10]
 
+            results.append(SearchResult(
+                type="SRV",
+                id=row["id"],
+                number=str(row["srv_number"]),
+                party="Unknown", # SRV doesn't map easily to party without joins, keeping simple
+                amount=None,
+                status="Processed",
+                date=date_str,
+                type_label="Store Receipt"
+            ))
+    except Exception as e:
+        logger.error(f"Error searching SRVs: {e}", exc_info=True)
+    
+    for row in srv_rows:
+        # created_at is likely a timestamp string. We slice first 10 chars safely.
+        date_str = None
+        if row["created_at"]:
+            date_str = str(row["created_at"])[:10]
+            
+        results.append(SearchResult(
+            type="SRV",
+            id=row["id"],
+            number=str(row["srv_number"]),
+            party="Unknown", 
+            amount=None,
+            status="Processed",
+            date=date_str,
+            type_label="Store Receipt"
+        ))
 
-@router.get("/suggestions/po-for-dc")
-def suggest_po_for_dc(
-    consignee: Optional[str] = None, db: sqlite3.Connection = Depends(get_db)
-):
-    """Suggest POs when creating a DC based on consignee"""
-
-    if consignee:
-        rows = db.execute(
-            """
-            SELECT DISTINCT
-                po.po_number,
-                po.supplier_name,
-                po.po_date,
-                po.po_value
-            FROM purchase_orders po
-            WHERE po.supplier_name LIKE ?
-            ORDER BY po.po_date DESC
-            LIMIT 5
-        """,
-            (f"%{consignee}%",),
-        ).fetchall()
-    else:
-        rows = db.execute("""
-            SELECT po_number, supplier_name, po_date, po_value
-            FROM purchase_orders
-            ORDER BY po_date DESC
-            LIMIT 10
-        """).fetchall()
-
-    return [dict(row) for row in rows]
-
-
-@router.get("/suggestions/dc-for-invoice")
-def suggest_dc_for_invoice(
-    po_number: Optional[int] = None, db: sqlite3.Connection = Depends(get_db)
-):
-    """Suggest DCs when creating an Invoice based on PO"""
-
-    if po_number:
-        rows = db.execute(
-            """
-            SELECT 
-                dc.dc_number,
-                dc.dc_date,
-                dc.consignee_name,
-                dc.po_number
-            FROM delivery_challans dc
-            LEFT JOIN gst_invoice_dc_links link ON dc.dc_number = link.dc_number
-            WHERE dc.po_number = ? AND link.id IS NULL
-            ORDER BY dc.dc_date DESC
-        """,
-            (po_number,),
-        ).fetchall()
-    else:
-        rows = db.execute("""
-            SELECT 
-                dc.dc_number,
-                dc.dc_date,
-                dc.consignee_name,
-                dc.po_number
-            FROM delivery_challans dc
-            LEFT JOIN gst_invoice_dc_links link ON dc.dc_number = link.dc_number
-            WHERE link.id IS NULL
-            ORDER BY dc.dc_date DESC
-            LIMIT 10
-        """).fetchall()
-
-    return [dict(row) for row in rows]
+    return {"results": results}

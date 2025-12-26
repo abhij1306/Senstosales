@@ -42,14 +42,14 @@ const trendStyles = {
   neutral: "text-[#6B7280]",
 };
 
-export const SummaryCard: React.FC<SummaryCardProps> = ({
+export const SummaryCard = React.memo(function SummaryCard({
   title,
   value,
   icon,
   trend,
   variant = "default",
   className,
-}) => {
+}: SummaryCardProps) {
   const isColored = variant !== "default";
 
   return (
@@ -110,7 +110,7 @@ export const SummaryCard: React.FC<SummaryCardProps> = ({
       </div>
     </Card>
   );
-};
+});
 
 /**
  * SummaryCards Container
@@ -122,11 +122,11 @@ export interface SummaryCardsProps {
   className?: string;
 }
 
-export const SummaryCards: React.FC<SummaryCardsProps> = ({
+export const SummaryCards = React.memo(function SummaryCards({
   cards,
   loading,
   className,
-}) => {
+}: SummaryCardsProps) {
   if (loading) {
     return (
       <div
@@ -154,4 +154,4 @@ export const SummaryCards: React.FC<SummaryCardsProps> = ({
       ))}
     </div>
   );
-};
+});

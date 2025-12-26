@@ -48,6 +48,7 @@ export interface ListPageTemplateProps<T = any> {
   emptyMessage?: string;
 
   className?: string;
+  children?: React.ReactNode;
 }
 
 export function ListPageTemplate<T extends Record<string, any>>({
@@ -74,6 +75,7 @@ export function ListPageTemplate<T extends Record<string, any>>({
   error,
   emptyMessage,
   className,
+  children,
 }: ListPageTemplateProps<T>) {
   return (
     <div className={cn("space-y-6", className)}>
@@ -91,27 +93,31 @@ export function ListPageTemplate<T extends Record<string, any>>({
         <SummaryCards cards={summaryCards} loading={loading} />
       )}
 
-      {/* Data Table */}
-      <DataTable
-        columns={columns}
-        data={data}
-        keyField={keyField}
-        page={page}
-        pageSize={pageSize}
-        totalItems={totalItems}
-        onPageChange={onPageChange}
-        sortKey={sortKey}
-        sortDirection={sortDirection}
-        onSort={onSort}
-        selectable={selectable}
-        selectedRows={selectedRows}
-        onSelectionChange={onSelectionChange}
-        exportable={exportable}
-        onExport={onExport}
-        loading={loading}
-        error={error}
-        emptyMessage={emptyMessage}
-      />
+      {/* Custom Content (e.g. Grid) or DataTable */}
+      {children ? (
+        <div className="min-h-[400px]">{children}</div>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={data}
+          keyField={keyField}
+          page={page}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          onPageChange={onPageChange}
+          sortKey={sortKey}
+          sortDirection={sortDirection}
+          onSort={onSort}
+          selectable={selectable}
+          selectedRows={selectedRows}
+          onSelectionChange={onSelectionChange}
+          exportable={exportable}
+          onExport={onExport}
+          loading={loading}
+          error={error}
+          emptyMessage={emptyMessage}
+        />
+      )}
     </div>
   );
 }

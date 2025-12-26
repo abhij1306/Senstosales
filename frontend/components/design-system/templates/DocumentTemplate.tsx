@@ -17,6 +17,8 @@ interface DocumentTemplateProps {
   className?: string;
   onBack?: () => void;
   layoutId?: string;
+  icon?: React.ReactNode;
+  iconLayoutId?: string;
 }
 
 export const DocumentTemplate = ({
@@ -27,6 +29,8 @@ export const DocumentTemplate = ({
   className,
   onBack,
   layoutId,
+  icon,
+  iconLayoutId,
 }: DocumentTemplateProps) => {
   return (
     <div className={cn("space-y-4", className)}>
@@ -43,6 +47,16 @@ export const DocumentTemplate = ({
               <ArrowLeft size={16} />
             </Button>
           )}
+
+          {icon && (
+            <motion.div
+              layoutId={iconLayoutId}
+              className="flex items-center justify-center"
+            >
+              {icon}
+            </motion.div>
+          )}
+
           <div>
             {layoutId ? (
               <motion.div layoutId={layoutId}>

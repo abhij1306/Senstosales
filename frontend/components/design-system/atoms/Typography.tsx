@@ -10,6 +10,10 @@ import { cn, formatIndianCurrency } from "@/lib/utils";
  */
 
 interface TypographyProps extends React.HTMLAttributes<HTMLElement> {
+  children?: React.ReactNode;
+}
+
+interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {
   children: React.ReactNode;
 }
 
@@ -66,7 +70,7 @@ export const Body = ({ className, children, ...props }: TypographyProps) => (
 );
 
 // Label text: 10px, semibold, uppercase
-export const Label = ({ className, children, ...props }: TypographyProps) => (
+export const Label = ({ className, children, ...props }: LabelProps) => (
   <label
     className={cn(
       "text-[10px] font-semibold text-slate-600 uppercase tracking-wider block mb-1",

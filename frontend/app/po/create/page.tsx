@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Plus, Trash2, Package, Loader2 } from "lucide-react";
+import { Save, Plus, Trash2, Package, Loader2, FileText } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   H3,
@@ -145,6 +145,8 @@ export default function CreatePOPage() {
       title="Create Purchase Order"
       description="Enter procurement contract details manually"
       actions={topActions}
+      icon={<FileText size={20} className="text-[#1A3D7C]" />}
+      iconLayoutId="create-po-icon"
     >
       <div className="mb-6">
         <DocumentJourney currentStage="PO" />
@@ -178,6 +180,8 @@ export default function CreatePOPage() {
                         PO Number
                       </Label>
                       <Input
+                        id="po-number"
+                        name="po-number"
                         value={header.po_number}
                         onChange={(e) =>
                           updateHeader("po_number", e.target.value)
@@ -191,6 +195,8 @@ export default function CreatePOPage() {
                         PO Date
                       </Label>
                       <Input
+                        id="po-date"
+                        name="po-date"
                         type="date"
                         value={header.po_date}
                         onChange={(e) =>
@@ -221,6 +227,8 @@ export default function CreatePOPage() {
                         Supplier Name
                       </Label>
                       <Input
+                        id="supplier-name"
+                        name="supplier-name"
                         value={header.supplier_name}
                         onChange={(e) =>
                           updateHeader("supplier_name", e.target.value)
@@ -233,6 +241,8 @@ export default function CreatePOPage() {
                         Supplier Code
                       </Label>
                       <Input
+                        id="supplier-code"
+                        name="supplier-code"
                         value={header.supplier_code}
                         onChange={(e) =>
                           updateHeader("supplier_code", e.target.value)
@@ -375,6 +385,8 @@ export default function CreatePOPage() {
                         Remarks
                       </Label>
                       <textarea
+                        id="remarks"
+                        name="remarks"
                         value={header.remarks}
                         onChange={(e) =>
                           updateHeader("remarks", e.target.value)

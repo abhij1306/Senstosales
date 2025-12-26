@@ -64,6 +64,7 @@ def init_db(conn: sqlite3.Connection):
         "016_atomic_accounting_triggers.sql",
         "017_fy_wise_unique_constraints.sql",
         "018_standardize_numeric_precision.sql",
+        "019_add_missing_invoice_fields.sql",
     ]
 
     cursor = conn.cursor()

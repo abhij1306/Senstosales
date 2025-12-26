@@ -5,6 +5,21 @@
 export const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+export interface Buyer {
+  id: number;
+  name: string;
+  gstin: string;
+  billing_address: string;
+  shipping_address?: string;
+  designation?: string;
+  place_of_supply: string;
+  state?: string;
+  state_code?: string;
+  is_default: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
 export interface POHeader {
   po_number: string;
   po_date: string;
@@ -152,12 +167,26 @@ class APIError extends Error {
   }
 }
 
+// --- SIMPLE CACHE SYSTEM ---
+const GET_CACHE = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL = 5000; // 5 seconds cache for GET requests
+
 async function apiFetch<T>(
   endpoint: string,
   options: FetchOptions = {},
 ): Promise<T> {
-  const { retries = 0, timeout = 60000, ...fetchOptions } = options; // Increased default to 60s
+  const { retries = 0, timeout = 60000, ...fetchOptions } = options;
   const url = `${API_BASE_URL}${endpoint}`;
+  const method = fetchOptions.method || "GET";
+
+  // Check Cache for GET requests
+  if (method === "GET") {
+    const cached = GET_CACHE.get(url);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+      console.debug(`[API] Cache Hit: ${url}`);
+      return cached.data as T;
+    }
+  }
 
   const headers: Record<string, string> = {
     Accept: "application/json",
@@ -222,7 +251,19 @@ async function apiFetch<T>(
       return {} as T;
     }
 
-    return await response.json();
+    const data = await response.json();
+
+    // Populate Cache for GET requests
+    if (method === "GET") {
+      GET_CACHE.set(url, { data, timestamp: Date.now() });
+      // Cleanup old cache entries
+      if (GET_CACHE.size > 100) {
+        const oldestKey = GET_CACHE.keys().next().value;
+        if (oldestKey) GET_CACHE.delete(oldestKey);
+      }
+    }
+
+    return data;
   } catch (error: any) {
     if (error.name === "AbortError") {
       console.error(`[API] Timeout for ${url}`);
@@ -404,6 +445,23 @@ export const api = {
     apiFetch<{ results: SearchResult[] }>(
       `/api/search/?q=${encodeURIComponent(q)}`,
     ).then((res) => res.results),
+
+  // --- Buyers ---
+  getBuyers: () => apiFetch<Buyer[]>("/api/buyers"),
+  createBuyer: (data: Partial<Buyer>) =>
+    apiFetch<Buyer>("/api/buyers", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  updateBuyer: (id: number, data: Partial<Buyer>) =>
+    apiFetch<Buyer>(`/api/buyers/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  setBuyerDefault: (id: number) =>
+    apiFetch<Buyer>(`/api/buyers/${id}/default`, { method: "PUT" }),
+  deleteBuyer: (id: number) =>
+    apiFetch<{ success: boolean }>(`/api/buyers/${id}`, { method: "DELETE" }),
 
   baseUrl: API_BASE_URL,
 };

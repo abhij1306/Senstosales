@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Save, Search, AlertCircle, Loader2, Plus, Trash2 } from "lucide-react";
+import { Save, Search, AlertCircle, Loader2, Plus, Trash2, Truck } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { DCItemRow, POHeader } from "@/types";
@@ -202,6 +202,8 @@ function CreateDCPageContent() {
       title="Create Delivery Challan"
       description="Generate dispatch documentation from PO"
       actions={topActions}
+      icon={<Truck size={20} className="text-emerald-700" />}
+      iconLayoutId="create-dc-icon"
     >
       <div className="mb-6">
         <DocumentJourney currentStage="DC" />
@@ -226,6 +228,8 @@ function CreateDCPageContent() {
             <div className="flex gap-3 mt-1">
               <div className="flex-1">
                 <Input
+                  id="search-po-number"
+                  name="search-po-number"
                   value={poNumber}
                   onChange={(e) => setPONumber(e.target.value)}
                   placeholder="Enter PO number"
@@ -277,6 +281,8 @@ function CreateDCPageContent() {
                 DC Number
               </Label>
               <Input
+                id="dc-number"
+                name="dc-number"
                 value={formData.dc_number}
                 onChange={(e) => {
                   const val = e.target.value;
@@ -307,6 +313,8 @@ function CreateDCPageContent() {
                 DC Date
               </Label>
               <Input
+                id="dc-date"
+                name="dc-date"
                 type="date"
                 value={formData.dc_date}
                 onChange={(e) =>
@@ -320,6 +328,8 @@ function CreateDCPageContent() {
                 Supplier Phone
               </Label>
               <Input
+                id="supplier-phone"
+                name="supplier-phone"
                 value={formData.supplier_phone}
                 onChange={(e) =>
                   setFormData({ ...formData, supplier_phone: e.target.value })
@@ -332,6 +342,8 @@ function CreateDCPageContent() {
                 Supplier GSTIN
               </Label>
               <Input
+                id="supplier-gstin"
+                name="supplier-gstin"
                 value={formData.supplier_gstin}
                 onChange={(e) =>
                   setFormData({ ...formData, supplier_gstin: e.target.value })
@@ -344,6 +356,8 @@ function CreateDCPageContent() {
                 Consignee Name
               </Label>
               <Input
+                id="consignee-name"
+                name="consignee-name"
                 value={formData.consignee_name}
                 onChange={(e) =>
                   setFormData({ ...formData, consignee_name: e.target.value })
@@ -356,6 +370,8 @@ function CreateDCPageContent() {
                 Consignee Address
               </Label>
               <textarea
+                id="consignee-address"
+                name="consignee-address"
                 value={formData.consignee_address}
                 onChange={(e) =>
                   setFormData({

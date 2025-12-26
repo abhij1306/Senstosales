@@ -14,6 +14,8 @@ import { useDebounce } from "@/hooks/useDebounce";
  */
 
 export interface SearchBarProps {
+  id?: string;
+  name?: string;
   value: string;
   onChange: (value: string) => void;
   onSearch?: () => void;
@@ -23,6 +25,8 @@ export interface SearchBarProps {
 }
 
 const SearchBarInternal: React.FC<SearchBarProps> = ({
+  id,
+  name,
   value,
   onChange,
   onSearch,
@@ -59,6 +63,8 @@ const SearchBarInternal: React.FC<SearchBarProps> = ({
   return (
     <div className={cn("relative", className)}>
       <Input
+        id={id}
+        name={name}
         value={localValue}
         onChange={(e) => setLocalValue(e.target.value)}
         onKeyDown={handleKeyDown}

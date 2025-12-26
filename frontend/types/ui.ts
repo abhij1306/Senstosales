@@ -25,8 +25,10 @@ export interface InvoiceFormData {
   buyers_order_no?: string;
   buyers_order_date?: string;
   buyer_name: string;
+  buyer_address?: string;
   buyer_gstin?: string;
   buyer_state?: string;
+  buyer_state_code?: string;
   place_of_supply?: string;
   vehicle_no?: string;
   transporter?: string;
