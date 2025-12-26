@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
-import { FormField } from '../molecules/FormField';
-import { Button } from '../atoms/Button';
-import { ActionButtonGroup } from '../molecules/ActionButtonGroup';
-import { Download, FileSpreadsheet, Calendar } from 'lucide-react';
+import React, { useState } from "react";
+import { FormField } from "../molecules/FormField";
+import { Button } from "../atoms/Button";
+import { FileSpreadsheet, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -14,96 +13,65 @@ import { cn } from "@/lib/utils";
  */
 
 export interface ReportsToolbarProps {
-    startDate: string;
-    endDate: string;
-    onDateChange: (start: string, end: string) => void;
-    module: string;
-    modules: { value: string; label: string }[];
-    onModuleChange: (module: string) => void;
-    onExport?: (format: 'excel' | 'csv') => void;
-    loading?: boolean;
-    className?: string;
+  startDate: string;
+  endDate: string;
+  onDateChange: (start: string, end: string) => void;
+  onExport?: () => void;
+  loading?: boolean;
+  className?: string;
 }
 
 export const ReportsToolbar: React.FC<ReportsToolbarProps> = ({
-    startDate,
-    endDate,
-    onDateChange,
-    module,
-    modules,
-    onModuleChange,
-    onExport,
-    loading = false,
-    className
+  startDate,
+  endDate,
+  onDateChange,
+  onExport,
+  loading = false,
+  className,
 }) => {
-    return (
-        <div className={cn(
-            "flex flex-col md:flex-row items-start md:items-center gap-4 p-4",
-            "bg-[#F6F8FB] rounded-lg border border-[#E5E7EB]",
-            className
-        )}>
-            {/* Date Range */}
-            <div className="flex items-center gap-3 flex-1">
-                <Calendar size={20} className="text-[#6B7280]" />
-                <div className="flex items-center gap-2">
-                    <FormField
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => onDateChange(e.target.value, endDate)}
-                        className="w-44"
-                    />
-                    <span className="text-[#6B7280]">→</span>
-                    <FormField
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => onDateChange(startDate, e.target.value)}
-                        className="w-44"
-                    />
-                </div>
-            </div>
-
-            {/* Module Selector */}
-            <div className="flex items-center gap-3">
-                <select
-                    value={module}
-                    onChange={(e) => onModuleChange(e.target.value)}
-                    className={cn(
-                        "h-[38px] px-3 rounded-md border border-[#D1D5DB] bg-white",
-                        "text-[14px] font-normal text-[#111827]",
-                        "focus:border-[#1A3D7C] focus:ring-2 focus:ring-[#1A3D7C]/20 focus:outline-none",
-                        "transition-all duration-200"
-                    )}
-                    disabled={loading}
-                >
-                    {modules.map((mod) => (
-                        <option key={mod.value} value={mod.value}>
-                            {mod.label}
-                        </option>
-                    ))}
-                </select>
-            </div>
-
-            {/* Export Actions */}
-            {onExport && (
-                <ActionButtonGroup
-                    actions={[
-                        {
-                            label: 'Excel',
-                            icon: <FileSpreadsheet size={16} />,
-                            onClick: () => onExport('excel'),
-                            variant: 'secondary',
-                            disabled: loading,
-                        },
-                        {
-                            label: 'CSV',
-                            icon: <Download size={16} />,
-                            onClick: () => onExport('csv'),
-                            variant: 'ghost',
-                            disabled: loading,
-                        },
-                    ]}
-                />
-            )}
+  return (
+    <div
+      className={cn(
+        "flex flex-col sm:flex-row items-center justify-between gap-4 py-2 px-4",
+        "bg-white/50 backdrop-blur-sm rounded-xl border border-slate-200 shadow-sm",
+        className,
+      )}
+    >
+      {/* Date Range Selection */}
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 bg-slate-100/80 p-1 rounded-lg border border-slate-200">
+          <Calendar size={14} className="text-slate-400 ml-1.5" />
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => onDateChange(e.target.value, endDate)}
+            className="bg-transparent border-none text-[12px] font-medium focus:ring-0 w-32"
+          />
+          <span className="text-slate-300">→</span>
+          <input
+            type="date"
+            value={endDate}
+            onChange={(e) => onDateChange(startDate, e.target.value)}
+            className="bg-transparent border-none text-[12px] font-medium focus:ring-0 w-32"
+          />
         </div>
-    );
+      </div>
+
+      {/* Export Action */}
+      {onExport && (
+        <Button
+          onClick={onExport}
+          variant="secondary"
+          size="sm"
+          disabled={loading}
+          className="h-8 gap-2 bg-white hover:bg-slate-50 border-slate-200 text-slate-700"
+        >
+          <FileSpreadsheet size={14} className="text-green-600" />
+          <span className="text-[11px] font-bold uppercase tracking-wider">
+            Export Excel
+          </span>
+        </Button>
+      )}
+    </div>
+  );
 };

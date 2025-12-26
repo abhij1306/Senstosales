@@ -2,229 +2,260 @@
 // CENTRALIZED API FETCH
 // ============================================================
 
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+export const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export interface POHeader {
-    po_number: string;
-    po_date: string;
-    supplier_name: string;
-    supplier_code: string;
-    supplier_email: string;
-    department_no: string;
-    po_value: number;
-    net_po_value: number;
-    tin_no: string;
-    ecc_no: string;
-    remarks: string;
-    project_name?: string;
-    status?: string;
+  po_number: string;
+  po_date: string;
+  supplier_name: string;
+  supplier_code: string;
+  supplier_email: string;
+  department_no: string;
+  po_value: number;
+  net_po_value: number;
+  tin_no: string;
+  ecc_no: string;
+  remarks: string;
+  project_name?: string;
+  status?: string;
 }
 export interface POListItem {
-    po_number: number;
-    po_date: string;
-    vendor_name: string;
-    project_name: string;
-    items: any[];
-    total_amount?: number;
-    po_value?: number;
-    total_ordered_quantity?: number;
-    total_dispatched_quantity?: number;
-    total_received_quantity?: number;
-    total_rejected_quantity?: number;
-    total_pending_quantity?: number;
-    total_items_count?: number; // Added
-    status: string;
-    [key: string]: any;
+  po_number: number;
+  po_date: string;
+  vendor_name: string;
+  project_name: string;
+  items: any[];
+  total_amount?: number;
+  po_value?: number;
+  total_ordered_quantity?: number;
+  total_dispatched_quantity?: number;
+  total_received_quantity?: number;
+  total_rejected_quantity?: number;
+  total_pending_quantity?: number;
+  total_items_count?: number; // Added
+  status: string;
+  [key: string]: any;
 }
 
 export interface POStats {
-    total_pos: number;
-    total_value: number;
-    pending_pos: number;
-    completed_pos: number;
-    open_orders_count: number;
-    pending_approval_count: number;
-    total_value_ytd: number;
-    total_value_change: number;
+  total_pos: number;
+  total_value: number;
+  pending_pos: number;
+  completed_pos: number;
+  open_orders_count: number;
+  pending_approval_count: number;
+  total_value_ytd: number;
+  total_value_change: number;
 }
 
 export interface DCListItem {
-    dc_number: string;
-    dc_date: string;
-    po_number: number;
-    consignee_name: string;
-    total_value: number;
-    status: string;
+  dc_number: string;
+  dc_date: string;
+  po_number: number;
+  consignee_name: string;
+  total_value: number;
+  status: string;
 }
 
 export interface DCStats {
-    total_challans: number;
-    pending_delivery: number;
-    completed_delivery: number;
+  total_challans: number;
+  pending_delivery: number;
+  completed_delivery: number;
+  total_value: number;
 }
 
 export interface InvoiceListItem {
-    invoice_number: string;
-    invoice_date: string;
-    linked_dc_numbers: string; // Comma separated
-    customer_gstin: string;
-    total_invoice_value: number;
-    status?: string; // Optional if not always present
-    [key: string]: any;
+  invoice_number: string;
+  invoice_date: string;
+  linked_dc_numbers: string; // Comma separated
+  customer_gstin: string;
+  total_invoice_value: number;
+  status?: string; // Optional if not always present
+  [key: string]: any;
 }
 
 export interface InvoiceStats {
-    total_invoiced: number;
-    total_invoiced_change: number;
-    gst_collected: number;
-    gst_collected_change: number;
-    pending_payments: number;
-    pending_payments_count: number;
+  total_invoiced: number;
+  total_invoiced_change: number;
+  gst_collected: number;
+  gst_collected_change: number;
+  pending_payments: number;
+  pending_payments_count: number;
 }
 
 export interface ReconciliationItem {
-    id: number;
-    po_item_no: number;
-    material_code: string;
-    material_description: string;
-    unit: string;
-    ord_qty: number;
-    dispatched_qty: number;
-    pending_qty: number;
-    status: string;
+  id: number;
+  po_item_no: number;
+  material_code: string;
+  material_description: string;
+  unit: string;
+  ord_qty: number;
+  dispatched_qty: number;
+  pending_qty: number;
+  status: string;
 }
 
 export interface PONote {
-    id: number;
-    title: string;
-    content: string;
-    updated_at: string;
+  id: number;
+  title: string;
+  content: string;
+  updated_at: string;
 }
 
 export interface DashboardSummary {
-    total_sales_month: number;
-    sales_growth: number | string;
-    pending_pos: number;
-    new_pos_today: number;
-    active_challans: number;
-    total_po_value: number;
-    po_value_growth: number | string;
-    active_po_count: number;
-    total_ordered?: number;
-    total_delivered?: number;
-    total_received?: number;
+  total_sales_month: number;
+  sales_growth: number | string;
+  pending_pos: number;
+  new_pos_today: number;
+  active_challans: number;
+  total_po_value: number;
+  po_value_growth: number | string;
+  active_po_count: number;
+  total_ordered?: number;
+  total_delivered?: number;
+  total_received?: number;
 }
 
 export interface ActivityItem {
-    type: 'PO' | 'DC' | 'Invoice';
-    number: string | number;
-    date: string;
-    amount?: number;
-    status: string;
+  type: "PO" | "DC" | "Invoice";
+  status: string;
+  number: string;
+  amount?: number;
+  date: string;
+}
+
+export interface SearchResult {
+  id: string | number;
+  type: "PO" | "DC" | "Invoice" | "SRV";
+  number: string;
+  date: string;
+  party: string;
+  amount?: number;
+  type_label: string;
+  status?: string;
 }
 
 type FetchOptions = RequestInit & {
-    retries?: number;
-    timeout?: number;
+  retries?: number;
+  timeout?: number;
 };
 
 class APIError extends Error {
-    constructor(public status: number, public message: string, public data?: any) {
-        super(message);
-        this.name = "APIError";
-    }
+  constructor(
+    public status: number,
+    public message: string,
+    public data?: any,
+  ) {
+    super(message);
+    this.name = "APIError";
+  }
 }
 
-async function apiFetch<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
-    const { retries = 0, timeout = 60000, ...fetchOptions } = options; // Increased default to 60s
-    const url = `${API_BASE_URL}${endpoint}`;
+async function apiFetch<T>(
+  endpoint: string,
+  options: FetchOptions = {},
+): Promise<T> {
+  const { retries = 0, timeout = 60000, ...fetchOptions } = options; // Increased default to 60s
+  const url = `${API_BASE_URL}${endpoint}`;
 
-    const headers: Record<string, string> = {
-        'Accept': 'application/json',
-        ...fetchOptions.headers as Record<string, string>,
-    };
+  const headers: Record<string, string> = {
+    Accept: "application/json",
+    ...(fetchOptions.headers as Record<string, string>),
+  };
 
-    if (!(fetchOptions.body instanceof FormData)) {
-        headers['Content-Type'] = 'application/json';
+  if (!(fetchOptions.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  // Add Auth Token if exists
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("token");
+    if (token) {
+      (headers as any)["Authorization"] = `Bearer ${token}`;
+    }
+  }
+
+  try {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), timeout);
+
+    console.debug(`[API] Fetching ${url} ...`);
+    const response = await fetch(url, {
+      ...fetchOptions,
+      headers,
+      signal: controller.signal,
+    });
+    clearTimeout(id);
+
+    if (!response.ok) {
+      // Handle 401 Unauthorized globally
+      if (response.status === 401) {
+        if (
+          typeof window !== "undefined" &&
+          !window.location.pathname.startsWith("/auth")
+        ) {
+          console.warn("[API] 401 Unauthorized - Redirecting to login");
+          localStorage.removeItem("token");
+          window.location.href = "/auth/login";
+        }
+        throw new APIError(401, "Unauthorized");
+      }
+
+      // Parse error response
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        errorData = { detail: response.statusText };
+      }
+
+      const errorMessage =
+        errorData.detail ||
+        errorData.message ||
+        `Request failed with status ${response.status}`;
+      throw new APIError(response.status, errorMessage, errorData);
     }
 
-    // Add Auth Token if exists
-    if (typeof window !== 'undefined') {
-        const token = localStorage.getItem('token');
-        if (token) {
-            (headers as any)['Authorization'] = `Bearer ${token}`;
-        }
+    // Handle 204 No Content
+    if (response.status === 204) {
+      return {} as T;
     }
 
-    try {
-        const controller = new AbortController();
-        const id = setTimeout(() => controller.abort(), timeout);
-
-        console.debug(`[API] Fetching ${url} ...`);
-        const response = await fetch(url, {
-            ...fetchOptions,
-            headers,
-            signal: controller.signal,
-        });
-        clearTimeout(id);
-
-        if (!response.ok) {
-            // Handle 401 Unauthorized globally
-            if (response.status === 401) {
-                if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/auth')) {
-                    console.warn("[API] 401 Unauthorized - Redirecting to login");
-                    localStorage.removeItem('token');
-                    window.location.href = '/auth/login';
-                }
-                throw new APIError(401, "Unauthorized");
-            }
-
-            // Parse error response
-            let errorData;
-            try {
-                errorData = await response.json();
-            } catch {
-                errorData = { detail: response.statusText };
-            }
-
-            const errorMessage = errorData.detail || errorData.message || `Request failed with status ${response.status}`;
-            throw new APIError(response.status, errorMessage, errorData);
-        }
-
-        // Handle 204 No Content
-        if (response.status === 204) {
-            return {} as T;
-        }
-
-        return await response.json();
-
-    } catch (error: any) {
-        if (error.name === 'AbortError') {
-            console.error(`[API] Timeout for ${url}`);
-            throw new APIError(408, `Request timed out after ${timeout}ms`);
-        }
-
-        if (retries > 0) {
-            console.warn(`[API] Retrying ${url} (${retries} attempts left)...`);
-            await new Promise(res => setTimeout(res, 1000));
-            return apiFetch<T>(endpoint, { ...options, retries: retries - 1 });
-        }
-
-        console.error(`[API] Error fetching ${url}:`, error);
-
-        // Dispatch global event for UI to verify
-        if (typeof window !== 'undefined' && options.method && options.method !== 'GET') {
-            window.dispatchEvent(new CustomEvent('api-error', {
-                detail: {
-                    title: "Operation Failed",
-                    message: error.message || "Unknown error occurred",
-                    type: 'error'
-                }
-            }));
-        }
-
-        throw error;
+    return await response.json();
+  } catch (error: any) {
+    if (error.name === "AbortError") {
+      console.error(`[API] Timeout for ${url}`);
+      throw new APIError(408, `Request timed out after ${timeout}ms`);
     }
+
+    if (retries > 0) {
+      console.warn(`[API] Retrying ${url} (${retries} attempts left)...`);
+      await new Promise((res) => setTimeout(res, 1000));
+      return apiFetch<T>(endpoint, { ...options, retries: retries - 1 });
+    }
+
+    console.error(`[API] Error fetching ${url}:`, error);
+
+    // Dispatch global event for UI to verify
+    if (
+      typeof window !== "undefined" &&
+      options.method &&
+      options.method !== "GET"
+    ) {
+      window.dispatchEvent(
+        new CustomEvent("api-error", {
+          detail: {
+            title: "Operation Failed",
+            message: error.message || "Unknown error occurred",
+            type: "error",
+          },
+        }),
+      );
+    }
+
+    throw error;
+  }
 }
 
 // ============================================================
@@ -232,90 +263,147 @@ async function apiFetch<T>(endpoint: string, options: FetchOptions = {}): Promis
 // ============================================================
 
 export const api = {
-    // DASHBOARD
-    getDashboardSummary: () => apiFetch<any>('/api/dashboard/summary'),
-    getDashboardInsights: () => apiFetch<any[]>('/api/dashboard/insights'),
-    getRecentActivity: (limit = 10) => apiFetch<any[]>(`/api/dashboard/activity?limit=${limit}`),
+  // DASHBOARD
+  getDashboardSummary: () => apiFetch<any>("/api/dashboard/summary"),
+  getDashboardInsights: () => apiFetch<any[]>("/api/dashboard/insights"),
+  getRecentActivity: (limit = 10) =>
+    apiFetch<any[]>(`/api/dashboard/activity?limit=${limit}`),
 
-    // PURCHASE ORDERS
-    listPOs: () => apiFetch<POListItem[]>('/api/po/'),
-    getPOStats: () => apiFetch<POStats>('/api/po/stats'),
-    getPO: (poNumber: string | number) => apiFetch<any>(`/api/po/${poNumber}`), // Alias for internal use
-    getPODetail: (poNumber: string | number) => apiFetch<any>(`/api/po/${poNumber}`), // Explicitly called by UI
-    checkPOHasDC: (poNumber: string | number) => apiFetch<any>(`/api/po/${poNumber}/dc`),
-    updatePO: (poNumber: string | number, data: any, items: any[]) => apiFetch(`/api/po/${poNumber}`, { method: 'PUT', body: JSON.stringify({ header: data, items }) }),
-    syncPO: (file: File) => {
-        const formData = new FormData();
-        formData.append('file', file);
-        return apiFetch<any>('/api/po/upload', {
-            method: 'POST',
-            body: formData,
-            headers: {},
-        });
-    },
-    uploadPOBatch: (files: File[]) => {
-        const formData = new FormData();
-        files.forEach(file => formData.append('files', file));
-        return apiFetch<any>('/api/po/upload/batch', {
-            method: 'POST',
-            body: formData,
-            headers: {},
-            timeout: 600000, // 10 minutes for large batch uploads
-        });
-    },
+  // PURCHASE ORDERS
+  listPOs: () => apiFetch<POListItem[]>("/api/po/"),
+  getPOStats: () => apiFetch<POStats>("/api/po/stats"),
+  getPO: (poNumber: string | number) => apiFetch<any>(`/api/po/${poNumber}`), // Alias for internal use
+  getPODetail: (poNumber: string | number) =>
+    apiFetch<any>(`/api/po/${poNumber}`), // Explicitly called by UI
+  checkPOHasDC: (poNumber: string | number) =>
+    apiFetch<any>(`/api/po/${poNumber}/dc`),
+  updatePO: (poNumber: string | number, data: any, items: any[]) =>
+    apiFetch(`/api/po/${poNumber}`, {
+      method: "PUT",
+      body: JSON.stringify({ header: data, items }),
+    }),
+  syncPO: (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return apiFetch<any>("/api/po/upload", {
+      method: "POST",
+      body: formData,
+      headers: {},
+    });
+  },
+  uploadPOBatch: (files: File[]) => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append("files", file));
+    return apiFetch<any>("/api/po/upload/batch", {
+      method: "POST",
+      body: formData,
+      headers: {},
+      timeout: 600000, // 10 minutes for large batch uploads
+    });
+  },
 
-    // DELIVERY CHALLANS
-    listDCs: () => apiFetch<DCListItem[]>('/api/dc/'),
-    getDCStats: () => apiFetch<DCStats>('/api/dc/stats'),
-    createDC: (data: any, items: any[]) => apiFetch('/api/dc/', { method: 'POST', body: JSON.stringify({ dc: data, items }) }),
-    updateDC: (dcNumber: string, data: any, items: any[]) => apiFetch(`/api/dc/${dcNumber}`, { method: 'PUT', body: JSON.stringify({ dc: data, items }) }),
-    getDC: (dcNumber: string) => apiFetch<any>(`/api/dc/${dcNumber}`),
-    getDCDetail: (dcNumber: string | null) => apiFetch<any>(`/api/dc/${dcNumber}`), // Alias for UI
-    checkDCHasInvoice: (dcNumber: string | null) => apiFetch<any>(`/api/dc/${dcNumber}/invoice`),
+  // DELIVERY CHALLANS
+  listDCs: () => apiFetch<DCListItem[]>("/api/dc/"),
+  getDCStats: () => apiFetch<DCStats>("/api/dc/stats"),
+  createDC: (data: any, items: any[]) =>
+    apiFetch("/api/dc/", {
+      method: "POST",
+      body: JSON.stringify({ dc: data, items }),
+    }),
+  updateDC: (dcNumber: string, data: any, items: any[]) =>
+    apiFetch(`/api/dc/${dcNumber}`, {
+      method: "PUT",
+      body: JSON.stringify({ dc: data, items }),
+    }),
+  getDC: (dcNumber: string) => apiFetch<any>(`/api/dc/${dcNumber}`),
+  getDCDetail: (dcNumber: string | null) =>
+    apiFetch<any>(`/api/dc/${dcNumber}`), // Alias for UI
+  checkDCHasInvoice: (dcNumber: string | null) =>
+    apiFetch<any>(`/api/dc/${dcNumber}/invoice`),
+  deleteDC: (dcNumber: string) =>
+    apiFetch<any>(`/api/dc/${dcNumber}`, { method: "DELETE" }),
 
-    // INVOICES
-    listInvoices: () => apiFetch<InvoiceListItem[]>('/api/invoice/'),
-    getInvoiceStats: () => apiFetch<InvoiceStats>('/api/invoice/stats'),
-    createInvoice: (data: any) => apiFetch('/api/invoice/', { method: 'POST', body: JSON.stringify(data) }),
-    getInvoiceDetail: (invoiceNumber: string) => apiFetch<any>(`/api/invoice/${encodeURIComponent(invoiceNumber)}`),
+  // INVOICES
+  listInvoices: () => apiFetch<InvoiceListItem[]>("/api/invoice/"),
+  getInvoiceStats: () => apiFetch<InvoiceStats>("/api/invoice/stats"),
+  createInvoice: (data: any) =>
+    apiFetch("/api/invoice/", { method: "POST", body: JSON.stringify(data) }),
+  getInvoiceDetail: (invoiceNumber: string) =>
+    apiFetch<any>(`/api/invoice/${encodeURIComponent(invoiceNumber)}`),
 
-    // COMMON
-    checkDuplicateNumber: (type: 'DC' | 'Invoice', number: string, date: string) =>
-        apiFetch<{ exists: boolean; financial_year: string }>(`/api/common/check-duplicate?type=${type}&number=${encodeURIComponent(number)}&date=${date}`),
+  // COMMON
+  checkDuplicateNumber: (
+    type: "DC" | "Invoice",
+    number: string,
+    date: string,
+  ) =>
+    apiFetch<{ exists: boolean; financial_year: string }>(
+      `/api/common/check-duplicate?type=${type}&number=${encodeURIComponent(number)}&date=${date}`,
+    ),
 
-    // SRVS
-    listSRVs: (poId?: number) => apiFetch<any[]>(poId ? `/api/srv/po/${poId}/srvs` : '/api/srv/'),
-    getSRVStats: () => apiFetch<any>('/api/srv/stats'),
-    uploadSRVBatch: (files: File[]) => {
-        const formData = new FormData();
-        files.forEach(file => formData.append('files', file));
-        return apiFetch<any>('/api/srv/upload/batch', {
-            method: 'POST',
-            body: formData,
-            headers: {},
-            timeout: 600000, // 10 minutes for large batch uploads
-        });
-    },
+  // SRVS
+  listSRVs: (poId?: number) =>
+    apiFetch<any[]>(poId ? `/api/srv/po/${poId}/srvs` : "/api/srv/"),
+  getSRVStats: () => apiFetch<any>("/api/srv/stats"),
+  uploadSRVBatch: (files: File[]) => {
+    const formData = new FormData();
+    files.forEach((file) => formData.append("files", file));
+    return apiFetch<any>("/api/srv/upload/batch", {
+      method: "POST",
+      body: formData,
+      headers: {},
+      timeout: 600000, // 10 minutes for large batch uploads
+    });
+  },
 
-    // PO NOTES
-    // PO NOTES TEMPLATES
-    getPONotes: () => apiFetch<any[]>('/api/po-notes/'),
-    getPONote: (id: string) => apiFetch<any>(`/api/po-notes/${id}`),
-    createPONote: (data: any) => apiFetch('/api/po-notes/', { method: 'POST', body: JSON.stringify(data) }),
-    updatePONote: (id: string, data: any) => apiFetch(`/api/po-notes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    deletePONote: (id: string) => apiFetch(`/api/po-notes/${id}`, { method: 'DELETE' }),
+  // SETTINGS
+  getSettings: () => apiFetch<Record<string, string>>("/api/settings/"),
+  updateSetting: (key: string, value: string) =>
+    apiFetch("/api/settings/", {
+      method: "POST",
+      body: JSON.stringify({ key, value }),
+    }),
+  updateSettingsBatch: (settings: { key: string; value: string }[]) =>
+    apiFetch("/api/settings/batch", {
+      method: "POST",
+      body: JSON.stringify(settings),
+    }),
 
-    // Legacy/Specific PO Note Lists (if needed, otherwise can be deprecated)
-    listPONotes: (poId: string) => apiFetch<any[]>(`/api/po-notes/${poId}`), // Warning: Backend treats {id} as template_id fetch, so this might need adjustment if used for PO-specific notes.
+  // PO NOTES
+  // PO NOTES TEMPLATES
+  getPONotes: () => apiFetch<any[]>("/api/po-notes/"),
+  getPONote: (id: string) => apiFetch<any>(`/api/po-notes/${id}`),
+  createPONote: (data: any) =>
+    apiFetch("/api/po-notes/", { method: "POST", body: JSON.stringify(data) }),
+  updatePONote: (id: string, data: any) =>
+    apiFetch(`/api/po-notes/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    }),
+  deletePONote: (id: string) =>
+    apiFetch(`/api/po-notes/${id}`, { method: "DELETE" }),
 
-    // REPORTS (RECONCILIATION)
-    getReconciliation: (poNumber: number) => apiFetch<any[]>(`/api/reconciliation/po/${poNumber}`),
-    getReconciliationLots: (poNumber: number) => apiFetch<any>(`/api/reconciliation/po/${poNumber}/lots`),
+  // Legacy/Specific PO Note Lists (if needed, otherwise can be deprecated)
+  listPONotes: (poId: string) => apiFetch<any[]>(`/api/po-notes/${poId}`), // Warning: Backend treats {id} as template_id fetch, so this might need adjustment if used for PO-specific notes.
 
-    // REPORTS
-    getReport: (type: string, dateParams: string) => apiFetch<any[]>(`/api/reports/${type}?${dateParams}`),
-    exportReport: (type: string, id: string) => {
-        window.open(`${API_BASE_URL}/api/reports/export/${type}/${id}`, '_blank');
-    },
-    baseUrl: API_BASE_URL
+  // REPORTS (RECONCILIATION)
+  getReconciliation: (poNumber: number) =>
+    apiFetch<any[]>(`/api/reconciliation/po/${poNumber}`),
+  getReconciliationLots: (poNumber: number) =>
+    apiFetch<any>(`/api/reconciliation/po/${poNumber}/lots`),
+
+  // REPORTS
+  getReport: (type: string, dateParams: string) =>
+    apiFetch<any[]>(`/api/reports/${type}?${dateParams}`),
+  exportReport: (type: string, id: string) => {
+    window.open(`${API_BASE_URL}/api/reports/export/${type}/${id}`, "_blank");
+  },
+
+  // SEARCH
+  searchGlobal: (q: string) =>
+    apiFetch<{ results: SearchResult[] }>(
+      `/api/search/?q=${encodeURIComponent(q)}`,
+    ).then((res) => res.results),
+
+  baseUrl: API_BASE_URL,
 };

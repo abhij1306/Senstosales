@@ -2,6 +2,7 @@
 Dashboard Router
 Summary statistics and recent activity
 """
+
 from fastapi import APIRouter, Depends, HTTPException
 from app.db import get_db
 from app.models import DashboardSummary
@@ -11,28 +12,37 @@ from datetime import datetime
 
 router = APIRouter()
 
+
 @router.get("/summary", response_model=DashboardSummary)
 def get_dashboard_summary(db: sqlite3.Connection = Depends(get_db)):
     """Get dashboard summary statistics"""
     try:
         # 1. Total Sales (Month)
         # Using active invoices. Try to filter by current month if created_at is standard.
-        current_month = datetime.now().strftime('%Y-%m')
-        sales_row = db.execute("""
+        current_month = datetime.now().strftime("%Y-%m")
+        sales_row = db.execute(
+            """
             SELECT SUM(total_invoice_value) FROM gst_invoices 
             WHERE strftime('%Y-%m', created_at) = ?
-        """, (current_month,)).fetchone()
+        """,
+            (current_month,),
+        ).fetchone()
         total_sales = sales_row[0] if sales_row and sales_row[0] else 0.0
 
         # 2. Pending POs
-        pending_pos = db.execute("SELECT COUNT(*) FROM purchase_orders WHERE po_status = 'New' OR po_status IS NULL").fetchone()[0]
-        
+        pending_pos = db.execute(
+            "SELECT COUNT(*) FROM purchase_orders WHERE po_status = 'New' OR po_status IS NULL"
+        ).fetchone()[0]
+
         # 3. New POs Today
-        current_date = datetime.now().strftime('%Y-%m-%d')
-        new_pos_today = db.execute("""
+        current_date = datetime.now().strftime("%Y-%m-%d")
+        new_pos_today = db.execute(
+            """
             SELECT COUNT(*) FROM purchase_orders 
             WHERE date(created_at) = ?
-        """, (current_date,)).fetchone()[0]
+        """,
+            (current_date,),
+        ).fetchone()[0]
 
         # 4. Active Challans (Uninvoiced)
         active_challans = db.execute("""
@@ -49,15 +59,17 @@ def get_dashboard_summary(db: sqlite3.Connection = Depends(get_db)):
         # 6. Global Reconciliation Snapshot
         # 6. Global Reconciliation Snapshot (Optimized)
         # Query tables directly instead of heavy view join
-        
+
         # Total Ordered
         ord_row = db.execute("SELECT SUM(ord_qty) FROM purchase_order_items").fetchone()
         total_order = ord_row[0] if ord_row and ord_row[0] else 0.0
-        
+
         # Total Delivered (from DC Items)
-        deliv_row = db.execute("SELECT SUM(dispatch_qty) FROM delivery_challan_items").fetchone()
+        deliv_row = db.execute(
+            "SELECT SUM(dispatch_qty) FROM delivery_challan_items"
+        ).fetchone()
         total_deliv = deliv_row[0] if deliv_row and deliv_row[0] else 0.0
-        
+
         # Total Received (from SRV Items)
         recvd_row = db.execute("SELECT SUM(received_qty) FROM srv_items").fetchone()
         total_recvd = recvd_row[0] if recvd_row and recvd_row[0] else 0.0
@@ -71,64 +83,77 @@ def get_dashboard_summary(db: sqlite3.Connection = Depends(get_db)):
             "active_challans_growth": "Stable",
             "total_po_value": total_po_value,
             "po_value_growth": 0.0,
+            "active_po_count": pending_pos,  # Mapping pending to active for now, or use separate Active Status count
             "total_ordered": total_order,
             "total_delivered": total_deliv,
-            "total_received": total_recvd
+            "total_received": total_recvd,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/activity")
-def get_recent_activity(limit: int = 10, db: sqlite3.Connection = Depends(get_db)) -> List[Dict[str, Any]]:
+def get_recent_activity(
+    limit: int = 10, db: sqlite3.Connection = Depends(get_db)
+) -> List[Dict[str, Any]]:
     """Get recent activity (POs, DCs, Invoices)"""
     try:
         activities = []
 
         # Recent POs
-        po_rows = db.execute("""
+        po_rows = db.execute(
+            """
             SELECT 'PO' as type, po_number as number, po_date as date, supplier_name as party, po_value as amount, 
                    COALESCE(po_status, 'New') as status, created_at
             FROM purchase_orders 
             ORDER BY created_at DESC LIMIT ?
-        """, (limit,)).fetchall()
+        """,
+            (limit,),
+        ).fetchall()
         for row in po_rows:
             activities.append(dict(row))
 
         # Recent Invoices
-        inv_rows = db.execute("""
+        inv_rows = db.execute(
+            """
             SELECT 'Invoice' as type, invoice_number as number, invoice_date as date, customer_gstin as party, 
                    total_invoice_value as amount, 'Paid' as status, created_at
             FROM gst_invoices
             ORDER BY created_at DESC LIMIT ?
-        """, (limit,)).fetchall()
+        """,
+            (limit,),
+        ).fetchall()
         for row in inv_rows:
             # Clean up party name if possible or keep generic
             r = dict(row)
-            r['party'] = r['party'] or "Client" 
+            r["party"] = r["party"] or "Client"
             activities.append(r)
 
         # Recent DCs
-        dc_rows = db.execute("""
+        dc_rows = db.execute(
+            """
             SELECT 'DC' as type, dc_number as number, dc_date as date, consignee_name as party, 
                    0 as amount, 'Dispatched' as status, created_at
             FROM delivery_challans
             ORDER BY created_at DESC LIMIT ?
-        """, (limit,)).fetchall()
+        """,
+            (limit,),
+        ).fetchall()
         for row in dc_rows:
-             activities.append(dict(row))
+            activities.append(dict(row))
 
         # Sort combined list by created_at desc
         # Note: created_at might be null for scraped data, fallback to date
         def sort_key(x):
-            return x['created_at'] or x['date'] or ''
-            
+            return x["created_at"] or x["date"] or ""
+
         activities.sort(key=sort_key, reverse=True)
 
         return activities[:limit]
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/insights")
 def get_dashboard_insights(db: sqlite3.Connection = Depends(get_db)):
@@ -137,17 +162,21 @@ def get_dashboard_insights(db: sqlite3.Connection = Depends(get_db)):
     Replaces the old AI-based insights.
     """
     insights = []
-    
+
     try:
         # Rule 1: Pending POs
-        pending_pos = db.execute("SELECT COUNT(*) FROM purchase_orders WHERE po_status = 'New' OR po_status IS NULL").fetchone()[0]
+        pending_pos = db.execute(
+            "SELECT COUNT(*) FROM purchase_orders WHERE po_status = 'New' OR po_status IS NULL"
+        ).fetchone()[0]
         if pending_pos > 5:
-            insights.append({
-                "type": "warning",
-                "text": f"{pending_pos} Purchase Orders pending approval",
-                "action": "view_pending"
-            })
-            
+            insights.append(
+                {
+                    "type": "warning",
+                    "text": f"{pending_pos} Purchase Orders pending approval",
+                    "action": "view_pending",
+                }
+            )
+
         # Rule 2: Uninvoiced Challans
         uninvoiced = db.execute("""
             SELECT COUNT(DISTINCT dc.dc_number)
@@ -155,13 +184,15 @@ def get_dashboard_insights(db: sqlite3.Connection = Depends(get_db)):
             LEFT JOIN gst_invoices i ON dc.dc_number = i.linked_dc_numbers
             WHERE i.invoice_number IS NULL
         """).fetchone()[0]
-        
+
         if uninvoiced > 0:
-             insights.append({
-                "type": "success" if uninvoiced < 10 else "warning",
-                "text": f"{uninvoiced} Challans ready for invoicing",
-                "action": "view_uninvoiced"
-            })
+            insights.append(
+                {
+                    "type": "success" if uninvoiced < 10 else "warning",
+                    "text": f"{uninvoiced} Challans ready for invoicing",
+                    "action": "view_uninvoiced",
+                }
+            )
 
         # Rule 3: Recent Rejections (SRV)
         recent_rejections = db.execute("""
@@ -169,28 +200,30 @@ def get_dashboard_insights(db: sqlite3.Connection = Depends(get_db)):
             WHERE rejected_qty > 0 
             AND created_at >= date('now', '-7 days')
         """).fetchone()[0]
-        
+
         if recent_rejections > 0:
-             insights.append({
-                "type": "error",
-                "text": f"{recent_rejections} items rejected in last 7 days",
-                "action": "view_srv"
-            })
-            
+            insights.append(
+                {
+                    "type": "error",
+                    "text": f"{recent_rejections} items rejected in last 7 days",
+                    "action": "view_srv",
+                }
+            )
+
         # Fallback if quiet
         if not insights:
-            insights.append({
-                "type": "success",
-                "text": "All systems operational. No immediate alerts.",
-                "action": "none"
-            })
-            
+            insights.append(
+                {
+                    "type": "success",
+                    "text": "All systems operational. No immediate alerts.",
+                    "action": "none",
+                }
+            )
+
         return insights
 
-    except Exception as e:
+    except Exception:
         # Fail gracefully
-        return [{
-            "type": "error",
-            "text": "System alert check failed",
-            "action": "none"
-        }]
+        return [
+            {"type": "error", "text": "System alert check failed", "action": "none"}
+        ]

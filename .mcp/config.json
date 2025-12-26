@@ -1,0 +1,52 @@
+{
+    "mcpServers": {
+        "database-audit": {
+            "command": "python",
+            "args": [
+                "-m",
+                "mcp-servers.database-audit.server"
+            ],
+            "description": "Database integrity and consistency audits"
+        },
+        "api-audit": {
+            "command": "python",
+            "args": [
+                "-m",
+                "mcp-servers.api-audit.server"
+            ],
+            "description": "API endpoint health and validation"
+        },
+        "lint-audit": {
+            "command": "python",
+            "args": [
+                "-m",
+                "mcp-servers.lint-audit.server"
+            ],
+            "description": "Code quality and linting checks"
+        },
+        "ui-audit": {
+            "command": "python",
+            "args": [
+                "-m",
+                "mcp-servers.ui-audit.server"
+            ],
+            "description": "UI consistency and accessibility checks"
+        },
+        "security-audit": {
+            "command": "python",
+            "args": [
+                "-m",
+                "mcp-servers.security-audit.server"
+            ],
+            "description": "Security vulnerability scanning"
+        },
+        "business-audit": {
+            "command": "python",
+            "args": [
+                "-m",
+                "mcp-servers.business-audit.server"
+            ],
+            "description": "ERP business logic invariant validation"
+        }
+    }
+}

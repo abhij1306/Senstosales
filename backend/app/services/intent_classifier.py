@@ -2,6 +2,7 @@
 Intent Classifier - Fast intent detection with regex layer
 Provides instant responses for simple commands, LLM for complex queries
 """
+
 import re
 import logging
 from typing import Dict, Any, Optional, Callable
@@ -16,24 +17,21 @@ INSTANT_COMMANDS: Dict[str, Callable[[re.Match], Dict[str, Any]]] = {
         "type": "navigate",
         "navigate": {"page": m.group(1).replace(" ", "_")},
         "message": f"Navigating to {m.group(1)}",
-        "tts_text": f"Going to {m.group(1)}"
+        "tts_text": f"Going to {m.group(1)}",
     },
-    
     # Filter management
     r"^clear filters?$": lambda _: {
         "type": "filter",
         "filter": {"entity": "current", "filters": {}},
         "message": "Filters cleared",
-        "tts_text": "Filters cleared"
+        "tts_text": "Filters cleared",
     },
-    
     # Cancel
     r"^(stop|cancel|nevermind)$": lambda _: {
         "type": "cancel",
         "message": "Cancelled",
-        "tts_text": "Cancelled"
+        "tts_text": "Cancelled",
     },
-    
     # Help
     r"^(help|what can you do)$": lambda _: {
         "type": "help",
@@ -46,7 +44,7 @@ INSTANT_COMMANDS: Dict[str, Callable[[re.Match], Dict[str, Any]]] = {
 • Clear: "Clear filters"
 
 What would you like to do?""",
-        "tts_text": "I can help with navigation, search, creating documents, and filtering. What would you like to do?"
+        "tts_text": "I can help with navigation, search, creating documents, and filtering. What would you like to do?",
     },
 }
 
@@ -64,13 +62,15 @@ INTENT_KEYWORDS = {
 }
 
 
-async def classify_intent(text: str, ui_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+async def classify_intent(
+    text: str, ui_context: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """
     Classify user intent
-    
+
     Fast path: Check regex patterns first (0ms)
     Slow path: Use LLM for complex queries (~500ms)
-    
+
     Returns:
     {
         "intent": "navigate",
@@ -79,9 +79,9 @@ async def classify_intent(text: str, ui_context: Optional[Dict[str, Any]] = None
         "requires_llm": false
     }
     """
-    
+
     text_lower = text.lower().strip()
-    
+
     # 1. Check instant commands (regex)
     for pattern, handler in INSTANT_COMMANDS.items():
         match = re.match(pattern, text_lower)
@@ -89,53 +89,51 @@ async def classify_intent(text: str, ui_context: Optional[Dict[str, Any]] = None
             action = handler(match)
             logger.info(
                 "Instant command matched",
-                extra={"pattern": pattern, "intent": action.get("type")}
+                extra={"pattern": pattern, "intent": action.get("type")},
             )
             return {
                 "intent": action.get("type"),
                 "confidence": 1.0,
                 "action": action,
-                "requires_llm": False
+                "requires_llm": False,
             }
-    
+
     # 2. Quick keyword-based classification
     intent_scores = {}
     for intent, keywords in INTENT_KEYWORDS.items():
         score = sum(1 for kw in keywords if kw in text_lower)
         if score > 0:
             intent_scores[intent] = score
-    
+
     if intent_scores:
         top_intent = max(intent_scores, key=intent_scores.get)
         confidence = intent_scores[top_intent] / len(text_lower.split())
-        
+
         logger.info(
             "Keyword-based classification",
-            extra={"intent": top_intent, "confidence": confidence}
+            extra={"intent": top_intent, "confidence": confidence},
         )
-        
+
         return {
             "intent": top_intent,
             "confidence": min(confidence, 0.8),  # Cap at 0.8 for keyword matching
-            "requires_llm": True  # Still need LLM for full processing
+            "requires_llm": True,  # Still need LLM for full processing
         }
-    
+
     # 3. Default to LLM
     logger.info("No quick match, using LLM classification")
-    return {
-        "intent": "unknown",
-        "confidence": 0.0,
-        "requires_llm": True
-    }
+    return {"intent": "unknown", "confidence": 0.0, "requires_llm": True}
 
 
-async def classify_with_llm(text: str, ui_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+async def classify_with_llm(
+    text: str, ui_context: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """
     Use LLM to classify complex intents
-    
+
     Returns structured intent with entities
     """
-    
+
     prompt = f"""Classify the user's intent and extract entities.
 
 User message: "{text}"
@@ -161,28 +159,28 @@ Return JSON with:
             messages=[{"role": "user", "content": prompt}],
             provider="groq",
             temperature=0.1,  # Strict adherence
-            response_format={"type": "json_object"}
+            response_format={"type": "json_object"},
         )
-        
+
         content = response["content"]
         # Strip markdown if present
         if content.startswith("```"):
             content = content.replace("```json", "").replace("```", "").strip()
-            
+
         import json
+
         result = json.loads(content)
-        
+
         logger.info(
             "LLM classification complete",
-            extra={"intent": result.get("intent"), "confidence": result.get("confidence")}
+            extra={
+                "intent": result.get("intent"),
+                "confidence": result.get("confidence"),
+            },
         )
-        
+
         return result
-        
+
     except Exception as e:
         logger.error(f"LLM classification failed: {e}", exc_info=True)
-        return {
-            "intent": "unknown",
-            "confidence": 0.0,
-            "error": str(e)
-        }
+        return {"intent": "unknown", "confidence": 0.0, "error": str(e)}

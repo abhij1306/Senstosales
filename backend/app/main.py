@@ -1,179 +1,58 @@
 """
-FastAPI Main Application with Structured Logging and Observability
+FastAPI Main Application
+Production Configuration
 """
-# CRITICAL: Apply multipart limit fix before any other imports!
-import app.core.multipart_fix
 
 from app.core.config import settings
-from app.core.exceptions import AppException
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routers import dashboard, po, dc, invoice, reports, search, alerts, reconciliation, po_notes, health, srv, system, common
-from app.routers import settings as settings_router
-from app.middleware import RequestLoggingMiddleware
-from app.core.logging_config import setup_logging
-from app.db import validate_database_path
 import logging
-import uuid # For error tracing
+
+# Import Routers
+from app.routers import (
+    health,
+    dashboard,
+    po,
+    dc,
+    invoice,
+    settings as settings_router,
+    po_notes,
+    reports,
+    srv,
+    common,
+)
 
 # Setup structured logging
-setup_logging(log_level="INFO", use_json=False)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    description="Local-first PO-DC-Invoice Management System with AI/Voice capabilities",
-    version="2.0.0",
-    docs_url="/api/docs",
-    redoc_url="/api/redoc"
+    title=settings.PROJECT_NAME, description="SenstoSales ERP API", version="2.0.0"
 )
 
-# CORS for localhost frontend
+# CORS Configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"]
+    expose_headers=["*"],
 )
 
-# Request logging middleware
-app.add_middleware(RequestLoggingMiddleware)
-
-# Include routers
+# Include Routers
 app.include_router(health.router, prefix="/api", tags=["Health"])
-
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
 app.include_router(po.router, prefix="/api/po", tags=["Purchase Orders"])
 app.include_router(dc.router, prefix="/api/dc", tags=["Delivery Challans"])
 app.include_router(invoice.router, prefix="/api/invoice", tags=["Invoices"])
+app.include_router(srv.router, prefix="/api/srv", tags=["SRVs"])
 app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
-app.include_router(search.router, prefix="/api/search", tags=["Search"])
-app.include_router(settings_router.router, prefix="/api/settings", tags=["settings"])
-app.include_router(alerts.router, prefix="/api/alerts", tags=["Alerts"])
-app.include_router(reconciliation.router, prefix="/api/reconciliation", tags=["Reconciliation"])
+app.include_router(settings_router.router, prefix="/api/settings", tags=["Settings"])
 app.include_router(po_notes.router, prefix="/api/po-notes", tags=["PO Notes"])
-app.include_router(srv.router, prefix="/api/srv", tags=["SRV"])
-app.include_router(system.router, prefix="/api/system", tags=["System"])
 app.include_router(common.router, prefix="/api/common", tags=["Common"])
 
-@app.exception_handler(AppException)
-async def app_exception_handler(request: Request, exc: AppException):
-    """
-    Handle defined Application Exceptions
-    Transform them into clean JSON responses with error codes.
-    """
-    logger.warning(f"AppException: {exc.error_code} - {exc.message}")
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={
-            "error": True,
-            "code": exc.error_code,
-            "message": exc.message,
-            "details": exc.details,
-            "request_id": str(uuid.uuid4())
-        }
-    )
 
-@app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
-    """
-    Catch-all for unhandled exceptions (500 Internal Server Error).
-    Prevents leaking stack traces to client.
-    """
-    error_id = str(uuid.uuid4())
-    logger.error(f"Unhandled Exception {error_id}: {exc}", exc_info=True)
-    return JSONResponse(
-        status_code=500,
-        content={
-            "error": True,
-            "code": "INTERNAL_SERVER_ERROR",
-            "message": "An unexpected error occurred. Please contact support with this Error ID.",
-            "error_id": error_id
-        }
-    )
-
-@app.on_event("startup")
-async def startup_event():
-    """Application startup - validate database and log initialization"""
-    logger.info("=" * 60)
-    logger.info(f"{settings.PROJECT_NAME} v2.0 - STARTING UP")
-    logger.info("=" * 60)
-    
-    # 1. Database Validation
-    db_status = "❌ Failed"
-    try:
-        validate_database_path()
-        db_status = "✅ Connected"
-    except Exception as e:
-        logger.error(f"Database validation failed: {e}")
-        # We don't raise here immediately to allow full diagnostics table to print, 
-        # but in strict mode we might want to. 
-        # For now, let's print the table then maybe raise if DB is critical (it is).
-        db_status = "❌ CRITICAL FAILURE"
-
-    # 2. Key Validation
-    groq_status = "✅ Loaded" if settings.GROQ_API_KEY else "⚪ Skipped"
-    openai_status = "✅ Loaded" if settings.OPENAI_API_KEY else "⚪ Skipped"
-    openrouter_status = "✅ Loaded" if settings.OPENROUTER_API_KEY else "⚪ Skipped"
-
-    # 3. Print Diagnostic Table
-    logger.info("┌──────────────────────────────────────────────────────────────┐")
-    logger.info("│                   SYSTEM HEALTH DIAGNOSTICS                  │")
-    logger.info("├──────────────────────────────┬───────────────────────────────┤")
-    logger.info(f"│ Database Connection          │ {db_status:<29} │")
-    logger.info(f"│ GROQ_API_KEY                 │ {groq_status:<29} │")
-    logger.info(f"│ OPENAI_API_KEY               │ {openai_status:<29} │")
-    logger.info(f"│ OPENROUTER_API_KEY           │ {openrouter_status:<29} │")
-    logger.info(f"│ Environment Mode             │ {settings.ENV_MODE:<29} │")
-    logger.info("└──────────────────────────────┴───────────────────────────────┘")
-
-    if "CRITICAL" in db_status:
-        logger.error("Startup aborted due to critical infrastructure failure.")
-        raise RuntimeError("Database connection failed")
-
-    logger.info("✓ System ready. Listening for requests...")
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("Sales Manager API - Shutting down")
-
-import os
-from fastapi.staticfiles import StaticFiles
-from fastapi.responses import HTMLResponse
-
-# Mount static files if directory exists (PROD mode)
-# In development, we don't need this as we run separate frontend
-# CRITICAL: Static mounts must NOT interfere with /api routes
-base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-static_dir = os.path.join(base_dir, "static")
-
-# DISABLED: Static file serving interferes with API routes in development
-# This should only be enabled in production standalone mode
-if False and os.path.exists(static_dir):
-    logger.info(f"Serving static files from {static_dir}")
-    
-    # Mount _next separately to ensure it is handled correctly
-    if os.path.exists(os.path.join(static_dir, "_next")):
-        app.mount("/_next", StaticFiles(directory=os.path.join(static_dir, "_next")), name="static_next")
-    
-    # Mount root to serve HTML files
-    # We use a custom catch-all to handle SPA routing if needed, 
-    # but with Next.js static export + .html extension stripping, 
-    # we might need to be careful.
-    # For a simple static export, usually StaticFiles(html=True) works for /path -> /path.html
-    
-    app.mount("/", StaticFiles(directory=static_dir, html=True), name="static")
-
-else:
-    # Fallback root for API-only mode
-    @app.get("/")
-    def root():
-        return {
-            "message": f"{settings.PROJECT_NAME} v2.0 API Only",
-            "status": "running",
-            "docs": "/api/docs",
-            "health": "/api/health"
-        }
+@app.get("/")
+def root():
+    return {"status": "active", "version": "2.0.0"}

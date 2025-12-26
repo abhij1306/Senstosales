@@ -1,0 +1,8 @@
+{
+  "metrics": {
+    "dashboard_load_ms": 11422.0
+  },
+  "trace_file": "performance_trace.zip",
+  "status": "Failed",
+  "error": "Page.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"text=Purchase Orders\")\n"
+}

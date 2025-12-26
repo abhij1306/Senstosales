@@ -85,3 +85,6 @@ htmlcov/
 .project
 .settings/
 
+!mcp-servers/performance/transition-audit/trace_run.py
+!mcp-servers/performance/transition-audit/trace_run.py
+!mcp-servers/performance/transition-audit/trace_run.py

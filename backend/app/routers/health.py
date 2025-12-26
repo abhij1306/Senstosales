@@ -2,6 +2,7 @@
 Health Check Endpoints
 Provides health, readiness, and metrics endpoints for monitoring
 """
+
 from fastapi import APIRouter, Depends, HTTPException
 from app.db import get_db
 import sqlite3
@@ -22,7 +23,7 @@ START_TIME = datetime.utcnow()
 def health_check() -> Dict[str, Any]:
     """
     Basic health check - returns 200 if service is running
-    
+
     Use this for:
     - Load balancer health checks
     - Simple uptime monitoring
@@ -31,7 +32,7 @@ def health_check() -> Dict[str, Any]:
         "status": "healthy",
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "service": "SenstoSales ERP",
-        "version": "2.0.0"
+        "version": "2.0.0",
     }
 
 
@@ -39,21 +40,18 @@ def health_check() -> Dict[str, Any]:
 def readiness_check(db: sqlite3.Connection = Depends(get_db)) -> Dict[str, Any]:
     """
     Readiness check - verifies all dependencies are available
-    
+
     Use this for:
     - Kubernetes readiness probes
     - Deployment verification
-    
+
     Returns 200 if ready, 503 if not ready
     """
-    
-    checks = {
-        "database": "unknown",
-        "filesystem": "unknown"
-    }
-    
+
+    checks = {"database": "unknown", "filesystem": "unknown"}
+
     all_healthy = True
-    
+
     # Check database connectivity
     try:
         result = db.execute("SELECT 1").fetchone()
@@ -66,7 +64,7 @@ def readiness_check(db: sqlite3.Connection = Depends(get_db)) -> Dict[str, Any]:
         checks["database"] = f"unhealthy: {str(e)}"
         all_healthy = False
         logger.error(f"Database health check failed: {e}", exc_info=True)
-    
+
     # Check filesystem (logs directory)
     try:
         logs_dir = "logs"
@@ -78,20 +76,20 @@ def readiness_check(db: sqlite3.Connection = Depends(get_db)) -> Dict[str, Any]:
     except Exception as e:
         checks["filesystem"] = f"unhealthy: {str(e)}"
         all_healthy = False
-    
+
     # Overall status
     overall_status = "ready" if all_healthy else "not_ready"
-    
+
     response = {
         "status": overall_status,
         "timestamp": datetime.utcnow().isoformat() + "Z",
-        "checks": checks
+        "checks": checks,
     }
-    
+
     # Return 503 if not ready
     if not all_healthy:
         raise HTTPException(status_code=503, detail=response)
-    
+
     return response
 
 
@@ -99,27 +97,26 @@ def readiness_check(db: sqlite3.Connection = Depends(get_db)) -> Dict[str, Any]:
 def liveness_check() -> Dict[str, Any]:
     """
     Liveness check - verifies the application is alive
-    
+
     Use this for:
     - Kubernetes liveness probes
     - Detecting deadlocks or hangs
-    
+
     Returns 200 if alive, 503 if not
     """
     try:
         # Simple check - if we can respond, we're alive
         uptime_seconds = (datetime.utcnow() - START_TIME).total_seconds()
-        
+
         return {
             "status": "alive",
             "timestamp": datetime.utcnow().isoformat() + "Z",
-            "uptime_seconds": round(uptime_seconds, 2)
+            "uptime_seconds": round(uptime_seconds, 2),
         }
     except Exception as e:
         logger.error(f"Liveness check failed: {e}", exc_info=True)
         raise HTTPException(
-            status_code=503,
-            detail={"status": "not_alive", "error": str(e)}
+            status_code=503, detail={"status": "not_alive", "error": str(e)}
         )
 
 
@@ -127,7 +124,7 @@ def liveness_check() -> Dict[str, Any]:
 def metrics() -> Dict[str, Any]:
     """
     Basic metrics endpoint
-    
+
     Provides:
     - System metrics (CPU, memory)
     - Application uptime
@@ -136,13 +133,13 @@ def metrics() -> Dict[str, Any]:
     try:
         # Get process info
         process = psutil.Process(os.getpid())
-        
+
         # Calculate uptime
         uptime_seconds = (datetime.utcnow() - START_TIME).total_seconds()
-        
+
         # Get memory info
         memory_info = process.memory_info()
-        
+
         return {
             "timestamp": datetime.utcnow().isoformat() + "Z",
             "uptime_seconds": round(uptime_seconds, 2),
@@ -156,12 +153,11 @@ def metrics() -> Dict[str, Any]:
                 "cpu_count": psutil.cpu_count(),
                 "cpu_percent": psutil.cpu_percent(interval=0.1),
                 "memory_percent": psutil.virtual_memory().percent,
-                "disk_percent": psutil.disk_usage('/').percent if os.name != 'nt' else psutil.disk_usage('C:\\').percent,
-            }
+                "disk_percent": psutil.disk_usage("/").percent
+                if os.name != "nt"
+                else psutil.disk_usage("C:\\").percent,
+            },
         }
     except Exception as e:
         logger.error(f"Metrics collection failed: {e}", exc_info=True)
-        return {
-            "timestamp": datetime.utcnow().isoformat() + "Z",
-            "error": str(e)
-        }
+        return {"timestamp": datetime.utcnow().isoformat() + "Z", "error": str(e)}

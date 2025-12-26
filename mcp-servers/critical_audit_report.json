@@ -1,0 +1,10 @@
+{
+  "lint-audit": {
+    "status": "Passed",
+    "output": "Running Frontend ESLint...\nFrontend Lint Issues Found:\n\n\nRunning Backend Ruff...\nBackend Lint Issues Found:\n\n{\n  \"frontend\": \"Failed\",\n  \"backend\": \"Failed\"\n}\n"
+  },
+  "transition-audit": {
+    "status": "Passed",
+    "output": "Running Transition Performance Audit (Playwright)...\nPlaywright Tests Failed:\n\n{\n  \"transition_check\": \"Failed\",\n  \"skeleton_load_check\": \"Pending\"\n}\n"
+  }
+}

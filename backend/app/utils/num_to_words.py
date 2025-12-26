@@ -7,8 +7,30 @@ def num_to_words(num):
         return "Zero"
 
     units = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"]
-    teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"]
-    tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"]
+    teens = [
+        "Ten",
+        "Eleven",
+        "Twelve",
+        "Thirteen",
+        "Fourteen",
+        "Fifteen",
+        "Sixteen",
+        "Seventeen",
+        "Eighteen",
+        "Nineteen",
+    ]
+    tens = [
+        "",
+        "",
+        "Twenty",
+        "Thirty",
+        "Forty",
+        "Fifty",
+        "Sixty",
+        "Seventy",
+        "Eighty",
+        "Ninety",
+    ]
 
     def convert_less_than_thousand(n):
         if n == 0:
@@ -20,7 +42,15 @@ def num_to_words(num):
         elif n < 100:
             return tens[n // 10] + (" " + units[n % 10] if n % 10 != 0 else "")
         else:
-            return units[n // 100] + " Hundred" + (" and " + convert_less_than_thousand(n % 100) if n % 100 != 0 else "")
+            return (
+                units[n // 100]
+                + " Hundred"
+                + (
+                    " and " + convert_less_than_thousand(n % 100)
+                    if n % 100 != 0
+                    else ""
+                )
+            )
 
     crore = num // 10000000
     lakh = (num % 10000000) // 100000
@@ -38,6 +68,7 @@ def num_to_words(num):
         parts.append(convert_less_than_thousand(remainder))
 
     return " ".join(parts).strip()
+
 
 def amount_to_words(amount):
     """

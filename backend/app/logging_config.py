@@ -2,6 +2,7 @@
 Structured Logging Configuration
 Provides app, business, and voice logging layers
 """
+
 import logging
 import json
 from pathlib import Path
@@ -12,6 +13,7 @@ from typing import Optional, Dict, Any
 LOGS_DIR = Path(__file__).parent.parent.parent / "logs"
 LOGS_DIR.mkdir(exist_ok=True)
 
+
 # Custom JSON formatter
 class JSONFormatter(logging.Formatter):
     def format(self, record):
@@ -21,7 +23,7 @@ class JSONFormatter(logging.Formatter):
             "module": record.module,
             "message": record.getMessage(),
         }
-        
+
         # Add extra fields if present
         if hasattr(record, "action"):
             log_data["action"] = record.action
@@ -33,8 +35,9 @@ class JSONFormatter(logging.Formatter):
             log_data["metadata"] = record.metadata
         if hasattr(record, "status"):
             log_data["status"] = record.status
-            
+
         return json.dumps(log_data)
+
 
 # Application logger
 app_logger = logging.getLogger("app")
@@ -57,12 +60,13 @@ voice_handler = logging.FileHandler(LOGS_DIR / "voice.log")
 voice_handler.setFormatter(JSONFormatter())
 voice_logger.addHandler(voice_handler)
 
+
 def log_business_event(
     action: str,
     entity: str,
     entity_id: str,
     status: str = "SUCCESS",
-    metadata: Optional[Dict[str, Any]] = None
+    metadata: Optional[Dict[str, Any]] = None,
 ):
     """Log a business event"""
     business_logger.info(
@@ -72,9 +76,10 @@ def log_business_event(
             "entity": entity,
             "entity_id": entity_id,
             "status": status,
-            "metadata": metadata or {}
-        }
+            "metadata": metadata or {},
+        },
     )
+
 
 def log_api_request(method: str, path: str, status_code: int, duration_ms: float):
     """Log an API request"""
@@ -86,7 +91,7 @@ def log_api_request(method: str, path: str, status_code: int, duration_ms: float
                 "method": method,
                 "path": path,
                 "status_code": status_code,
-                "duration_ms": duration_ms
-            }
-        }
+                "duration_ms": duration_ms,
+            },
+        },
     )

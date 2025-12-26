@@ -2,18 +2,18 @@
 PO Scraper - Refactored for FastAPI
 Extracts PO data from HTML files
 """
+
 import re
-from bs4 import BeautifulSoup
 from datetime import datetime
 
 # --------------------------------------------------
 # Regex
 # --------------------------------------------------
-RX_LABEL_ONLY = re.compile(r'^[A-Z\s/-]{3,}$')
+RX_LABEL_ONLY = re.compile(r"^[A-Z\s/-]{3,}$")
 RX_DRG = re.compile(
-    r'DRG(?:[\s\.]*NO[\s\.]*|[\s\.]+)[\:\-]?\s*([A-Z0-9][A-Z0-9\.\-]*)',
-    re.IGNORECASE
+    r"DRG(?:[\s\.]*NO[\s\.]*|[\s\.]+)[\:\-]?\s*([A-Z0-9][A-Z0-9\.\-]*)", re.IGNORECASE
 )
+
 
 # --------------------------------------------------
 # Helpers
@@ -21,8 +21,10 @@ RX_DRG = re.compile(
 def clean(text):
     return re.sub(r"\s+", " ", text or "").strip()
 
+
 def has_value(text):
     return bool(text and any(c.isalnum() for c in text))
+
 
 def to_int(val):
     try:
@@ -31,12 +33,14 @@ def to_int(val):
     except:
         return None
 
+
 def to_float(val):
     try:
         v = re.sub(r"[^\d.\-]", "", str(val))
         return float(v) if v else None
     except:
         return None
+
 
 def normalize_date(val):
     if not val:
@@ -45,7 +49,7 @@ def normalize_date(val):
     s = str(val).strip().upper()
 
     # dd/mm/yyyy or dd-mm-yyyy
-    m = re.search(r'(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})', s)
+    m = re.search(r"(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})", s)
     if m:
         d, mth, y = m.groups()
         if len(y) == 2:
@@ -53,7 +57,7 @@ def normalize_date(val):
         return f"{int(d):02d}/{int(mth):02d}/{int(y)}"
 
     # dd-MMM-yy or dd-MMM-yyyy
-    m = re.search(r'(\d{1,2})[\/\-]([A-Z]{3})[\/\-](\d{2,4})', s)
+    m = re.search(r"(\d{1,2})[\/\-]([A-Z]{3})[\/\-](\d{2,4})", s)
     if m:
         d, mon, y = m.groups()
         if len(y) == 2:
@@ -65,6 +69,7 @@ def normalize_date(val):
             return ""
 
     return ""
+
 
 # --------------------------------------------------
 # Header Extraction
@@ -85,9 +90,7 @@ def extract_po_header(soup):
                         continue
 
                     inline = re.search(
-                        rf"{label_rx}[:\.]?\s*(.+)",
-                        cell_text,
-                        re.IGNORECASE
+                        rf"{label_rx}[:\.]?\s*(.+)", cell_text, re.IGNORECASE
                     )
                     if inline and has_value(inline.group(1)):
                         return clean(inline.group(1))
@@ -113,7 +116,7 @@ def extract_po_header(soup):
         "PHONE": r"PHONE",
         "FAX": r"FAX",
         "EMAIL": r"EMAIL",
-        "WEBSITE": r"WEBSITE"
+        "WEBSITE": r"WEBSITE",
     }.items():
         header[k] = find_value(rx)
 
@@ -138,7 +141,7 @@ def extract_po_header(soup):
         "ENQ DATE": r"ENQ\s+DATE",
         "REMARKS": r"REMARKS",
         "TOTAL VALUE": r"TOTAL\s+VALUE",
-        "SUPP NAME M/S": r"^SUPP\s+NAME\s+M/S$"
+        "SUPP NAME M/S": r"^SUPP\s+NAME\s+M/S$",
     }.items():
         pref = "any" if k in ["PURCHASE ORDER", "PO DATE"] else "below"
         header[k] = find_value(rx, prefer=pref)
@@ -148,12 +151,14 @@ def extract_po_header(soup):
         header["PURCHASE ORDER"] = find_value(r"PURCHASE\s+ORDER", prefer="adjacent")
         # If still empty, try "Purchase Order No" specifically
         if not header.get("PURCHASE ORDER"):
-             header["PURCHASE ORDER"] = find_value(r"Purchase\s+Order\s+No", prefer="adjacent")
+            header["PURCHASE ORDER"] = find_value(
+                r"Purchase\s+Order\s+No", prefer="adjacent"
+            )
 
     if not header.get("PO DATE"):
         # Try finding just "Date" which is common in simple tables
         header["PO DATE"] = find_value(r"(PO\s+)?DATE", prefer="adjacent")
-    
+
     # Validate ENQUIRY - reject if too long (likely grabbed "Important Note" text)
     if header.get("ENQUIRY") and len(str(header["ENQUIRY"])) > 50:
         header["ENQUIRY"] = ""  # Clear invalid data
@@ -163,7 +168,7 @@ def extract_po_header(soup):
         "INSPECTION BY": r"INSPECTION\s+BY",
         "NAME": r"^NAME$",
         "DESIGNATION": r"DESIGNATION",
-        "PHONE NO": r"^PHONE\s+NO$"
+        "PHONE NO": r"^PHONE\s+NO$",
     }.items():
         header[k] = find_value(rx, prefer="adjacent")
 
@@ -187,21 +192,23 @@ def extract_po_header(soup):
     # ---- date normalization ----
     for k in ["PO DATE", "QUOT-DATE", "ENQ DATE"]:
         header[k] = normalize_date(header.get(k))
-    
+
     # NUCLEAR FALLBACK: If PO DATE is still empty/whitespace, scan near "PO DATE" label
     # This handles BHEL format where table-based extraction fails
     if not header.get("PO DATE") or not header["PO DATE"].strip():
         # Strategy: Find "PO DATE" label in text, then look for date within next 200 chars
         text_content = soup.get_text(" ", strip=True)
-        po_date_match = re.search(r'PO\s+DATE', text_content, re.IGNORECASE)
-        
+        po_date_match = re.search(r"PO\s+DATE", text_content, re.IGNORECASE)
+
         if po_date_match:
             # Search for date pattern within 200 chars after "PO DATE" label
-            search_window = text_content[po_date_match.end():po_date_match.end() + 200]
-            date_match = re.search(r'(\d{1,2}/\d{1,2}/\d{4})', search_window)
+            search_window = text_content[
+                po_date_match.end() : po_date_match.end() + 200
+            ]
+            date_match = re.search(r"(\d{1,2}/\d{1,2}/\d{4})", search_window)
             if date_match:
                 header["PO DATE"] = normalize_date(date_match.group(1))
-        
+
         # Ultimate fallback: if still empty, try all tables for date in row below "PO DATE"
         if not header.get("PO DATE") or not header["PO DATE"].strip():
             tables = soup.find_all("table")
@@ -210,11 +217,13 @@ def extract_po_header(soup):
                 for r_idx, row in enumerate(rows):
                     # Check if this row contains "PO DATE"
                     row_text = clean(row.get_text())
-                    if re.search(r'PO\s+DATE', row_text, re.IGNORECASE):
+                    if re.search(r"PO\s+DATE", row_text, re.IGNORECASE):
                         # Check next row for date
                         if r_idx + 1 < len(rows):
                             next_row_text = rows[r_idx + 1].get_text()
-                            date_match = re.search(r'(\d{1,2}/\d{1,2}/\d{4})', next_row_text)
+                            date_match = re.search(
+                                r"(\d{1,2}/\d{1,2}/\d{4})", next_row_text
+                            )
                             if date_match:
                                 header["PO DATE"] = normalize_date(date_match.group(1))
                                 break
@@ -223,22 +232,26 @@ def extract_po_header(soup):
 
     return header
 
+
 # --------------------------------------------------
 # Item Extraction
 # --------------------------------------------------
 def extract_items(soup):
     tables = soup.find_all("table")
     item_table = next(
-        (t for t in tables if t.find(string=re.compile("MATERIAL CODE", re.I))),
-        None
+        (t for t in tables if t.find(string=re.compile("MATERIAL CODE", re.I))), None
     )
     if not item_table:
         return []
 
     rows = item_table.find_all("tr")
     header_idx = next(
-        (i for i, r in enumerate(rows) if r.find(string=re.compile("MATERIAL CODE", re.I))),
-        None
+        (
+            i
+            for i, r in enumerate(rows)
+            if r.find(string=re.compile("MATERIAL CODE", re.I))
+        ),
+        None,
     )
     if header_idx is None:
         return []
@@ -253,10 +266,10 @@ def extract_items(soup):
 
     # Extract description from merged cell at bottom of item/delivery table
     description_text = ""
-    
-    for row in rows[header_idx + 1:]:
+
+    for row in rows[header_idx + 1 :]:
         cols = [clean(td.get_text()) for td in row.find_all("td")]
-        
+
         # Check if this is a merged cell row (1-4 cells with long text)
         if 1 <= len(cols) <= 4:
             text = " ".join(cols).strip()
@@ -266,38 +279,40 @@ def extract_items(soup):
                 break
 
     items = []
-    
-    for row in rows[header_idx + 1:]:
+
+    for row in rows[header_idx + 1 :]:
         cols = [clean(td.get_text()) for td in row.find_all("td")]
-        
+
         # Skip merged cell rows (description rows with 1-4 cells)
         if len(cols) <= 4:
             continue
-        
+
         # Check if this is a data row (must have at least 8 columns and start with a number)
         if len(cols) < 8:
             continue
-            
+
         # First column should be item number
         if not cols[0] or not any(c.isdigit() for c in cols[0]):
             continue
-        
-        items.append({
-            "PO ITM": to_int(cols[0]),
-            "MATERIAL CODE": cols[1],
-            "DESCRIPTION": description_text,
-            "DRG": drg_no,
-            "MTRL CAT": to_int(cols[2]) if len(cols) > 2 else None,
-            "UNIT": cols[3] if len(cols) > 3 else "",
-            "PO RATE": to_float(cols[4]) if len(cols) > 4 else None,
-            "ORD QTY": to_int(cols[5]) if len(cols) > 5 else None,
-            "RCD QTY": to_int(cols[6]) if len(cols) > 6 else None,
-            "ITEM VALUE": to_float(cols[7]) if len(cols) > 7 else None,
-            "LOT NO": to_int(cols[8]) if len(cols) > 8 else None,
-            "DELY QTY": to_int(cols[9]) if len(cols) > 9 else None,
-            "DELY DATE": normalize_date(cols[10]) if len(cols) > 10 else "",
-            "ENTRY ALLOW DATE": normalize_date(cols[11]) if len(cols) > 11 else "",
-            "DEST CODE": to_int(cols[12]) if len(cols) > 12 else None,
-        })
+
+        items.append(
+            {
+                "PO ITM": to_int(cols[0]),
+                "MATERIAL CODE": cols[1],
+                "DESCRIPTION": description_text,
+                "DRG": drg_no,
+                "MTRL CAT": to_int(cols[2]) if len(cols) > 2 else None,
+                "UNIT": cols[3] if len(cols) > 3 else "",
+                "PO RATE": to_float(cols[4]) if len(cols) > 4 else None,
+                "ORD QTY": to_int(cols[5]) if len(cols) > 5 else None,
+                "RCD QTY": to_int(cols[6]) if len(cols) > 6 else None,
+                "ITEM VALUE": to_float(cols[7]) if len(cols) > 7 else None,
+                "LOT NO": to_int(cols[8]) if len(cols) > 8 else None,
+                "DELY QTY": to_int(cols[9]) if len(cols) > 9 else None,
+                "DELY DATE": normalize_date(cols[10]) if len(cols) > 10 else "",
+                "ENTRY ALLOW DATE": normalize_date(cols[11]) if len(cols) > 11 else "",
+                "DEST CODE": to_int(cols[12]) if len(cols) > 12 else None,
+            }
+        )
 
     return items

@@ -1,0 +1,38 @@
+"""
+FastAPI Main Application - DEBUG MODE
+"""
+# import app.core.multipart_fix
+
+from app.core.config import settings
+from app.core.exceptions import AppException
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from app.routers import health
+import logging
+
+# Setup structured logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    description="DEBUG MODE",
+    version="2.0.0"
+)
+
+# CORS for localhost frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["*"]
+)
+
+app.include_router(health.router, prefix="/api", tags=["Health"])
+
+@app.get("/")
+def root():
+    return {"status": "debug_mode_active"}

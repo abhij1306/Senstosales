@@ -5,7 +5,19 @@ All notable changes to SenstoSales ERP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.2.0] - 2025-12-26
+## [3.3.0] - 2025-12-26
+
+### Added
+- **Cinematic Transitions**: Implemented "Shared Element" morphing transitions for PO, DC, and Invoice numbers, creating a seamless navigation experience between lists and details.
+- **Skeleton Loading**: Replaced generic spinners with layout-aware Skeleton screens for PO, DC, Invoice, and Templates pages, eliminating "Double Flicker" and layout shifts.
+- **Audit Infrastructure**: Restored critical MCP audit servers (`lint-audit`, `performance-audit`) using shared configurations.
+- **Performance Trace**: Integrated Playwright-based performance tracing to measure CLS and load times (Cold Start ~11s, Transitions optimized).
+
+### Fixed
+- **Linting**: Auto-fixed formatting issues across 108+ frontend files using Prettier.
+- **Visual Stability**: Resolved layout jumping on "PO Notes/Templates" page by standardizing the loading state.
+
+
 
 ### Fixed
 - **Reports Page**: Resolved "Duplicate children with the same key" React error in "Shortages" and "Ledger Audit" tabs by implementing unique composite keys for data rows.

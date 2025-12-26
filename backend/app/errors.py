@@ -2,6 +2,7 @@
 Centralized Error Handling System
 All routers MUST use these helpers instead of raw HTTPException
 """
+
 from fastapi import HTTPException
 from typing import Optional
 import logging
@@ -18,7 +19,7 @@ def bad_request(message: str, log_details: Optional[str] = None) -> HTTPExceptio
         logger.warning(f"Bad Request: {message} | Details: {log_details}")
     else:
         logger.warning(f"Bad Request: {message}")
-    
+
     return HTTPException(status_code=400, detail=message)
 
 
@@ -31,7 +32,7 @@ def not_found(message: str, resource_type: Optional[str] = None) -> HTTPExceptio
         logger.info(f"Not Found ({resource_type}): {message}")
     else:
         logger.info(f"Not Found: {message}")
-    
+
     return HTTPException(status_code=404, detail=message)
 
 
@@ -44,11 +45,13 @@ def conflict(message: str, log_details: Optional[str] = None) -> HTTPException:
         logger.warning(f"Conflict: {message} | Details: {log_details}")
     else:
         logger.warning(f"Conflict: {message}")
-    
+
     return HTTPException(status_code=409, detail=message)
 
 
-def internal_error(message: str, exception: Optional[Exception] = None) -> HTTPException:
+def internal_error(
+    message: str, exception: Optional[Exception] = None
+) -> HTTPException:
     """
     500 Internal Server Error - Unexpected server error
     Use for: database errors, unexpected exceptions
@@ -57,7 +60,7 @@ def internal_error(message: str, exception: Optional[Exception] = None) -> HTTPE
         logger.error(f"Internal Error: {message}", exc_info=exception)
     else:
         logger.error(f"Internal Error: {message}")
-    
+
     return HTTPException(status_code=500, detail=message)
 
 
@@ -70,5 +73,5 @@ def forbidden(message: str, reason: Optional[str] = None) -> HTTPException:
         logger.warning(f"Forbidden: {message} | Reason: {reason}")
     else:
         logger.warning(f"Forbidden: {message}")
-    
+
     return HTTPException(status_code=403, detail=message)

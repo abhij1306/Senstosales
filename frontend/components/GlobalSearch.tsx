@@ -1,147 +1,230 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Search, X, FileText, Truck, Receipt } from "lucide-react";
+import {
+  Search,
+  Loader2,
+  FileText,
+  Truck,
+  Receipt,
+  Package,
+  ArrowRight,
+  X,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { api, SearchResult } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import StatusBadge from "@/components/ui/StatusBadge";
 
 export default function GlobalSearch() {
-    const [isOpen, setIsOpen] = useState(false);
-    const [query, setQuery] = useState("");
-    const [results, setResults] = useState<SearchResult[]>([]);
-    const [loading, setLoading] = useState(false);
-    const searchRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
-    const router = useRouter();
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<SearchResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const router = useRouter();
+  const searchRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Removed Ctrl+K - CommandBar handles it
-            if (e.key === "Escape") setIsOpen(false);
-        };
-        document.addEventListener("keydown", handleKeyDown);
-        return () => document.removeEventListener("keydown", handleKeyDown);
-    }, []);
-
-    useEffect(() => {
-        if (isOpen && inputRef.current) inputRef.current.focus();
-    }, [isOpen]);
-
-    useEffect(() => {
-        const search = async () => {
-            if (query.length < 2) {
-                setResults([]);
-                return;
-            }
-            setLoading(true);
-            try {
-                const data = await api.searchGlobal(query);
-                setResults(data);
-            } catch (error) {
-                setResults([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-        const debounce = setTimeout(search, 300);
-        return () => clearTimeout(debounce);
-    }, [query]);
-
-    const handleResultClick = (result: SearchResult) => {
-        setIsOpen(false);
-        setQuery("");
-        if (result.type === "PO") router.push(`/po/view?id=${result.number}`);
-        else if (result.type === "DC") router.push(`/dc/view?id=${result.number}`);
-        else if (result.type === "Invoice") router.push(`/invoice/view?id=${encodeURIComponent(result.number)}`);
+  // Global Ctrl+K shortcut to focus input
+  useEffect(() => {
+    const handleGlobalK = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
     };
+    window.addEventListener("keydown", handleGlobalK);
+    return () => window.removeEventListener("keydown", handleGlobalK);
+  }, []);
 
-    if (!isOpen) {
-        return (
-            <button
-                onClick={() => setIsOpen(true)}
-                className="flex items-center gap-3 px-4 py-2 bg-white/60 backdrop-blur-md rounded-xl shadow-md border border-white/40 hover:shadow-lg hover:bg-white/80 transition-all duration-300 min-w-[300px]"
-            >
-                <Search className="w-4 h-4 text-slate-400" />
-                <span className="text-sm text-slate-500 font-medium flex-1 text-left">Search for anything...</span>
-                <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border border-slate-200 bg-white px-2 font-mono text-[10px] font-bold text-slate-400 shadow-sm">
-                    ⌘K
-                </kbd>
-            </button>
-        );
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (query.length < 2) {
+      setResults([]);
+      setIsOpen(false);
+      return;
     }
+    const search = async () => {
+      setLoading(true);
+      try {
+        const data = await api.searchGlobal(query);
+        setResults(data);
+        setIsOpen(true);
+        setSelectedIndex(-1);
+      } catch (error) {
+        setResults([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    const debounce = setTimeout(search, 300);
+    return () => clearTimeout(debounce);
+  }, [query]);
 
-    return (
-        <>
-            <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-50 transition-all" onClick={() => setIsOpen(false)} />
+  const handleResultClick = (result: SearchResult) => {
+    setIsOpen(false);
+    setQuery("");
+    if (result.type === "PO") router.push(`/po/view?id=${result.number}`);
+    else if (result.type === "DC") router.push(`/dc/view?id=${result.number}`);
+    else if (result.type === "Invoice")
+      router.push(`/invoice/view?id=${encodeURIComponent(result.number)}`);
+    else if (result.type === "SRV")
+      router.push(`/reports?tab=reconciliation&search=${result.number}`);
+  };
 
-            <div className="fixed top-20 left-1/2 transform -translate-x-1/2 w-full max-w-xl z-50">
-                <div className="bg-white/80 backdrop-blur-xl border border-white/40 shadow-2xl rounded-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                    <div className="flex items-center gap-3 p-4 border-b border-slate-200/50">
-                        <Search className="w-5 h-5 text-slate-400" />
-                        <input
-                            ref={inputRef}
-                            type="text"
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            placeholder="Type to search POs, DCs, Invoices..."
-                            className="flex-1 bg-transparent outline-none text-slate-900 text-lg placeholder:text-slate-400"
-                        />
-                        <button onClick={() => setIsOpen(false)}>
-                            <X className="w-5 h-5 text-slate-400 hover:text-slate-600" />
-                        </button>
-                    </div>
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev + 1) % results.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev - 1 + results.length) % results.length);
+    } else if (e.key === "Enter" && selectedIndex >= 0) {
+      handleResultClick(results[selectedIndex]);
+    } else if (e.key === "Escape") {
+      setIsOpen(false);
+    }
+  };
 
-                    <div className="max-h-[60vh] overflow-y-auto">
-                        {loading && <div className="p-8 text-center text-slate-400 text-sm">Searching...</div>}
+  return (
+    <div ref={searchRef} className="relative w-full max-w-2xl group">
+      <div
+        className={cn(
+          "flex items-center gap-4 px-6 py-2.5 bg-slate-100/40 hover:bg-slate-100/60 border border-slate-200/50 hover:border-slate-300 rounded-2xl transition-all duration-300",
+          isOpen && "bg-white border-blue-400/50 shadow-xl shadow-blue-500/5",
+        )}
+      >
+        {loading ? (
+          <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+        ) : (
+          <Search
+            className={cn(
+              "w-5 h-5 transition-colors",
+              isOpen ? "text-blue-500" : "text-slate-400",
+            )}
+          />
+        )}
 
-                        {!loading && query.length >= 2 && results.length === 0 && (
-                            <div className="p-8 text-center text-slate-500 text-sm">No results found.</div>
-                        )}
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onFocus={() => query.length >= 2 && setIsOpen(true)}
+          onKeyDown={handleKeyDown}
+          placeholder="Search items, vendors, invoices..."
+          className="flex-1 bg-transparent border-none outline-none text-sm font-medium text-slate-900 placeholder:text-slate-400"
+        />
 
-                        {!loading && results.length > 0 && (
-                            <div className="py-1">
-                                {results.map((result, idx) => (
-                                    <button
-                                        key={idx}
-                                        onClick={() => handleResultClick(result)}
-                                        className="w-full px-4 py-3 hover:bg-slate-100/50 flex items-center justify-between text-left transition-colors border-b border-transparent hover:border-slate-100 last:border-0"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className={cn(
-                                                "p-2 rounded-lg flex items-center justify-center",
-                                                result.type === 'PO' ? "bg-blue-50 text-blue-600" :
-                                                    result.type === 'DC' ? "bg-purple-50 text-purple-600" :
-                                                        "bg-emerald-50 text-emerald-600"
-                                            )}>
-                                                {result.type === 'PO' ? <FileText className="w-4 h-4" /> :
-                                                    result.type === 'DC' ? <Truck className="w-4 h-4" /> :
-                                                        <Receipt className="w-4 h-4" />}
-                                            </div>
-                                            <div>
-                                                <div className="font-semibold text-slate-800 text-sm">{result.number}</div>
-                                                <div className="text-xs text-slate-500">{result.party || "Unknown Party"}</div>
-                                            </div>
-                                        </div>
-                                        <div className="text-right">
-                                            <div className="font-mono text-sm font-medium text-slate-700">
-                                                {result.amount ? `₹${result.amount.toLocaleString()}` : ''}
-                                            </div>
-                                            <StatusBadge status={result.status || 'Active'} variant="neutral" className="scale-75 origin-right" />
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+        {query && (
+          <button
+            onClick={() => setQuery("")}
+            className="p-1 hover:bg-slate-200 rounded-lg transition-colors"
+          >
+            <X size={14} className="text-slate-400" />
+          </button>
+        )}
 
-                    <div className="px-4 py-2 border-t border-slate-200/50 bg-slate-50/50 text-[10px] text-slate-400 flex justify-between uppercase tracking-wider font-medium">
-                        <span>SenstoSales Search</span>
-                        <span>{results.length} Matches</span>
-                    </div>
-                </div>
+        <div className="hidden lg:flex items-center gap-1.5 px-2 py-1 bg-white rounded border border-slate-200 shadow-sm">
+          <kbd className="font-mono text-[9px] font-bold text-slate-400">
+            CTRL K
+          </kbd>
+        </div>
+      </div>
+
+      {isOpen && results.length > 0 && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 backdrop-blur-xl border border-slate-200 shadow-2xl rounded-2xl overflow-hidden z-[100] animate-in slide-in-from-top-1 duration-200">
+          <div className="py-2">
+            <div className="px-4 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-50 mb-1">
+              Live Database Results
             </div>
-        </>
-    );
+            {results.map((result, idx) => (
+              <button
+                key={`${result.type}-${result.id}`}
+                onClick={() => handleResultClick(result)}
+                onMouseEnter={() => setSelectedIndex(idx)}
+                className={cn(
+                  "w-full flex items-center justify-between px-4 py-3 text-left transition-all duration-200",
+                  selectedIndex === idx
+                    ? "bg-blue-600 text-white"
+                    : "hover:bg-slate-50 text-slate-700",
+                )}
+              >
+                <div className="flex items-center gap-4">
+                  <div
+                    className={cn(
+                      "p-2 rounded-xl flex items-center justify-center transition-colors",
+                      selectedIndex === idx
+                        ? "bg-white/20 text-white"
+                        : "bg-white shadow-sm border border-slate-100 text-slate-500",
+                    )}
+                  >
+                    {result.type === "PO" ? (
+                      <Package size={18} />
+                    ) : result.type === "DC" ? (
+                      <Truck size={18} />
+                    ) : result.type === "Invoice" ? (
+                      <Receipt size={18} />
+                    ) : (
+                      <FileText size={18} />
+                    )}
+                  </div>
+                  <div>
+                    <div className="font-bold tracking-tight text-sm">
+                      {result.number}
+                    </div>
+                    <div
+                      className={cn(
+                        "text-[11px] font-medium opacity-80 line-clamp-1",
+                        selectedIndex === idx
+                          ? "text-blue-50"
+                          : "text-slate-400",
+                      )}
+                    >
+                      {result.type_label} • {result.party || "No Reference"}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {result.amount && (
+                    <div className="font-mono text-[13px] font-black tracking-tighter">
+                      ₹{result.amount.toLocaleString("en-IN")}
+                    </div>
+                  )}
+                  <StatusBadge
+                    status={result.status || "Active"}
+                    variant={selectedIndex === idx ? "neutral" : "success"}
+                    className={cn(
+                      "px-2 py-0.5 text-[9px]",
+                      selectedIndex === idx &&
+                        "bg-white/20 text-white border-transparent",
+                    )}
+                  />
+                  <ArrowRight
+                    size={14}
+                    className={cn(
+                      "transition-transform",
+                      selectedIndex === idx
+                        ? "translate-x-1 opacity-100"
+                        : "opacity-0",
+                    )}
+                  />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

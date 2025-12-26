@@ -1,7 +1,7 @@
 "use client";
 
-import React from 'react';
-import { Button } from '../atoms/Button';
+import React from "react";
+import { Button } from "../atoms/Button";
 import { cn } from "@/lib/utils";
 
 /**
@@ -10,45 +10,47 @@ import { cn } from "@/lib/utils";
  */
 
 export interface Action {
-    label: string;
-    onClick: () => void;
-    variant?: 'default' | 'secondary' | 'destructive' | 'ghost';
-    icon?: React.ReactNode;
-    disabled?: boolean;
+  label: string;
+  onClick: () => void;
+  variant?: "default" | "secondary" | "destructive" | "ghost";
+  icon?: React.ReactNode;
+  disabled?: boolean;
 }
 
 export interface ActionButtonGroupProps {
-    actions: Action[];
-    align?: 'left' | 'center' | 'right';
-    className?: string;
+  actions: Action[];
+  align?: "left" | "center" | "right";
+  className?: string;
 }
 
 export const ActionButtonGroup: React.FC<ActionButtonGroupProps> = ({
-    actions,
-    align = 'right',
-    className
+  actions,
+  align = "right",
+  className,
 }) => {
-    const alignClasses = {
-        left: 'justify-start',
-        center: 'justify-center',
-        right: 'justify-end',
-    };
+  const alignClasses = {
+    left: "justify-start",
+    center: "justify-center",
+    right: "justify-end",
+  };
 
-    return (
-        <div className={cn("flex items-center gap-2", alignClasses[align], className)}>
-            {actions.map((action, index) => (
-                <Button
-                    key={index}
-                    variant={action.variant || 'ghost'}
-                    size="sm"
-                    onClick={action.onClick}
-                    disabled={action.disabled}
-                    className="gap-1.5"
-                >
-                    {action.icon}
-                    {action.label}
-                </Button>
-            ))}
-        </div>
-    );
+  return (
+    <div
+      className={cn("flex items-center gap-2", alignClasses[align], className)}
+    >
+      {actions.map((action, index) => (
+        <Button
+          key={index}
+          variant={action.variant || "ghost"}
+          size="sm"
+          onClick={action.onClick}
+          disabled={action.disabled}
+          className="gap-1.5"
+        >
+          {action.icon}
+          {action.label}
+        </Button>
+      ))}
+    </div>
+  );
 };

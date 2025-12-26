@@ -1,16 +1,18 @@
 """
 Pydantic Models for API Request/Response
 """
+
 from pydantic import BaseModel, Field
 from typing import Optional, List
-from datetime import date, datetime
 
 # ============================================================
 # PURCHASE ORDER MODELS
 # ============================================================
 
+
 class POHeader(BaseModel):
     """Purchase Order Header"""
+
     po_number: int
     po_date: Optional[str] = Field(None, description="YYYY-MM-DD")
     supplier_name: Optional[str] = None
@@ -20,7 +22,7 @@ class POHeader(BaseModel):
     supplier_fax: Optional[str] = None
     supplier_email: Optional[str] = None
     department_no: Optional[int] = None
-    
+
     # Reference Info
     enquiry_no: Optional[str] = None
     enquiry_date: Optional[str] = Field(None, description="YYYY-MM-DD")
@@ -29,7 +31,7 @@ class POHeader(BaseModel):
     rc_no: Optional[str] = None
     order_type: Optional[str] = None
     po_status: Optional[str] = None
-    
+
     # Financials & Tax
     tin_no: Optional[str] = None
     ecc_no: Optional[str] = None
@@ -49,8 +51,10 @@ class POHeader(BaseModel):
     consignee_name: Optional[str] = None
     consignee_address: Optional[str] = None
 
+
 class PODelivery(BaseModel):
     """Purchase Order Delivery Schedule"""
+
     id: Optional[str] = None
     lot_no: Optional[int] = None
     delivered_quantity: Optional[float] = None
@@ -58,8 +62,10 @@ class PODelivery(BaseModel):
     entry_allow_date: Optional[str] = Field(None, description="YYYY-MM-DD")
     dest_code: Optional[int] = None
 
+
 class POItem(BaseModel):
     """Purchase Order Item"""
+
     id: Optional[str] = None
     po_item_no: int
     material_code: Optional[str] = None
@@ -75,10 +81,12 @@ class POItem(BaseModel):
     hsn_code: Optional[str] = None
     delivered_quantity: Optional[float] = 0
     pending_quantity: Optional[float] = None
-    deliveries: List['PODelivery'] = []
+    deliveries: List["PODelivery"] = []
+
 
 class POListItem(BaseModel):
     """Purchase Order List Item (Summary)"""
+
     po_number: int
     po_date: Optional[str] = None
     supplier_name: Optional[str] = None
@@ -94,24 +102,31 @@ class POListItem(BaseModel):
     total_items_count: int = 0  # NEW: Total line items count
     created_at: Optional[str] = None
 
+
 class POStats(BaseModel):
     """PO Page KPIs"""
+
     open_orders_count: int
     pending_approval_count: int
     total_value_ytd: float
-    total_value_change: float # Mock percentage change
+    total_value_change: float  # Mock percentage change
+
 
 class PODetail(BaseModel):
     """Purchase Order Detail (Full)"""
+
     header: POHeader
     items: List[POItem]
+
 
 # ============================================================
 # DELIVERY CHALLAN MODELS
 # ============================================================
 
+
 class DCCreate(BaseModel):
     """Create Delivery Challan"""
+
     dc_number: str
     dc_date: str = Field(..., description="YYYY-MM-DD")
     po_number: Optional[int] = None
@@ -127,8 +142,10 @@ class DCCreate(BaseModel):
     mode_of_transport: Optional[str] = None
     remarks: Optional[str] = None
 
+
 class DCListItem(BaseModel):
     """Delivery Challan List Item"""
+
     dc_number: str
     dc_date: str = Field(..., description="YYYY-MM-DD")
     po_number: Optional[int] = None
@@ -137,20 +154,26 @@ class DCListItem(BaseModel):
     total_value: float = 0.0
     created_at: Optional[str] = None
 
+
 class DCStats(BaseModel):
     """Delivery Challan KPIs"""
+
     total_challans: int
     total_challans_change: float = 0.0
     pending_delivery: int
     completed_delivery: int
     completed_change: float = 0.0
+    total_value: float = 0.0
+
 
 # ============================================================
 # INVOICE MODELS
 # ============================================================
 
+
 class InvoiceCreate(BaseModel):
     """Create Invoice"""
+
     invoice_number: str
     invoice_date: str = Field(..., description="YYYY-MM-DD")
     linked_dc_numbers: Optional[str] = None
@@ -164,38 +187,45 @@ class InvoiceCreate(BaseModel):
     total_invoice_value: Optional[float] = None
     remarks: Optional[str] = None
 
+
 class InvoiceListItem(BaseModel):
     """Invoice List Item"""
+
     invoice_number: str
     invoice_date: str = Field(..., description="YYYY-MM-DD")
     po_numbers: Optional[str] = None
     linked_dc_numbers: Optional[str] = None  # Added
-    customer_gstin: Optional[str] = None     # Added
-    taxable_value: Optional[float] = None    # Added
+    customer_gstin: Optional[str] = None  # Added
+    taxable_value: Optional[float] = None  # Added
     total_invoice_value: Optional[float] = None
     created_at: Optional[str] = None
 
+
 class InvoiceStats(BaseModel):
     """Invoice Page KPIs"""
+
     total_invoiced: float
     pending_payments: float
     gst_collected: float
-    total_invoiced_change: float  # Percentage change 
+    total_invoiced_change: float  # Percentage change
     pending_payments_count: int
     gst_collected_change: float
+
 
 # ============================================================
 # DASHBOARD MODELS
 # ============================================================
 
+
 class DashboardSummary(BaseModel):
     """Dashboard KPIs"""
+
     total_sales_month: float
     sales_growth: float
     pending_pos: int
     new_pos_today: int
     active_challans: int
-    active_challans_growth: str # e.g. "Stable"
+    active_challans_growth: str  # e.g. "Stable"
     total_po_value: float
     po_value_growth: float
     # Global Reconciliation Totals
@@ -203,20 +233,25 @@ class DashboardSummary(BaseModel):
     total_delivered: float = 0
     total_received: float = 0
 
+
 class ActivityItem(BaseModel):
     """Recent Activity Item"""
+
     type: str  # "PO", "DC", "Invoice"
     number: str
     date: str
     description: str
     created_at: str
 
+
 # ============================================================
 # SRV (STORES RECEIPT VOUCHER) MODELS
 # ============================================================
 
+
 class SRVHeader(BaseModel):
     """SRV Header"""
+
     srv_number: str
     srv_date: str
     po_number: str
@@ -226,8 +261,10 @@ class SRVHeader(BaseModel):
     is_active: Optional[bool] = True
     created_at: Optional[str] = None
 
+
 class SRVItem(BaseModel):
     """SRV Item"""
+
     id: Optional[int] = None
     po_item_no: int
     lot_no: Optional[int] = None
@@ -248,13 +285,17 @@ class SRVItem(BaseModel):
     cnote_date: Optional[str] = None
     remarks: Optional[str] = None
 
+
 class SRVDetail(BaseModel):
     """SRV Detail (Full)"""
+
     header: SRVHeader
     items: List[SRVItem]
 
+
 class SRVListItem(BaseModel):
     """SRV List Item (Summary)"""
+
     srv_number: str
     srv_date: str
     po_number: str
@@ -269,20 +310,25 @@ class SRVListItem(BaseModel):
     invoice_numbers: Optional[str] = None
     created_at: Optional[str] = None
 
+
 class SRVStats(BaseModel):
     """SRV Page KPIs"""
+
     total_srvs: int
     total_received_qty: float
     total_rejected_qty: float
     rejection_rate: float  # Percentage
     missing_po_count: int  # Count of SRVs with PO not found
 
+
 # ============================================================
 # SETTINGS MODELS
 # ============================================================
 
+
 class Settings(BaseModel):
     """Business Settings"""
+
     supplier_name: Optional[str] = None
     supplier_description: Optional[str] = None
     supplier_address: Optional[str] = None
@@ -290,7 +336,7 @@ class Settings(BaseModel):
     supplier_contact: Optional[str] = None
     supplier_state: Optional[str] = None
     supplier_state_code: Optional[str] = None
-    
+
     buyer_name: Optional[str] = None
     buyer_address: Optional[str] = None
     buyer_gstin: Optional[str] = None
@@ -299,7 +345,9 @@ class Settings(BaseModel):
     buyer_place_of_supply: Optional[str] = None
     buyer_designation: Optional[str] = None
 
+
 class SettingsUpdate(BaseModel):
     """Partial Update of Settings"""
+
     key: str
     value: str

@@ -2,9 +2,9 @@
 FastAPI Database Connection Manager
 Handles SQLite connection with WAL mode and explicit transactions
 """
+
 import sqlite3
 import sys
-import os
 from pathlib import Path
 from typing import Generator
 from contextlib import contextmanager
@@ -13,7 +13,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Determine Base Directory (Handles PyInstaller vs Script)
-if getattr(sys, 'frozen', False):
+if getattr(sys, "frozen", False):
     # Running as compiled exe
     # Use the directory of the executable for the database
     BASE_DIR = Path(sys.executable).parent
@@ -23,7 +23,7 @@ else:
     # Running as script
     # Handle case where script is run from project root vs backend dir
     current_path = Path(__file__).resolve()
-    if current_path.parent.name == 'app':
+    if current_path.parent.name == "app":
         # running from backend/app
         BASE_DIR = current_path.parent.parent
     else:
@@ -37,10 +37,11 @@ DATABASE_DIR = INTERNAL_DIR / "db"
 DATABASE_PATH = DATABASE_DIR / "business.db"
 MIGRATIONS_DIR = INTERNAL_DIR / "migrations"
 
+
 def init_db(conn: sqlite3.Connection):
     """Initialize database with schema from migrations"""
     logger.info("Initializing new database...")
-    
+
     # Order of migrations to apply
     migration_files = [
         "v1_initial.sql",
@@ -60,16 +61,18 @@ def init_db(conn: sqlite3.Connection):
         "013_add_document_sequences.sql",
         "014_add_settings.sql",
         "015_add_unique_constraints.sql",
-        "016_atomic_accounting_triggers.sql"
+        "016_atomic_accounting_triggers.sql",
+        "017_fy_wise_unique_constraints.sql",
+        "018_standardize_numeric_precision.sql",
     ]
-    
+
     cursor = conn.cursor()
     for filename in migration_files:
         file_path = MIGRATIONS_DIR / filename
         if file_path.exists():
             logger.info(f"Applying migration: {filename}")
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     sql_script = f.read()
                 cursor.executescript(sql_script)
             except Exception as e:
@@ -77,16 +80,17 @@ def init_db(conn: sqlite3.Connection):
                 raise
         else:
             logger.warning(f"Migration file not found: {file_path}")
-    
+
     conn.commit()
     logger.info("Database initialization complete.")
+
 
 def validate_database_path():
     """Ensure database directory exists"""
     if not DATABASE_DIR.exists():
         print(f"Creating database directory at {DATABASE_DIR}")
         DATABASE_DIR.mkdir(parents=True, exist_ok=True)
-    
+
     if not DATABASE_PATH.exists():
         print(f"WARNING: Database file not found at {DATABASE_PATH}")
         # Connect and initialize
@@ -106,17 +110,24 @@ def get_connection() -> sqlite3.Connection:
     try:
         conn = sqlite3.connect(str(DATABASE_PATH), check_same_thread=False)
         conn.row_factory = sqlite3.Row
-        
+
         # CRITICAL: Enable Foreign Keys and WAL mode
         conn.execute("PRAGMA foreign_keys = ON")
         conn.execute("PRAGMA journal_mode = WAL")
-        
+
+        # CRITICAL FIX: Commit to persist PRAGMA settings
+        conn.commit()
+
         # Verify Foreign Keys are actually enabled
         fk_status = conn.execute("PRAGMA foreign_keys").fetchone()[0]
         if fk_status != 1:
-            logger.error(f"CRITICAL: Foreign Keys failed to enable! Status: {fk_status}")
-            raise RuntimeError("Foreign Key enforcement failed - database integrity at risk")
-        
+            logger.error(
+                f"CRITICAL: Foreign Keys failed to enable! Status: {fk_status}"
+            )
+            raise RuntimeError(
+                "Foreign Key enforcement failed - database integrity at risk"
+            )
+
         logger.debug(f"Connection established: FK={fk_status}, WAL=enabled")
         return conn
     except sqlite3.Error as e:
@@ -145,7 +156,7 @@ def db_transaction(conn: sqlite3.Connection):
     """
     Explicit transaction context manager
     Use this for operations that require atomic multi-step writes
-    
+
     Example:
         with db_transaction(db):
             db.execute("INSERT INTO table1 ...")
