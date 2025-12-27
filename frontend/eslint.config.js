@@ -1,3 +1,6 @@
+// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
+import storybook from "eslint-plugin-storybook";
+
 import js from "@eslint/js";
 import { FlatCompat } from "@eslint/eslintrc";
 import path from "path";
@@ -11,14 +14,11 @@ const compat = new FlatCompat({
   recommendedConfig: js.configs.recommended,
 });
 
-export default [
-  js.configs.recommended,
-  // ...compat.extends("next/core-web-vitals"),
-  {
-    rules: {
-      "no-unused-vars": "warn",
-      "no-console": "warn",
-      "@typescript-eslint/no-explicit-any": "off",
-    },
+export default [js.configs.recommended, // ...compat.extends("next/core-web-vitals"),
+{
+  rules: {
+    "no-unused-vars": "warn",
+    "no-console": "warn",
+    "@typescript-eslint/no-explicit-any": "off",
   },
-];
+}, ...storybook.configs["flat/recommended"]];

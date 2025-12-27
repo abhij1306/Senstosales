@@ -1,27 +1,20 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Receipt,
   Plus,
-  Download,
-  TrendingUp,
-  FileText,
-  AlertCircle,
-  Layers,
   Clock,
   Activity,
 } from "lucide-react";
-import { motion } from "framer-motion";
 import { api, InvoiceListItem, InvoiceStats } from "@/lib/api";
 import { formatDate, formatIndianCurrency } from "@/lib/utils";
 import { useDebouncedValue } from "@/lib/hooks/useDebounce";
 import { ListPageTemplate } from "@/components/design-system/templates/ListPageTemplate";
 import { SearchBar as AtomicSearchBar } from "@/components/design-system/molecules/SearchBar";
 import { Accounting, Body } from "@/components/design-system/atoms/Typography";
-import { TableRowCell as TableCells } from "@/components/design-system/molecules/TableCells";
 import { Button } from "@/components/design-system/atoms/Button";
 import { Badge } from "@/components/design-system/atoms/Badge";
 import type { Column } from "@/components/design-system/organisms/DataTable";
@@ -37,11 +30,9 @@ const columns: Column<InvoiceListItem>[] = [
     render: (_value, inv) => (
       <Link
         href={`/invoice/${encodeURIComponent(inv.invoice_number)}`}
-        className="text-[#1A3D7C] font-medium hover:underline"
+        className="text-blue-600 font-medium hover:text-blue-700 transition-colors"
       >
-        <motion.span layoutId={`inv-title-${inv.invoice_number}`}>
-          {inv.invoice_number}
-        </motion.span>
+        {inv.invoice_number}
       </Link>
     ),
   },
@@ -51,9 +42,9 @@ const columns: Column<InvoiceListItem>[] = [
     sortable: true,
     width: "10%",
     render: (_value, inv) => (
-      <span className="text-[#6B7280] whitespace-nowrap">
+      <Body className="text-slate-500 font-medium whitespace-nowrap">
         {formatDate(inv.invoice_date)}
-      </span>
+      </Body>
     ),
   },
   {
@@ -64,22 +55,17 @@ const columns: Column<InvoiceListItem>[] = [
       <div className="flex flex-wrap gap-1">
         {inv.linked_dc_numbers ? (
           inv.linked_dc_numbers.split(",").map((dc: string, i: number) => (
-            <Link
-              key={i}
-              href={`/dc/${dc.trim()}`}
-              className="no-underline"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <Link key={i} href={`/dc?search=${dc.trim()}`}>
               <Badge
                 variant="secondary"
-                className="cursor-pointer hover:bg-[#1A3D7C]/10 text-[10px]"
+                className="px-2 py-0.5 hover:bg-blue-100 hover:text-blue-700 transition-colors cursor-pointer"
               >
                 {dc.trim()}
               </Badge>
             </Link>
           ))
         ) : (
-          <span className="text-[#9CA3AF] italic text-[11px]">Direct</span>
+          <Body className="text-slate-400 font-medium italic text-[11px]">Direct</Body>
         )}
       </div>
     ),
@@ -92,22 +78,17 @@ const columns: Column<InvoiceListItem>[] = [
       <div className="flex flex-wrap gap-1">
         {inv.po_numbers ? (
           inv.po_numbers.split(",").map((po: string, i: number) => (
-            <Link
-              key={i}
-              href={`/po/${po.trim()}`}
-              className="no-underline"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <Link key={i} href={`/po?search=${po.trim()}`}>
               <Badge
                 variant="outline"
-                className="cursor-pointer hover:bg-[#1A3D7C]/10"
+                className="px-2 py-0.5 hover:bg-slate-100 hover:border-slate-300 transition-colors cursor-pointer"
               >
                 {po.trim()}
               </Badge>
             </Link>
           ))
         ) : (
-          <span className="text-[#9CA3AF] italic text-[12px]">Direct</span>
+          <Body className="text-slate-400 font-medium italic text-[11px]">Direct</Body>
         )}
       </div>
     ),
@@ -117,9 +98,9 @@ const columns: Column<InvoiceListItem>[] = [
     label: "CUSTOMER GSTIN",
     width: "15%",
     render: (_value, inv) => (
-      <span className="font-mono text-[12px]">
+      <Body className="font-mono text-[12px] font-medium">
         {inv.customer_gstin || "N/A"}
-      </span>
+      </Body>
     ),
   },
   {
@@ -140,9 +121,9 @@ const columns: Column<InvoiceListItem>[] = [
     align: "right",
     width: "10%",
     render: (_value, inv) => (
-      <span className="text-[#6B7280] text-[12px] tabular-nums">
+      <Accounting className="text-slate-500 font-medium">
         {formatIndianCurrency(inv.igst || 0)}
-      </span>
+      </Accounting>
     ),
   },
   {
@@ -190,7 +171,11 @@ export default function InvoicePage() {
           api.listInvoices(),
           api.getInvoiceStats(),
         ]);
-        setInvoices(invoicesData || []);
+        const invoicesWithKeys = (invoicesData || []).map((inv, idx) => ({
+          ...inv,
+          unique_id: `inv-${inv.invoice_number}-${idx}`
+        }));
+        setInvoices(invoicesWithKeys);
         setStats(statsData);
       } catch (err) {
         console.error("Invoice Load Error:", err);
@@ -214,13 +199,12 @@ export default function InvoicePage() {
     );
   }, [invoices, debouncedSearch]);
 
-  // --- OPTIMIZATION: Memoized Summary Cards ---
   const summaryCards = useMemo(
     (): SummaryCardProps[] => [
       {
         title: "Total Invoices",
         value: (
-          <Accounting className="text-xl text-white">
+          <Accounting className="text-2xl text-white font-medium">
             {invoices.length}
           </Accounting>
         ),
@@ -230,7 +214,7 @@ export default function InvoicePage() {
       {
         title: "Paid Invoices",
         value: (
-          <Accounting isCurrency short className="text-xl text-white">
+          <Accounting isCurrency short className="text-2xl text-white font-medium">
             {stats?.total_invoiced || 0}
           </Accounting>
         ),
@@ -240,7 +224,7 @@ export default function InvoicePage() {
       {
         title: "Pending Payments",
         value: (
-          <Accounting isCurrency short className="text-xl text-white">
+          <Accounting isCurrency short className="text-2xl text-white font-medium">
             {stats?.pending_payments || 0}
           </Accounting>
         ),
@@ -250,7 +234,7 @@ export default function InvoicePage() {
       {
         title: "Total Invoiced",
         value: (
-          <Accounting isCurrency short className="text-xl text-white">
+          <Accounting isCurrency short className="text-2xl text-white font-medium">
             {stats?.total_invoiced || 0}
           </Accounting>
         ),
@@ -261,7 +245,6 @@ export default function InvoicePage() {
     [invoices.length, stats],
   );
 
-  // Toolbar
   const toolbar = (
     <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
       <div className="flex-1 w-full max-w-md">
@@ -277,7 +260,7 @@ export default function InvoicePage() {
         <Button
           variant="default"
           size="sm"
-          onClick={() => router.push("/invoice/create")}
+          onClick={useCallback(() => router.push("/invoice/create"), [router])}
         >
           <Plus size={16} />
           Create New
@@ -294,18 +277,18 @@ export default function InvoicePage() {
       summaryCards={summaryCards}
       columns={columns}
       data={filteredInvoices}
-      keyField="invoice_number"
+      keyField="unique_id"
       page={page}
       pageSize={pageSize}
       totalItems={filteredInvoices.length}
-      onPageChange={(newPage) => setPage(newPage)}
+      onPageChange={useCallback((newPage: number) => setPage(newPage), [])}
       exportable
-      onExport={() =>
+      onExport={useCallback(() =>
         window.open(
           `${api.baseUrl}/api/reports/register/invoice?export=true`,
           "_blank",
-        )
-      }
+        ),
+        [])}
       loading={loading}
       emptyMessage="No invoices found"
     />

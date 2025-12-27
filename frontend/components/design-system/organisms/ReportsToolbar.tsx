@@ -21,7 +21,7 @@ export interface ReportsToolbarProps {
   className?: string;
 }
 
-export const ReportsToolbar: React.FC<ReportsToolbarProps> = ({
+const ReportsToolbarInternal: React.FC<ReportsToolbarProps> = ({
   startDate,
   endDate,
   onDateChange,
@@ -33,26 +33,26 @@ export const ReportsToolbar: React.FC<ReportsToolbarProps> = ({
     <div
       className={cn(
         "flex flex-col sm:flex-row items-center justify-between gap-4 py-2 px-4",
-        "bg-white/50 backdrop-blur-sm rounded-xl border border-slate-200 shadow-sm",
+        "bg-white/45 backdrop-blur-xl rounded-2xl border border-white/20 shadow-sm",
         className,
       )}
     >
       {/* Date Range Selection */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 bg-white/40 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/40 shadow-[0_2px_10px_rgba(0,0,0,0.02)] focus-within:ring-2 focus-within:ring-blue-500/10 transition-all">
-          <Calendar size={14} className="text-blue-600 mr-0.5" />
+        <div className="flex items-center gap-2 bg-white/40 backdrop-blur-md px-4 py-2 rounded-xl border border-slate-200/50 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/10 transition-all">
+          <Calendar size={14} className="text-blue-600 mr-1" />
           <input
             type="date"
             value={startDate}
             onChange={(e) => onDateChange(e.target.value, endDate)}
-            className="bg-transparent border-none text-[12px] font-bold text-slate-800 focus:ring-0 w-32 cursor-pointer"
+            className="bg-transparent border-none text-[12px] font-medium text-slate-800 focus:ring-0 w-32 cursor-pointer outline-none"
           />
-          <span className="text-slate-300 font-black">→</span>
+          <span className="text-slate-300 font-medium">→</span>
           <input
             type="date"
             value={endDate}
             onChange={(e) => onDateChange(startDate, e.target.value)}
-            className="bg-transparent border-none text-[12px] font-bold text-slate-800 focus:ring-0 w-32 cursor-pointer"
+            className="bg-transparent border-none text-[12px] font-medium text-slate-800 focus:ring-0 w-32 cursor-pointer outline-none"
           />
         </div>
       </div>
@@ -64,14 +64,16 @@ export const ReportsToolbar: React.FC<ReportsToolbarProps> = ({
           variant="secondary"
           size="sm"
           disabled={loading}
-          className="h-8 gap-2 bg-white hover:bg-slate-50 border-slate-200 text-slate-700"
+          className="h-9 gap-2 bg-white border-slate-200 text-slate-700 shadow-sm"
         >
-          <FileSpreadsheet size={14} className="text-green-600" />
-          <span className="text-[11px] font-bold uppercase tracking-wider">
-            Export Excel
+          <FileSpreadsheet size={16} className="text-emerald-600" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider">
+            Export Report
           </span>
         </Button>
       )}
     </div>
   );
 };
+
+export const ReportsToolbar = React.memo(ReportsToolbarInternal);

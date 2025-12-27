@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, Suspense, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -98,16 +98,27 @@ function PODetailContent() {
         ]);
 
         setData(poData);
-        if (poData.items)
+        if (poData.items) {
+          const itemsWithKeys = poData.items.map((item: POItem, idx: number) => ({
+            ...item,
+            unique_id: `po-item-${item.po_item_no || idx}-${idx}`
+          }));
+          poData.items = itemsWithKeys;
           setExpandedItems(
-            new Set(poData.items.map((item: POItem) => item.po_item_no)),
+            new Set(itemsWithKeys.map((item: any) => item.po_item_no)),
           );
+        }
 
         if (dcCheck?.has_dc) {
           setHasDC(true);
           setDCId(dcCheck.dc_id || null);
         }
-        setSrvs(srvData || []);
+
+        const srvsWithKeys = (srvData || []).map((srv: any, idx: number) => ({
+          ...srv,
+          unique_id: `po-srv-${srv.srv_number || idx}-${idx}`
+        }));
+        setSrvs(srvsWithKeys);
       } catch (err: any) {
         setError(err.message || "Traceback failure in record retrieval");
       } finally {
@@ -215,18 +226,42 @@ function PODetailContent() {
   if (loading || !data || !data.header) {
     return (
       <DocumentTemplate
-        title={loading ? "Synchronizing..." : "Contract Not Found"}
+        title={loading ? "PO #---" : "Contract Not Found"}
         description={
           loading
-            ? "Retrieving record data from ledger"
+            ? "Retrieving record data from ledger..."
             : "Traceback failure in record retrieval"
         }
         onBack={() => router.push("/po")}
       >
         <div className="space-y-6">
-          <div className="h-8 w-64 bg-slate-100 rounded-full animate-pulse" />
-          <div className="h-10 w-full bg-slate-100 rounded-xl animate-pulse" />
-          <div className="h-[200px] w-full bg-slate-50 rounded-xl border border-slate-100 animate-pulse" />
+          {/* Top Info Bar Skeleton */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-16 bg-slate-50 border border-slate-100/50 rounded-xl animate-pulse" />
+            ))}
+          </div>
+
+          {/* Journey Skeleton */}
+          <div className="h-1 bg-slate-100 rounded-full w-full relative overflow-hidden animate-pulse">
+            <div className="absolute inset-y-0 left-0 w-1/3 bg-blue-100" />
+          </div>
+
+          {/* Tabs Skeleton */}
+          <div className="flex gap-2 mb-4">
+            {[...Array(5)].map((_, i) => (
+              <div key={i} className="h-10 w-24 bg-slate-100 rounded-xl animate-pulse" />
+            ))}
+          </div>
+
+          {/* Content Area Skeleton */}
+          <div className="h-48 bg-slate-50/50 rounded-2xl border border-slate-100 animate-pulse" />
+
+          {/* Table Skeleton */}
+          <div className="space-y-3">
+            <div className="h-6 w-32 bg-slate-100 rounded animate-pulse" />
+            <div className="h-96 bg-white rounded-2xl shadow-sm border border-slate-100 animate-pulse" />
+          </div>
         </div>
       </DocumentTemplate>
     );
@@ -287,7 +322,7 @@ function PODetailContent() {
             <FileText className="w-3.5 h-3.5 mr-2" />
             {hasDC ? "VIEW DC" : "GENERATE DC"}
           </Button>
-          <Button variant="default" size="sm" onClick={() => setEditMode(true)}>
+          <Button variant="default" size="sm" onClick={useCallback(() => setEditMode(true), [])}>
             <Edit2 className="w-3.5 h-3.5 mr-2" />
             MODIFY
           </Button>
@@ -310,7 +345,7 @@ function PODetailContent() {
   }) => {
     return (
       <div className="min-h-[44px] flex flex-col justify-center">
-        <SmallText className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-1.5 leading-none">
+        <SmallText className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.12em] mb-1.5 leading-none">
           {label}
         </SmallText>
         {editMode && field && !readonly ? (
@@ -430,40 +465,40 @@ function PODetailContent() {
 
         {/* V2 Layout: Comprehensive Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="mb-4 bg-slate-100/30 p-1 rounded-xl">
+          <TabsList className="mb-4 bg-slate-100/30 p-1.5 rounded-xl border border-slate-200/50 backdrop-blur-md">
             <TabsTrigger
               value="basic"
-              className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930"
+              className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white"
             >
-              <Info className="w-3.5 h-3.5 mr-1.5" />
+              <Info className="w-3.5 h-3.5 mr-2" />
               Basic
             </TabsTrigger>
             <TabsTrigger
               value="references"
-              className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930"
+              className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white"
             >
-              <FileText className="w-3.5 h-3.5 mr-1.5" />
+              <FileText className="w-3.5 h-3.5 mr-2" />
               Refs
             </TabsTrigger>
             <TabsTrigger
               value="financial"
-              className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930"
+              className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white"
             >
-              <Landmark className="w-3.5 h-3.5 mr-1.5" />
+              <Landmark className="w-3.5 h-3.5 mr-2" />
               Finance
             </TabsTrigger>
             <TabsTrigger
               value="issuer"
-              className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930"
+              className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white"
             >
-              <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
+              <ShieldCheck className="w-3.5 h-3.5 mr-2" />
               Issuer
             </TabsTrigger>
             <TabsTrigger
               value="srvs"
-              className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930"
+              className="px-4 py-2 text-[11px] font-semibold uppercase tracking-wider transition-all data-[state=active]:bg-blue-600 data-[state=active]:text-white"
             >
-              <Receipt className="w-3.5 h-3.5 mr-1.5" />
+              <Receipt className="w-3.5 h-3.5 mr-2" />
               SRVs ({srvs.length})
             </TabsTrigger>
           </TabsList>
@@ -635,7 +670,7 @@ function PODetailContent() {
                     {/* Truncated Remarks Section to Save a Row */}
                     <div className="col-span-2 md:col-span-4 mt-2">
                       <div className="flex flex-col">
-                        <SmallText className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-1 leading-none">
+                        <SmallText className="text-[10px] font-semibold text-slate-500 uppercase tracking-[0.12em] mb-1 leading-none">
                           Remarks
                         </SmallText>
                         {editMode ? (
@@ -649,7 +684,7 @@ function PODetailContent() {
                           />
                         ) : (
                           <div
-                            className="text-[13px] text-slate-950 font-normal line-clamp-1 italic px-0.5 opacity-90"
+                            className="text-[13px] text-slate-950 font-medium line-clamp-1 italic px-0.5 opacity-90"
                             title={header.remarks || ""}
                           >
                             {header.remarks || "No remarks provided."}
@@ -663,15 +698,15 @@ function PODetailContent() {
                 <TabsContent value="srvs" className="m-0">
                   {srvs.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {srvs.map((srv) => (
+                      {srvs.map((srv: any) => (
                         <div
-                          key={srv.srv_number}
+                          key={srv.unique_id}
                           className="p-4 rounded-xl shadow-sm bg-white/50 hover:bg-emerald-50/30 hover:shadow-md transition-all duration-300 group cursor-pointer border border-slate-100"
                           onClick={() => router.push(`/srv/${srv.srv_number}`)}
                         >
                           <div className="flex justify-between items-start mb-3">
                             <div className="space-y-0.5">
-                              <div className="text-[10px] font-bold text-slate-900 uppercase tracking-tight group-hover:text-emerald-600">
+                              <div className="text-[10px] font-semibold text-slate-900 uppercase tracking-tight group-hover:text-emerald-600">
                                 SRV-{srv.srv_number}
                               </div>
                               <div className="text-[9px] font-medium text-slate-400 flex items-center gap-1 uppercase tracking-tighter">
@@ -685,8 +720,7 @@ function PODetailContent() {
                               </div>
                               {srv.invoice_numbers && (
                                 <Badge
-                                  variant="default"
-                                  className="text-[8px] py-0 px-1 font-bold bg-slate-900 text-white border-none"
+                                  className="text-[8px] py-0 px-1 font-semibold bg-blue-600 text-white border-none"
                                 >
                                   INV: {srv.invoice_numbers.split(",")[0]}
                                 </Badge>
@@ -695,20 +729,20 @@ function PODetailContent() {
                           </div>
                           <div className="grid grid-cols-2 pt-2 border-t border-slate-50 gap-2">
                             <div>
-                              <div className="text-[7px] font-bold text-emerald-500 uppercase tracking-widest leading-tight">
+                              <div className="text-[7px] font-semibold text-emerald-500 uppercase tracking-[0.12em] leading-tight">
                                 Accepted
                               </div>
-                              <div className="text-[11px] font-bold text-slate-900">
+                              <div className="text-[11px] font-medium text-slate-900">
                                 <Accounting>
                                   {srv.total_accepted_qty || 0}
                                 </Accounting>
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className="text-[7px] font-bold text-rose-500 uppercase tracking-widest leading-tight">
+                              <div className="text-[7px] font-semibold text-rose-500 uppercase tracking-[0.12em] leading-tight">
                                 Rejected
                               </div>
-                              <div className="text-[11px] font-bold text-slate-900">
+                              <div className="text-[11px] font-medium text-slate-900">
                                 <Accounting>
                                   {srv.total_rejected_qty || 0}
                                 </Accounting>
@@ -733,7 +767,7 @@ function PODetailContent() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <H3 className="m-0 uppercase tracking-widest text-[12px] font-black text-slate-600">
+              <H3 className="m-0 uppercase tracking-[0.15em] text-[11px] font-medium text-slate-500">
                 Bill of Materials
               </H3>
             </div>
@@ -742,7 +776,7 @@ function PODetailContent() {
                 size="sm"
                 onClick={addItem}
                 variant="ghost"
-                className="h-8 text-[11px] bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold"
+                className="h-8 text-[11px] bg-slate-100 text-slate-700 hover:bg-slate-200 font-medium"
               >
                 <Plus className="w-3.5 h-3.5 mr-1.5" />
                 ADD ITEM
@@ -786,8 +820,8 @@ function PODetailContent() {
                   </tr>
                 </thead>
                 <tbody>
-                  {items.map((item, idx) => (
-                    <React.Fragment key={item.po_item_no}>
+                  {items.map((item: any, idx: number) => (
+                    <React.Fragment key={item.unique_id}>
                       <tr
                         className={cn(
                           "hover:bg-slate-50 transition-colors group",
@@ -846,7 +880,7 @@ function PODetailContent() {
                                 {item.material_description}
                               </div>
                               {item.drg_no && (
-                                <div className="text-[10px] font-medium text-[#1A3D7C] uppercase tracking-tight">
+                                <div className="text-[10px] font-semibold text-blue-600 uppercase tracking-tight">
                                   DRG: {item.drg_no}
                                 </div>
                               )}
@@ -1026,17 +1060,17 @@ function PODetailContent() {
                                   <tbody>
                                     {item.deliveries &&
                                       item.deliveries.length > 0 ? (
-                                      item.deliveries.map((d, dIdx) => (
+                                      item.deliveries.map((d: any, dIdx: number) => (
                                         <tr
-                                          key={dIdx}
+                                          key={`lot-${item.po_item_no}-${d.lot_no || dIdx}-${dIdx}`}
                                           className="hover:bg-slate-50/80 transition-colors"
                                         >
                                           <td className="px-4 py-1.5">
-                                            <span className="text-[11px] font-bold text-slate-400 font-mono tracking-tight">
+                                            <span className="text-[11px] font-semibold text-slate-400 font-mono tracking-tight">
                                               L{d.lot_no}
                                             </span>
                                           </td>
-                                          <td className="px-4 py-1.5 text-right font-medium text-blue-900 text-[12px] font-mono tracking-tighter">
+                                          <td className="px-4 py-1.5 text-right font-medium text-blue-600 text-[12px] font-mono tracking-tighter">
                                             {editMode ? (
                                               <input
                                                 type="number"
@@ -1052,7 +1086,7 @@ function PODetailContent() {
                                                     items: n,
                                                   });
                                                 }}
-                                                className="w-16 text-right text-[11px] bg-blue-100/30 rounded px-1 py-0.5 border-none outline-none font-medium text-blue-900"
+                                                className="w-16 text-right text-[11px] bg-blue-50 rounded px-1 py-0.5 border-none outline-none font-medium text-blue-600"
                                               />
                                             ) : (
                                               d.delivered_quantity

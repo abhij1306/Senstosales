@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Plus,
   Edit2,
@@ -35,7 +35,7 @@ export default function PONotesPage() {
     loadTemplates();
   }, []);
 
-  const loadTemplates = async () => {
+  const loadTemplates = useCallback(async () => {
     try {
       const data = await api.getPONotes();
       setTemplates(data || []);
@@ -44,9 +44,9 @@ export default function PONotesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       if (editingId) {
@@ -61,15 +61,15 @@ export default function PONotesPage() {
     } catch (err) {
       console.error("Failed to save template:", err);
     }
-  };
+  }, [editingId, formData, loadTemplates]);
 
-  const handleEdit = (template: PONote) => {
+  const handleEdit = useCallback((template: PONote) => {
     setFormData({ title: template.title, content: template.content });
     setEditingId(template.id);
     setShowForm(true);
-  };
+  }, []);
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = useCallback(async (id: number) => {
     if (!confirm("Delete this template permanently?")) return;
     try {
       await api.deletePONote(id.toString());
@@ -77,9 +77,9 @@ export default function PONotesPage() {
     } catch (err) {
       console.error("Failed to delete template:", err);
     }
-  };
+  }, [loadTemplates]);
 
-  const actions = (
+  const actions = useMemo(() => (
     <Button
       variant="default"
       onClick={() => {
@@ -92,7 +92,7 @@ export default function PONotesPage() {
       <Plus size={16} />
       New Template
     </Button>
-  );
+  ), [loading]);
 
   return (
     <DocumentTemplate
@@ -116,10 +116,10 @@ export default function PONotesPage() {
                 onClick={() => setShowForm(false)}
               />
               <Card className="relative w-full max-w-xl p-0 shadow-2xl">
-                <div className="px-6 py-4 border-b border-[#E5E7EB] flex items-center justify-between">
+                <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
                   <div>
-                    <H3>{editingId ? "Update Template" : "New Template"}</H3>
-                    <SmallText className="text-[#6B7280]">
+                    <H3 className="font-semibold">{editingId ? "Update Template" : "New Template"}</H3>
+                    <SmallText className="text-slate-500 font-medium">
                       Template Configuration
                     </SmallText>
                   </div>
@@ -147,14 +147,14 @@ export default function PONotesPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Template Content</Label>
+                    <Label className="font-semibold uppercase tracking-wider text-[10px] text-slate-500 ml-1">Template Content</Label>
                     <textarea
                       value={formData.content}
                       onChange={(e) =>
                         setFormData({ ...formData, content: e.target.value })
                       }
                       rows={10}
-                      className="w-full px-3 py-2 text-[14px] border border-[#D1D5DB] rounded-md focus:outline-none focus:ring-2 focus:ring-[#1A3D7C] resize-none"
+                      className="w-full px-3 py-2 text-[14px] border border-slate-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all font-medium text-slate-900 resize-none"
                       placeholder="Enter documentation text..."
                       required
                     />
@@ -183,24 +183,24 @@ export default function PONotesPage() {
           {loading ? (
             [1, 2, 3, 4, 5, 6].map((i) => (
               <div
-                key={i}
+                key={`skeleton-${i}`}
                 className="h-64 bg-slate-50/50 rounded-xl border border-slate-100 animate-pulse"
               />
             ))
           ) : (
             <>
-              {templates.map((template) => (
+              {templates.map((template, idx) => (
                 <Card
-                  key={template.id}
+                  key={`template-${template.id || idx}`}
                   className="flex flex-col h-full hover:shadow-lg transition-shadow animate-in"
                 >
                   <div className="p-6 flex-1 flex flex-col">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3 flex-1">
-                        <div className="w-10 h-10 bg-[#1A3D7C]/10 rounded-lg flex items-center justify-center">
-                          <FileText className="w-5 h-5 text-[#1A3D7C]" />
+                        <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center border border-blue-100">
+                          <FileText className="w-5 h-5 text-blue-600" />
                         </div>
-                        <H3 className="text-[16px] line-clamp-1">
+                        <H3 className="text-[15px] font-semibold text-slate-930 line-clamp-1">
                           {template.title}
                         </H3>
                       </div>
@@ -217,7 +217,7 @@ export default function PONotesPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleDelete(template.id)}
-                          className="text-[#DC2626] hover:text-[#991B1B]"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
                           title="Delete"
                         >
                           <Trash2 size={14} />
@@ -225,19 +225,19 @@ export default function PONotesPage() {
                       </div>
                     </div>
 
-                    <div className="flex-1 bg-[#F9FAFB] rounded-lg p-4 border border-[#E5E7EB]">
-                      <SmallText className="text-[#6B7280] leading-relaxed whitespace-pre-wrap">
+                    <div className="flex-1 bg-slate-50/50 rounded-lg p-4 border border-slate-100">
+                      <SmallText className="text-slate-600 leading-relaxed font-medium whitespace-pre-wrap">
                         {template.content}
                       </SmallText>
                     </div>
 
-                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-[#E5E7EB]">
-                      <SmallText className="text-[#9CA3AF]">
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100">
+                      <SmallText className="text-slate-400 font-medium">
                         Ver. {new Date(template.updated_at).getFullYear()}.
                         {new Date(template.updated_at).getMonth() + 1}
                       </SmallText>
-                      <Badge variant="success">
-                        <CheckSquare size={12} /> Active
+                      <Badge variant="success" className="font-semibold px-2">
+                        <CheckSquare size={12} className="mr-1" /> Active
                       </Badge>
                     </div>
                   </div>
@@ -245,16 +245,16 @@ export default function PONotesPage() {
               ))}
 
               {templates.length === 0 && (
-                <Card className="text-center py-24 border-dashed border-[#E5E7EB] col-span-full">
-                  <div className="w-16 h-16 bg-[#F9FAFB] rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Quote className="w-8 h-8 text-[#D1D5DB]" />
+                <Card className="text-center py-24 border-dashed border-slate-200 col-span-full">
+                  <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-100">
+                    <Quote className="w-8 h-8 text-slate-300" />
                   </div>
-                  <H3 className="mb-2">No templates configured</H3>
-                  <Body className="text-[#6B7280] mb-6">
+                  <H3 className="mb-2 font-semibold">No templates configured</H3>
+                  <Body className="text-slate-500 font-medium mb-6">
                     Standardize your document terms for faster processing.
                   </Body>
                   <Button onClick={() => setShowForm(true)} variant="default">
-                    <Plus size={16} />
+                    <Plus size={16} className="mr-2" />
                     Setup First Template
                   </Button>
                 </Card>

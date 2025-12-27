@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -39,11 +39,9 @@ const columns: Column<POListItem>[] = [
     render: (_v, row) => (
       <Link
         href={`/po/${row.po_number}`}
-        className="font-medium text-[#1A3D7C] hover:underline"
+        className="font-medium text-blue-600 hover:text-blue-700 transition-colors"
       >
-        <motion.span layoutId={`po-title-${row.po_number}`}>
-          {row.po_number}
-        </motion.span>
+        {row.po_number}
       </Link>
     ),
   },
@@ -52,7 +50,7 @@ const columns: Column<POListItem>[] = [
     label: "DATE",
     width: "10%",
     render: (_v, row) => (
-      <Body className="text-slate-600">{formatDate(row.po_date)}</Body>
+      <Body className="text-slate-500 font-medium">{formatDate(row.po_date)}</Body>
     ),
   },
   {
@@ -81,21 +79,21 @@ const columns: Column<POListItem>[] = [
     label: "Dlv",
     width: "10%",
     align: "right",
-    render: (v) => <Accounting className="text-green-600">{v}</Accounting>,
+    render: (v) => <Accounting className="text-emerald-600 font-medium">{v}</Accounting>,
   },
   {
     key: "total_pending_quantity",
     label: "Bal",
     width: "9%",
     align: "right",
-    render: (v) => <Accounting className="text-orange-600">{v}</Accounting>,
+    render: (v) => <Accounting className="text-amber-600 font-medium">{v}</Accounting>,
   },
   {
     key: "total_received_quantity",
     label: "Rec",
     width: "10%",
     align: "right",
-    render: (v) => <Accounting className="text-blue-600">{v}</Accounting>,
+    render: (v) => <Accounting className="text-blue-600 font-medium">{v}</Accounting>,
   },
   {
     key: "po_status",
@@ -148,7 +146,11 @@ export default function POListPage() {
           api.listPOs(),
           api.getPOStats(),
         ]);
-        setPOs(posData || []);
+        const posWithKeys = (posData || []).map((po, idx) => ({
+          ...po,
+          unique_id: `po-${po.po_number}-${idx}`
+        }));
+        setPOs(posWithKeys);
         setStats(statsData);
       } catch (err) {
         console.error("PO Load Error:", err);
@@ -159,11 +161,11 @@ export default function POListPage() {
     fetchData();
   }, []);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedFiles(Array.from(e.target.files || []));
-  };
+  }, []);
 
-  const handleUpload = async () => {
+  const handleUpload = useCallback(async () => {
     if (selectedFiles.length === 0) return;
     setUploading(true);
     setUploadProgress({ current: 0, total: selectedFiles.length });
@@ -190,7 +192,11 @@ export default function POListPage() {
           api.listPOs(),
           api.getPOStats(),
         ]);
-        setPOs(updatedPos || []);
+        const updatedPosWithKeys = (updatedPos || []).map((po, idx) => ({
+          ...po,
+          unique_id: `po-${po.po_number}-${idx}`
+        }));
+        setPOs(updatedPosWithKeys);
         setStats(updatedStats);
         setSelectedFiles([]);
       }
@@ -200,7 +206,7 @@ export default function POListPage() {
       setUploading(false);
       isCancelled.current = false;
     }
-  };
+  }, [selectedFiles]);
 
   const filteredPOs = useMemo(() => {
     return pos.filter(
@@ -219,7 +225,7 @@ export default function POListPage() {
       {
         title: "Total Orders",
         value: (
-          <Accounting className="text-xl text-white">{pos.length}</Accounting>
+          <Accounting className="text-2xl text-white font-medium">{pos.length}</Accounting>
         ),
         icon: <FileText size={24} />,
         variant: "primary",
@@ -227,7 +233,7 @@ export default function POListPage() {
       {
         title: "Open Orders",
         value: (
-          <Accounting className="text-xl text-white">
+          <Accounting className="text-2xl text-white font-medium">
             {stats?.open_orders_count || 0}
           </Accounting>
         ),
@@ -237,7 +243,7 @@ export default function POListPage() {
       {
         title: "Pending Approval",
         value: (
-          <Accounting className="text-xl text-white">
+          <Accounting className="text-2xl text-white font-medium">
             {stats?.pending_approval_count || 0}
           </Accounting>
         ),
@@ -247,7 +253,7 @@ export default function POListPage() {
       {
         title: "Total Value",
         value: (
-          <Accounting isCurrency short className="text-xl text-white">
+          <Accounting isCurrency short className="text-2xl text-white font-medium">
             {stats?.total_value_ytd || 0}
           </Accounting>
         ),
@@ -289,7 +295,7 @@ export default function POListPage() {
       <Button
         variant="default"
         size="sm"
-        onClick={() => router.push("/po/create")}
+        onClick={useCallback(() => router.push("/po/create"), [router])}
       >
         <Plus size={16} />
         New PO
@@ -306,7 +312,7 @@ export default function POListPage() {
         summaryCards={summaryCards}
         columns={columns}
         data={filteredPOs}
-        keyField="po_number"
+        keyField="unique_id"
         page={page}
         pageSize={pageSize}
         totalItems={filteredPOs.length}
@@ -353,12 +359,12 @@ export default function POListPage() {
             <div className="space-y-2">
               <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
                 <motion.div
-                  className="bg-[#1A3D7C] h-full"
+                  className="bg-blue-600 h-full"
                   initial={{ width: 0 }}
                   animate={{
                     width: `${(uploadProgress.current / uploadProgress.total) * 100}%`,
                   }}
-                  transition={{ duration: 0.3 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
                 />
               </div>
               <div className="flex justify-between text-xs text-slate-500">

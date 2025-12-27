@@ -4,8 +4,9 @@ import React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Checkbox Atom - Atomic Design System v1.0
- * Spec: 18px size, 4px radius, #1A3D7C selected
+ * Checkbox Atom - Atomic Design System v1.1
+ * Consists of Radix UI Checkbox primitive styled for Enterprise ERP.
+ * Focus: Blue 600, Border: Slate 300
  */
 
 export interface CheckboxProps extends Omit<
@@ -38,7 +39,7 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
         {label && (
           <label
             htmlFor={checkboxId}
-            className="text-[14px] font-normal text-[#111827] cursor-pointer select-none"
+            className="text-[13px] font-medium text-slate-700 cursor-pointer select-none"
           >
             {label}
           </label>

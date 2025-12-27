@@ -1,52 +1,47 @@
 "use client";
 
-import * as React from "react";
+import React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 /**
  * Badge Atom - Atomic Design System v1.0
- * Uses strict color palette with proper contrast
+ * Rounded-full, uppercase tracking-wide (px-2 py-0.5 text-[10px])
  */
 
-export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
-  variant?:
-    | "default"
-    | "secondary"
-    | "success"
-    | "warning"
-    | "error"
-    | "outline";
-}
+const badgeVariants = cva(
+  "inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider transition-colors focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2",
+  {
+    variants: {
+      variant: {
+        default:
+          "border-transparent bg-slate-900 text-slate-50 hover:bg-slate-900/80",
+        secondary:
+          "border-transparent bg-slate-100 text-slate-900 hover:bg-slate-100/80",
+        destructive:
+          "border-transparent bg-red-500 text-slate-50 hover:bg-red-500/80",
+        outline: "text-slate-950 border-slate-200 bg-white/50",
+        success:
+          "border-transparent bg-emerald-100 text-emerald-700 font-semibold",
+        warning:
+          "border-transparent bg-amber-100 text-amber-700 font-semibold",
+        info: "border-transparent bg-blue-100 text-blue-700 font-semibold",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+    },
+  },
+);
 
-function Badge({ className, variant = "default", ...props }: BadgeProps) {
-  const variants = {
-    // Primary blue
-    default: "bg-[#1A3D7C]/10 text-[#1A3D7C] border-[#1A3D7C]/20",
-    // Teal secondary
-    secondary: "bg-[#2BB7A0]/10 text-[#2BB7A0] border-[#2BB7A0]/20",
-    // Success green
-    success: "bg-[#16A34A]/10 text-[#16A34A] border-[#16A34A]/20",
-    // Warning amber
-    warning: "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20",
-    // Error red
-    error: "bg-[#DC2626]/10 text-[#DC2626] border-[#DC2626]/20",
-    // Outline
-    outline: "bg-transparent text-[#111827] border-[#D1D5DB]",
-  };
+export interface BadgeProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+  VariantProps<typeof badgeVariants> { }
 
+const BadgeInternal = ({ className, variant, ...props }: BadgeProps) => {
   return (
-    <div
-      className={cn(
-        "inline-flex items-center rounded-full border px-2 py-0.5",
-        "text-[12px] font-medium uppercase tracking-tight",
-        "transition-all duration-200",
-        "mb-1 tabular-nums transition-all truncate",
-        variants[variant],
-        className,
-      )}
-      {...props}
-    />
+    <div className={cn(badgeVariants({ variant }), className)} {...props} />
   );
-}
+};
 
-export { Badge };
+export const Badge = React.memo(BadgeInternal);

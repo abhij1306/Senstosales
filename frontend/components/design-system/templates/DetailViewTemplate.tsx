@@ -81,17 +81,17 @@ export const DetailViewTemplate: React.FC<DetailViewTemplateProps> = ({
               {crumb.href ? (
                 <a
                   href={crumb.href}
-                  className="text-[#6B7280] hover:text-[#1A3D7C] transition-colors"
+                  className="text-slate-500 hover:text-blue-600 transition-colors font-medium"
                 >
                   {crumb.label}
                 </a>
               ) : (
-                <span className="text-[#111827] font-medium">
+                <span className="text-slate-900 font-semibold">
                   {crumb.label}
                 </span>
               )}
               {index < breadcrumbs.length - 1 && (
-                <ChevronRight size={16} className="text-[#9CA3AF]" />
+                <ChevronRight size={14} className="text-slate-300" />
               )}
             </React.Fragment>
           ))}
@@ -105,7 +105,7 @@ export const DetailViewTemplate: React.FC<DetailViewTemplateProps> = ({
             <H1>{title}</H1>
             {badge}
           </div>
-          {subtitle && <Body className="text-[#6B7280]">{subtitle}</Body>}
+          {subtitle && <Body className="text-slate-500 font-medium">{subtitle}</Body>}
         </div>
 
         {actions && actions.length > 0 && (
@@ -127,18 +127,18 @@ export const DetailViewTemplate: React.FC<DetailViewTemplateProps> = ({
       {tabs && tabs.length > 0 ? (
         <div className="space-y-4">
           {/* Tab Headers */}
-          <div className="border-b border-[#E5E7EB]">
+          <div className="border-b border-slate-200">
             <div className="flex items-center gap-1">
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-3 text-[14px] font-medium transition-all",
+                    "flex items-center gap-2 px-4 py-3 text-[13px] font-semibold transition-all",
                     "border-b-2 -mb-px",
                     activeTab === tab.id
-                      ? "border-[#1A3D7C] text-[#1A3D7C]"
-                      : "border-transparent text-[#6B7280] hover:text-[#111827]",
+                      ? "border-blue-600 text-blue-600"
+                      : "border-transparent text-slate-500 hover:text-slate-900",
                   )}
                 >
                   {tab.icon}

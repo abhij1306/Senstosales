@@ -19,7 +19,7 @@ export interface DialogProps {
   maxWidth?: string; // e.g. "max-w-md", "max-w-2xl"
 }
 
-export const Dialog = ({
+const DialogInternal = ({
   isOpen,
   onClose,
   title,
@@ -59,39 +59,38 @@ export const Dialog = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50"
             onClick={onClose}
           />
 
           {/* Dialog Content */}
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
               transition={{
                 duration: 0.2,
-                type: "spring",
-                damping: 25,
-                stiffness: 300,
+                ease: "easeOut",
               }}
               className={cn("w-full pointer-events-auto", maxWidth)}
             >
               <Card
                 className={cn(
                   "overflow-hidden shadow-2xl border border-white/20",
-                  "bg-white/90 backdrop-blur-xl", // Strict Glassmorphism
+                  "bg-white/45 backdrop-blur-xl", // Professional Glassmorphism
                   className,
                 )}
+                glass={true}
               >
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-                  <H3>{title || "Dialog"}</H3>
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/50">
+                  <H3 className="text-slate-950 uppercase tracking-wider">{title || "Dialog"}</H3>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={onClose}
-                    className="h-8 w-8 p-0 rounded-full hover:bg-slate-100 text-slate-500"
+                    className="h-8 w-8 p-0 rounded-full hover:bg-slate-200/50 text-slate-500"
                   >
                     <X size={18} />
                   </Button>
@@ -102,7 +101,7 @@ export const Dialog = ({
 
                 {/* Footer */}
                 {footer && (
-                  <div className="px-6 py-4 bg-slate-50/50 border-t border-slate-100 flex justify-end gap-3">
+                  <div className="px-6 py-4 bg-slate-50/30 border-t border-slate-200/50 flex justify-end gap-3">
                     {footer}
                   </div>
                 )}
@@ -115,3 +114,5 @@ export const Dialog = ({
     document.body,
   );
 };
+
+export const Dialog = React.memo(DialogInternal);

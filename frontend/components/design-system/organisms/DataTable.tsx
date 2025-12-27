@@ -59,6 +59,7 @@ export interface DataTableProps<T = any> {
   emptyMessage?: string;
   emptyIcon?: React.ReactNode;
 
+  glass?: boolean;
   className?: string;
 }
 
@@ -83,6 +84,7 @@ const DataTableComponent = <T extends Record<string, any>>({
   error,
   emptyMessage = "No data available",
   emptyIcon,
+  glass = false,
   className,
 }: DataTableProps<T>) => {
   const [internalSort, setInternalSort] = useState<{
@@ -191,10 +193,10 @@ const DataTableComponent = <T extends Record<string, any>>({
     return (
       <Card className={cn("p-12 text-center", className)}>
         <div className="flex flex-col items-center gap-4">
-          <div className="p-4 rounded-full bg-[#F6F8FB]">
-            {emptyIcon || <Inbox size={32} className="text-[#9CA3AF]" />}
+          <div className="p-4 rounded-full bg-slate-50">
+            {emptyIcon || <Inbox size={32} className="text-slate-400" />}
           </div>
-          <Body className="text-[#6B7280]">{emptyMessage}</Body>
+          <Body className="text-slate-500">{emptyMessage}</Body>
         </div>
       </Card>
     );
@@ -204,7 +206,7 @@ const DataTableComponent = <T extends Record<string, any>>({
   if (error) {
     return (
       <Card className={cn("p-8 text-center", className)}>
-        <Body className="text-[#DC2626]">{error}</Body>
+        <Body className="text-red-600">{error}</Body>
       </Card>
     );
   }
@@ -213,17 +215,17 @@ const DataTableComponent = <T extends Record<string, any>>({
     <div className={cn("space-y-4", className)}>
       {/* Table toolbar */}
       {(exportable || selectable) && (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-4">
           <div>
             {selectable && selectedCount > 0 && (
-              <SmallText className="text-[#6B7280]">
+              <SmallText className="text-slate-500 font-medium">
                 {selectedCount} row{selectedCount !== 1 ? "s" : ""} selected
               </SmallText>
             )}
           </div>
           {exportable && onExport && (
-            <Button variant="secondary" size="sm" onClick={onExport}>
-              <FileDown size={16} />
+            <Button variant="secondary" size="sm" onClick={onExport} className="rounded-xl">
+              <FileDown size={14} className="mr-2" />
               {exportLabel}
             </Button>
           )}
@@ -231,7 +233,7 @@ const DataTableComponent = <T extends Record<string, any>>({
       )}
 
       {/* Table */}
-      <Card className="p-0 overflow-hidden border border-[#E5E7EB]">
+      <Card className="p-0 overflow-hidden border-white/20" glass={glass}>
         <div
           className="overflow-x-auto"
           style={{ minHeight: "200px", display: "block" }}
@@ -241,9 +243,9 @@ const DataTableComponent = <T extends Record<string, any>>({
             style={{ display: "table" }}
           >
             <thead>
-              <tr className="bg-slate-500/5 border-b border-slate-200/50">
+              <tr className="bg-slate-50/50 border-b border-slate-200/50">
                 {selectable && (
-                  <th className="h-12 px-4 w-12">
+                  <th className="h-10 px-4 w-12 text-center">
                     <Checkbox
                       checked={allSelected}
                       onChange={(e) => handleSelectAll(e.target.checked)}
@@ -255,7 +257,7 @@ const DataTableComponent = <T extends Record<string, any>>({
                   <th
                     key={column.key}
                     className={cn(
-                      "py-2.5 px-4 text-[11px] font-medium text-slate-600 uppercase tracking-widest transition-colors",
+                      "py-2.5 px-4 text-[10px] font-semibold text-slate-500 uppercase tracking-[0.12em] transition-colors border-b border-slate-200/60",
                       column.align === "right"
                         ? "text-right"
                         : column.align === "center"
@@ -263,8 +265,8 @@ const DataTableComponent = <T extends Record<string, any>>({
                           : "text-left",
                       column.sortable &&
                       (currentSortKey === column.key
-                        ? "bg-slate-200/50 text-slate-950"
-                        : "hover:bg-slate-100/50 cursor-pointer"),
+                        ? "bg-slate-100/50 text-slate-950"
+                        : "hover:bg-slate-50/50 cursor-pointer"),
                     )}
                     style={{ width: column.width }}
                     onClick={
@@ -272,9 +274,13 @@ const DataTableComponent = <T extends Record<string, any>>({
                     }
                   >
                     {column.sortable ? (
-                      <div className="flex items-center gap-1">
+                      <div className={cn(
+                        "flex items-center gap-1.5",
+                        column.align === "right" ? "justify-end" :
+                          column.align === "center" ? "justify-center" : "justify-start"
+                      )}>
                         {column.label}
-                        <span className="text-[#9CA3AF]">
+                        <span className="text-slate-400">
                           {currentSortKey === column.key
                             ? currentSortDirection === "asc"
                               ? "↑"
@@ -293,26 +299,31 @@ const DataTableComponent = <T extends Record<string, any>>({
               {loading
                 ? Array.from({ length: pageSize || 5 }).map((_, i) => (
                   <tr key={`skeleton-${i}`}>
-                    <td colSpan={columns.length + (selectable ? 1 : 0)}>
+                    <td colSpan={columns.length + (selectable ? 1 : 0)} className="px-4">
                       <TableRowSkeleton columns={columns.length} />
                     </td>
                   </tr>
                 ))
-                : processedData.map((row) => {
-                  const rowKey = String(row[keyField]);
+                : processedData.map((row, index) => {
+                  const rowKey = row[keyField]
+                    ? String(row[keyField])
+                    : row.id
+                      ? String(row.id)
+                      : `fallback-${index}`;
+
                   const isSelected = selectedRows.includes(rowKey);
 
                   return (
                     <tr
                       key={rowKey}
                       className={cn(
-                        "border-b border-slate-200/30 transition-colors",
-                        "hover:bg-blue-500/5",
-                        isSelected && "bg-blue-500/10",
+                        "border-b border-slate-200/30 transition-all duration-200",
+                        "hover:bg-blue-50/50 group/row",
+                        isSelected && "bg-blue-50/40",
                       )}
                     >
                       {selectable && (
-                        <td className="px-4 py-4">
+                        <td className="px-4 py-4 text-center">
                           <Checkbox
                             checked={isSelected}
                             onChange={(e) =>
@@ -326,7 +337,7 @@ const DataTableComponent = <T extends Record<string, any>>({
                         <td
                           key={column.key}
                           className={cn(
-                            "py-3 px-4 text-[13px] font-medium text-slate-950 tabular-nums align-top",
+                            "py-2.5 px-4 text-[13px] font-medium text-slate-950 tabular-nums align-middle relative",
                             column.align === "right"
                               ? "text-right"
                               : column.align === "center"
@@ -348,23 +359,24 @@ const DataTableComponent = <T extends Record<string, any>>({
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-[#E5E7EB] bg-[#F6F8FB]/30">
-            <SmallText className="text-[#6B7280]">
-              Showing {startIndex + 1} to {endIndex} of {total} results
+          <div className="flex items-center justify-between px-6 py-4 border-t border-slate-200/50 bg-slate-50/50 backdrop-blur-sm">
+            <SmallText className="text-slate-500 font-medium">
+              Showing <span className="text-slate-900">{startIndex + 1}</span> to <span className="text-slate-900">{endIndex}</span> of <span className="text-slate-900">{total}</span> results
             </SmallText>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => handlePageChange(currentPage - 1)}
                 disabled={currentPage === 1}
+                className="rounded-xl h-9 px-3"
               >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={14} className="mr-1" />
                 Previous
               </Button>
 
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1.5">
                 {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
                   let pageNum: number;
                   if (totalPages <= 5) {
@@ -383,7 +395,10 @@ const DataTableComponent = <T extends Record<string, any>>({
                       variant={currentPage === pageNum ? "default" : "ghost"}
                       size="sm"
                       onClick={() => handlePageChange(pageNum)}
-                      className="w-8 h-8 p-0"
+                      className={cn(
+                        "w-9 h-9 p-0 rounded-xl transition-all duration-200",
+                        currentPage === pageNum ? "shadow-md scale-105" : "hover:bg-slate-200/50"
+                      )}
                     >
                       {pageNum}
                     </Button>
@@ -396,9 +411,10 @@ const DataTableComponent = <T extends Record<string, any>>({
                 size="sm"
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
+                className="rounded-xl h-9 px-3"
               >
                 Next
-                <ChevronRight size={16} />
+                <ChevronRight size={14} className="ml-1" />
               </Button>
             </div>
           </div>

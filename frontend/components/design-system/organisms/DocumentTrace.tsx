@@ -30,20 +30,20 @@ const documentConfig = {
   po: {
     icon: FileText,
     label: "Purchase Order",
-    color: "text-[#1A3D7C]",
-    bgColor: "bg-[#1A3D7C]/10",
+    color: "text-blue-600",
+    bgColor: "bg-blue-50",
   },
   dc: {
     icon: Truck,
     label: "Delivery Challan",
-    color: "text-[#2BB7A0]",
-    bgColor: "bg-[#2BB7A0]/10",
+    color: "text-emerald-600",
+    bgColor: "bg-emerald-50",
   },
   invoice: {
     icon: Receipt,
     label: "GST Invoice",
-    color: "text-[#F59E0B]",
-    bgColor: "bg-[#F59E0B]/10",
+    color: "text-amber-600",
+    bgColor: "bg-amber-50",
   },
 };
 
@@ -57,19 +57,19 @@ const DocumentNode: React.FC<{ node: DocumentNode; isLast: boolean }> = ({
   const content = (
     <div
       className={cn(
-        "flex items-center gap-3 p-4 rounded-lg border-2 transition-all",
+        "flex items-center gap-3 p-4 rounded-xl border-2 transition-all",
         node.link
-          ? "cursor-pointer hover:border-[#1A3D7C] hover:shadow-md"
-          : "border-[#E5E7EB]",
+          ? "cursor-pointer hover:border-blue-600 hover:shadow-md"
+          : "border-slate-200",
       )}
     >
-      <div className={cn("p-2 rounded", config.bgColor)}>
+      <div className={cn("p-2 rounded-lg", config.bgColor)}>
         <Icon size={20} className={config.color} />
       </div>
       <div className="flex-1 min-w-0">
-        <SmallText className="uppercase mb-0.5">{config.label}</SmallText>
-        <div className="font-semibold text-[#111827]">{node.number}</div>
-        <div className="text-[12px] text-[#6B7280] mt-0.5">{node.date}</div>
+        <SmallText className="uppercase mb-0.5 font-semibold text-slate-500 tracking-wider text-[10px]">{config.label}</SmallText>
+        <div className="font-semibold text-slate-900">{node.number}</div>
+        <div className="text-[12px] text-slate-500 font-medium mt-0.5">{node.date}</div>
       </div>
       <Badge
         variant={
@@ -95,7 +95,7 @@ const DocumentNode: React.FC<{ node: DocumentNode; isLast: boolean }> = ({
         <div className="flex-1">{content}</div>
       )}
 
-      {!isLast && <ArrowRight size={20} className="text-[#9CA3AF] shrink-0" />}
+      {!isLast && <ArrowRight size={18} className="text-slate-300 shrink-0" />}
     </div>
   );
 };
@@ -106,8 +106,8 @@ export const DocumentTrace: React.FC<DocumentTraceProps> = ({
 }) => {
   return (
     <Card className={cn("p-6", className)}>
-      <H3 className="mb-4">Document Traceability</H3>
-      <Body className="text-[#6B7280] mb-6">
+      <H3 className="mb-4 text-[13px] font-semibold text-slate-500 uppercase tracking-[0.15em]">Document Traceability</H3>
+      <Body className="text-slate-600 font-medium mb-6">
         Track the complete document flow from purchase order to invoice
       </Body>
 

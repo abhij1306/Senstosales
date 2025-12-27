@@ -25,21 +25,21 @@ export interface SummaryCardProps {
 }
 
 const variantStyles = {
-  default: "bg-white border-[#E5E7EB]",
+  default: "bg-white border-slate-200 shadow-sm",
   primary:
-    "bg-gradient-to-br from-[#1A3D7C] to-[#152F61] text-white border-transparent",
+    "bg-gradient-to-br from-blue-600 to-blue-700 text-white border-transparent",
   secondary:
-    "bg-gradient-to-br from-[#2BB7A0] to-[#1E8A79] text-white border-transparent",
+    "bg-gradient-to-br from-slate-600 to-slate-700 text-white border-transparent",
   success:
-    "bg-gradient-to-br from-[#16A34A] to-[#15803D] text-white border-transparent",
+    "bg-gradient-to-br from-emerald-600 to-emerald-700 text-white border-transparent",
   warning:
-    "bg-gradient-to-br from-[#F59E0B] to-[#D97706] text-white border-transparent",
+    "bg-gradient-to-br from-amber-500 to-amber-600 text-white border-transparent",
 };
 
 const trendStyles = {
-  up: "text-[#16A34A]",
-  down: "text-[#DC2626]",
-  neutral: "text-[#6B7280]",
+  up: "text-emerald-600",
+  down: "text-red-500",
+  neutral: "text-slate-500",
 };
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -57,7 +57,7 @@ export const SummaryCard = React.memo(function SummaryCard({
   return (
     <div
       className={cn(
-        "relative flex flex-col justify-between p-4 rounded-xl transition-all duration-200 min-h-[110px] border hover:shadow-lg hover:-translate-y-1",
+        "relative flex flex-col justify-between p-4 rounded-xl transition-all duration-300 min-h-[95px] border hover:shadow-lg hover:-translate-y-0.5",
         // Restore original colored backgrounds
         variantStyles[variant],
         className,
@@ -65,8 +65,8 @@ export const SummaryCard = React.memo(function SummaryCard({
     >
       <div className="flex justify-between items-start">
         <SmallText className={cn(
-          "uppercase tracking-wider font-semibold text-[10px]",
-          isColored ? "text-white" : "text-slate-500/90"
+          "uppercase tracking-[0.1em] font-semibold text-[10px]",
+          isColored ? "text-white/90" : "text-slate-500"
         )}>
           {title}
         </SmallText>
@@ -75,12 +75,12 @@ export const SummaryCard = React.memo(function SummaryCard({
         {icon && (
           <div
             className={cn(
-              "w-8 h-8 rounded-full flex items-center justify-center text-base",
+              "w-9 h-9 rounded-xl flex items-center justify-center text-lg transition-transform duration-300 group-hover:scale-110",
               variant === "primary" ? "bg-white/20 text-white" :
-                variant === "success" ? "bg-white/20 text-white" :
+                variant === "success" ? "bg-white/10 text-white" :
                   variant === "warning" ? "bg-white/20 text-white" :
                     variant === "secondary" ? "bg-white/20 text-white" :
-                      "bg-slate-50 text-slate-600"
+                      "bg-slate-50 text-slate-600 border border-slate-100"
             )}
           >
             {icon}
@@ -90,8 +90,8 @@ export const SummaryCard = React.memo(function SummaryCard({
 
       <div className="mt-3">
         <div className={cn(
-          "text-2xl font-bold tracking-tight",
-          isColored ? "text-white" : "text-slate-900"
+          "text-2xl font-medium tracking-tight",
+          isColored ? "text-white" : "text-slate-950"
         )}>
           {value}
         </div>
@@ -100,14 +100,14 @@ export const SummaryCard = React.memo(function SummaryCard({
         {trend && (
           <div
             className={cn(
-              "text-[10px] font-medium mt-1 flex items-center gap-1",
-              isColored ? "text-white" : trendStyles[trend.direction],
+              "text-[10px] font-medium mt-1.5 flex items-center gap-1.5",
+              isColored ? "text-white/80" : trendStyles[trend.direction],
             )}
           >
-            <span>{trend.direction === 'up' ? '↑' : trend.direction === 'down' ? '↓' : '•'}</span>
-            <span>{trend.value}</span>
+            <span className="text-xs">{trend.direction === 'up' ? '↑' : trend.direction === 'down' ? '↓' : '•'}</span>
+            <span className="tracking-wide">{trend.value}</span>
             <span className={cn(
-              "ml-1",
+              "ml-0.5 opacity-70",
               isColored ? "text-white" : "text-slate-400"
             )}>vs last month</span>
           </div>
@@ -132,20 +132,19 @@ const container = {
   show: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.05
+      staggerChildren: 0.03
     }
   }
 };
 
 const item = {
-  hidden: { opacity: 0, y: -20 },
+  hidden: { opacity: 0, y: 8 },
   show: {
     opacity: 1,
     y: 0,
     transition: {
-      type: "spring",
-      stiffness: 400,
-      damping: 25
+      duration: 0.3,
+      ease: "easeOut"
     } as any
   }
 };

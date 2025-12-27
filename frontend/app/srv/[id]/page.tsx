@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import {
@@ -75,14 +75,14 @@ export default function SRVDetailPage() {
         render: (_v: any, row: any) => (
           <div>
             <div
-              className="font-medium text-[#1A3D7C] cursor-pointer hover:underline"
-              onClick={() =>
+              className="font-medium text-blue-600 cursor-pointer hover:underline"
+              onClick={useCallback(() =>
                 row.invoice_no &&
                 window.open(
                   `/invoice/${encodeURIComponent(row.invoice_no.toString().trim())}`,
                   "_self",
-                )
-              }
+                ),
+                [row.invoice_no])}
             >
               {row.invoice_no || "-"}
             </div>
@@ -113,7 +113,7 @@ export default function SRVDetailPage() {
         align: "right",
         width: "8%",
         render: (_v: any, row: any) => (
-          <Accounting className="font-medium text-[#1A3D7C]">
+          <Accounting className="font-medium text-blue-600">
             {row.received_qty}
           </Accounting>
         ),
@@ -124,7 +124,7 @@ export default function SRVDetailPage() {
         align: "right",
         width: "8%",
         render: (_v: any, row: any) => (
-          <Accounting className="font-medium text-[#16A34A]">
+          <Accounting className="font-medium text-emerald-600">
             {row.accepted_qty}
           </Accounting>
         ),
@@ -135,7 +135,7 @@ export default function SRVDetailPage() {
         align: "right",
         width: "8%",
         render: (_v: any, row: any) => (
-          <Accounting className="font-medium text-[#DC2626]">
+          <Accounting className="font-medium text-red-600">
             {row.rejected_qty}
           </Accounting>
         ),
@@ -150,34 +150,57 @@ export default function SRVDetailPage() {
     }
   }, [params.id]);
 
-  const loadSRV = async (id: string) => {
+  const loadSRV = useCallback(async (id: string) => {
     try {
       const baseUrl = api.baseUrl;
       const res = await fetch(`${baseUrl}/api/srv/${id}`);
       if (!res.ok) throw new Error("SRV not found");
       const data = await res.json();
-      setSrv(data);
+      const srvWithKeys = {
+        ...data,
+        items: (data.items || []).map((item: any, idx: number) => ({
+          ...item,
+          unique_id: `srv-item-${item.po_item_no || 'NA'}-${item.lot_no || 'NA'}-${idx}`
+        }))
+      };
+      setSrv(srvWithKeys);
     } catch (err) {
       console.error("SRV Error:", err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   if (loading || !srv || !srv.header) {
     return (
       <DocumentTemplate
-        title={loading ? "Synchronizing..." : "SRV Not Found"}
+        title={loading ? "SRV----" : "SRV Not Found"}
         description={
           loading
-            ? "Retrieving record data from ledger"
+            ? "Retrieving record data from ledger..."
             : "Traceback failure in record retrieval"
         }
         onBack={() => router.push("/srv")}
       >
         <div className="space-y-6">
-          <div className="h-8 w-64 bg-slate-100 rounded-full animate-pulse" />
-          <div className="h-[200px] w-full bg-slate-50 rounded-xl border border-slate-100 animate-pulse" />
+          {/* Top Info Skeleton */}
+          <div className="flex gap-3 h-6">
+            <div className="h-6 w-24 bg-slate-100 rounded-full animate-pulse" />
+            <div className="h-6 w-24 bg-slate-100 rounded-full animate-pulse" />
+          </div>
+
+          {/* Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-32 bg-white rounded-2xl shadow-sm border border-slate-100 animate-pulse" />
+            ))}
+          </div>
+
+          {/* Table Skeleton */}
+          <div className="space-y-4">
+            <div className="h-6 w-48 bg-slate-100 rounded animate-pulse" />
+            <div className="h-96 bg-white rounded-2xl shadow-sm border border-slate-100 animate-pulse" />
+          </div>
         </div>
       </DocumentTemplate>
     );
@@ -199,7 +222,7 @@ export default function SRVDetailPage() {
       title={`SRV-${header.srv_number}`}
       description={`Certified ${formatDate(header.srv_date)} • Contract: ${header.po_number}`}
       onBack={() => router.back()}
-      icon={<Package size={20} className="text-[#1A3D7C]" />}
+      icon={<Package size={20} className="text-blue-600" />}
       actions={
         <div className="flex gap-3">
           <Button variant="secondary" size="sm" onClick={() => window.print()}>
@@ -211,10 +234,10 @@ export default function SRVDetailPage() {
     >
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <Badge variant="default">INSPECTED</Badge>
+          <Badge variant="default" className="font-semibold">INSPECTED</Badge>
           <Badge
             variant="outline"
-            className="cursor-pointer hover:bg-[#1A3D7C]/10 transition-colors"
+            className="cursor-pointer hover:bg-blue-50 hover:text-blue-700 transition-colors font-semibold"
             onClick={() => router.push(`/po/${header.po_number}`)}
           >
             Ref: {header.po_number}
@@ -225,56 +248,56 @@ export default function SRVDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card className="p-6">
             <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-[#1A3D7C]/10 rounded-lg">
-                <Package className="w-6 h-6 text-[#1A3D7C]" />
+              <div className="p-3 bg-blue-50 rounded-lg border border-blue-100">
+                <Package className="w-6 h-6 text-blue-600" />
               </div>
-              <Activity className="w-4 h-4 text-[#D1D5DB]" />
+              <Activity className="w-4 h-4 text-slate-300" />
             </div>
-            <Label className="text-[10px] uppercase tracking-widest text-[#6B7280] mb-1">
+            <Label className="text-[10px] uppercase tracking-[0.15em] text-slate-500 font-semibold mb-1">
               Receipt Volume
             </Label>
             <div className="text-[28px] font-medium text-slate-950">
               <Accounting>{totalReceived}</Accounting>
             </div>
-            <SmallText className="text-[#1A3D7C] mt-2">
+            <SmallText className="text-blue-600 font-medium mt-2">
               Aggregated Units
             </SmallText>
           </Card>
 
           <Card className="p-6">
             <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-[#DC2626]/10 rounded-lg">
-                <AlertTriangle className="w-6 h-6 text-[#DC2626]" />
+              <div className="p-3 bg-red-50 rounded-lg border border-red-100">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
-              <Activity className="w-4 h-4 text-[#D1D5DB]" />
+              <Activity className="w-4 h-4 text-slate-300" />
             </div>
-            <Label className="text-[10px] uppercase tracking-widest text-[#6B7280] mb-1">
+            <Label className="text-[10px] uppercase tracking-[0.15em] text-slate-500 font-semibold mb-1">
               Quality Deficiency
             </Label>
-            <div className="text-[28px] font-medium text-[#DC2626]">
-              <Accounting className="text-[#DC2626] font-medium">
+            <div className="text-[28px] font-medium text-red-600">
+              <Accounting className="text-red-600 font-medium">
                 {totalRejected}
               </Accounting>
             </div>
-            <SmallText className="text-[#DC2626] mt-2">
+            <SmallText className="text-red-600 font-medium mt-2">
               Impacted Inventory
             </SmallText>
           </Card>
 
           <Card className="p-6">
             <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-[#2BB7A0]/10 rounded-lg">
-                <ClipboardCheck className="w-6 h-6 text-[#2BB7A0]" />
+              <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100">
+                <ClipboardCheck className="w-6 h-6 text-emerald-600" />
               </div>
-              <CheckCircle className="w-4 h-4 text-[#D1D5DB]" />
+              <CheckCircle className="w-4 h-4 text-slate-300" />
             </div>
-            <Label className="text-[10px] uppercase tracking-widest text-[#6B7280] mb-1">
+            <Label className="text-[10px] uppercase tracking-[0.15em] text-slate-500 font-semibold mb-1">
               Verification Node
             </Label>
-            <div className="text-[16px] font-medium text-slate-950 truncate">
+            <div className="text-[16px] font-medium text-slate-900 truncate">
               {items[0]?.invoice_no || "PENDING AUDIT"}
             </div>
-            <SmallText className="text-[#2BB7A0] mt-2">
+            <SmallText className="text-emerald-600 font-medium mt-2">
               {items[0]?.invoice_date
                 ? `Finalized ${formatDate(items[0].invoice_date)}`
                 : "Awaiting Sync"}
@@ -285,14 +308,14 @@ export default function SRVDetailPage() {
         {/* Items Table */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <H3 className="text-[13px] font-medium text-slate-600 uppercase tracking-widest">
+            <H3 className="text-[13px] font-medium text-slate-500 uppercase tracking-[0.15em]">
               Inspection Manifest
             </H3>
-            <Badge variant="default" className="text-[10px]">
+            <Badge variant="default" className="text-[10px] font-semibold">
               {items.length} Quality Nodes
             </Badge>
           </div>
-          <DataTable columns={itemColumns} data={items} keyField="id" />
+          <DataTable columns={itemColumns} data={items} keyField="unique_id" />
         </div>
       </div>
     </DocumentTemplate>

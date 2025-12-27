@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { api, DashboardSummary, ActivityItem } from "@/lib/api";
@@ -90,7 +90,7 @@ const createActivityColumns = (router: any): Column<ActivityItem>[] => [
                 ? `dc-title-${item.number}`
                 : `inv-title-${item.number}`
           }
-          className="font-semibold text-sm text-slate-900 group-hover:text-blue-700 transition-colors whitespace-nowrap"
+          className="font-medium text-sm text-slate-900 group-hover:text-blue-700 transition-colors whitespace-nowrap"
         >
           {item.number}
         </motion.div>
@@ -103,7 +103,7 @@ const createActivityColumns = (router: any): Column<ActivityItem>[] => [
     width: "20%",
     align: "right",
     render: (_value, item) => (
-      <Accounting isCurrency className="text-slate-900 font-semibold">
+      <Accounting isCurrency className="text-slate-900">
         {item.amount || 0}
       </Accounting>
     ),
@@ -160,7 +160,11 @@ export default function DashboardPage() {
           api.getRecentActivity(20),
         ]);
         setSummary(summaryData);
-        setActivity(activityData);
+        const activityWithKeys = (activityData || []).map((item: ActivityItem, idx: number) => ({
+          ...item,
+          unique_id: `act-${item.type}-${item.number}-${idx}`
+        }));
+        setActivity(activityWithKeys);
       } catch (err) {
         console.error("Dashboard Load Error:", err);
       } finally {
@@ -179,7 +183,7 @@ export default function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <H1>DASHBOARD</H1>
-          <Body className="text-[#6B7280] mt-1">
+          <Body className="text-slate-500 mt-1 font-medium">
             Business intelligence overview
           </Body>
         </div>
@@ -187,7 +191,7 @@ export default function DashboardPage() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => router.push("/reports")}
+            onClick={useCallback(() => router.push("/reports"), [router])}
           >
             <BarChart3 size={16} />
             Analytics
@@ -195,7 +199,7 @@ export default function DashboardPage() {
           <Button
             variant="default"
             size="sm"
-            onClick={() => router.push("/po/create")}
+            onClick={useCallback(() => router.push("/po/create"), [router])}
           >
             <Plus size={16} />
             New Purchase Order
@@ -265,7 +269,7 @@ export default function DashboardPage() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => router.push("/reports")}
+              onClick={useCallback(() => router.push("/reports"), [router])}
             >
               View All
               <ArrowRight size={16} />
@@ -285,7 +289,7 @@ export default function DashboardPage() {
               <DataTable
                 columns={activityColumns}
                 data={activity}
-                keyField="number"
+                keyField="unique_id"
                 pageSize={10}
               />
             )}
@@ -300,21 +304,21 @@ export default function DashboardPage() {
               title="Create Purchase Order"
               description="Initiate new procurement request"
               icon={<Plus size={20} />}
-              onClick={() => router.push("/po/create")}
+              onClick={useCallback(() => router.push("/po/create"), [router])}
               layoutId="create-po-icon"
             />
             <QuickActionCard
               title="Create Delivery Challan"
               description="Generate shipping documentation"
               icon={<Truck size={20} />}
-              onClick={() => router.push("/dc/create")}
+              onClick={useCallback(() => router.push("/dc/create"), [router])}
               layoutId="create-dc-icon"
             />
             <QuickActionCard
               title="Create Invoice"
               description="Issue billing document"
               icon={<Receipt size={20} />}
-              onClick={() => router.push("/invoice/create")}
+              onClick={useCallback(() => router.push("/invoice/create"), [router])}
               layoutId="create-invoice-icon"
             />
           </div>
@@ -342,21 +346,21 @@ function QuickActionCard({
     <Card
       className={cn(
         "p-4 flex items-center gap-4 cursor-pointer transition-all duration-200",
-        "hover:shadow-lg hover:border-[#1A3D7C]/20",
+        "hover:shadow-lg hover:border-blue-500/20",
       )}
       onClick={onClick}
     >
       <motion.div
         layoutId={layoutId}
-        className="p-3 rounded-lg bg-[#1A3D7C]/10 text-[#1A3D7C] shrink-0"
+        className="p-3 rounded-lg bg-blue-50 text-blue-600 shrink-0 border border-blue-100"
       >
         {icon}
       </motion.div>
       <div className="flex-1 min-w-0">
-        <div className="text-[14px] font-medium text-slate-950">{title}</div>
-        <SmallText className="text-[#6B7280] mt-0.5">{description}</SmallText>
+        <div className="text-[14px] font-medium text-slate-900">{title}</div>
+        <SmallText className="text-slate-500 font-medium mt-0.5">{description}</SmallText>
       </div>
-      <ArrowRight size={16} className="text-[#9CA3AF] shrink-0" />
+      <ArrowRight size={16} className="text-slate-400 shrink-0" />
     </Card>
   );
 }

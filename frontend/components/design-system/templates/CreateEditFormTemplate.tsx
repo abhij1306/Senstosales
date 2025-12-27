@@ -65,17 +65,17 @@ export const CreateEditFormTemplate: React.FC<CreateEditFormTemplateProps> = ({
               {crumb.href ? (
                 <a
                   href={crumb.href}
-                  className="text-[#6B7280] hover:text-[#1A3D7C] transition-colors"
+                  className="text-slate-500 hover:text-blue-600 transition-colors font-medium"
                 >
                   {crumb.label}
                 </a>
               ) : (
-                <span className="text-[#111827] font-medium">
+                <span className="text-slate-900 font-semibold">
                   {crumb.label}
                 </span>
               )}
               {index < breadcrumbs.length - 1 && (
-                <ChevronRight size={16} className="text-[#9CA3AF]" />
+                <ChevronRight size={14} className="text-slate-300" />
               )}
             </React.Fragment>
           ))}
@@ -83,9 +83,9 @@ export const CreateEditFormTemplate: React.FC<CreateEditFormTemplateProps> = ({
       )}
 
       {/* Page Header */}
-      <div className="space-y-2 pb-4 border-b border-[#E5E7EB]">
+      <div className="space-y-2 pb-4 border-b border-slate-200">
         <H1>{title}</H1>
-        {subtitle && <Body className="text-[#6B7280]">{subtitle}</Body>}
+        {subtitle && <Body className="text-slate-500 font-medium">{subtitle}</Body>}
       </div>
 
       {/* Form Sections */}
@@ -93,12 +93,12 @@ export const CreateEditFormTemplate: React.FC<CreateEditFormTemplateProps> = ({
         {sections.map((section, index) => (
           <div key={index} className="space-y-4">
             <div className="space-y-1">
-              <H2>{section.title}</H2>
+              <H2 className="text-[16px] font-semibold">{section.title}</H2>
               {section.description && (
-                <Body className="text-[#6B7280]">{section.description}</Body>
+                <Body className="text-slate-500 font-medium">{section.description}</Body>
               )}
             </div>
-            <div className="bg-white rounded-lg border border-[#E5E7EB] p-6">
+            <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
               {section.content}
             </div>
           </div>
@@ -106,7 +106,7 @@ export const CreateEditFormTemplate: React.FC<CreateEditFormTemplateProps> = ({
       </div>
 
       {/* Action Buttons */}
-      <div className="sticky bottom-0 bg-[#F6F8FB] border-t border-[#E5E7EB] px-6 py-4 -mx-6 flex items-center justify-between gap-4">
+      <div className="sticky bottom-0 bg-slate-50 border-t border-slate-200 px-6 py-4 -mx-6 flex items-center justify-between gap-4 backdrop-blur-sm bg-opacity-95">
         <div className="flex items-center gap-3">
           {secondaryActions.length > 0 && (
             <ActionButtonGroup actions={secondaryActions} align="left" />

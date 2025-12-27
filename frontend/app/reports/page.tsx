@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import Link from "next/link";
 import { createPortal } from "react-dom";
 import {
   FileText,
@@ -35,6 +36,9 @@ import { formatDate, formatIndianCurrency, cn } from "@/lib/utils";
 // --- FIX 1: Direct Imports (No Barrel Files) ---
 import { ReportsPageTemplate } from "@/components/design-system/templates/ReportsPageTemplate";
 import {
+  H1,
+  H2,
+  H3,
   Accounting,
   Body,
   TableText,
@@ -62,7 +66,7 @@ const salesColumns: Column<any>[] = [
     key: "month",
     label: "MONTH",
     render: (_v, row) => (
-      <Body className="font-medium text-[#1A3D7C]">{row.month}</Body>
+      <Body className="font-medium text-blue-600">{row.month}</Body>
     ),
   },
   {
@@ -100,14 +104,16 @@ const dcColumns: Column<any>[] = [
     key: "dc_number",
     label: "DC NUMBER",
     render: (_v, row) => (
-      <Body className="text-[#1A3D7C] font-bold">DC-{row.dc_number}</Body>
+      <Link href={`/dc?search=${row.dc_number}`} className="hover:underline transition-all active:scale-95 block">
+        <Body className="text-blue-600 font-medium tracking-tight">DC-{row.dc_number}</Body>
+      </Link>
     ),
   },
   {
     key: "dc_date",
     label: "DATE",
     render: (_v, row) => (
-      <Body className="text-[#6B7280] font-medium">
+      <Body className="text-slate-500 font-medium">
         {formatDate(row.dc_date)}
       </Body>
     ),
@@ -116,7 +122,9 @@ const dcColumns: Column<any>[] = [
     key: "po_number",
     label: "PO REF",
     render: (_v, row) => (
-      <Body className="text-[#6B7280] font-medium">{row.po_number}</Body>
+      <Link href={`/po?search=${row.po_number}`} className="hover:underline opacity-80 hover:opacity-100 transition-all block">
+        <Body className="text-slate-500 font-medium">{row.po_number}</Body>
+      </Link>
     ),
   },
   {
@@ -143,7 +151,9 @@ const invoiceColumns: Column<any>[] = [
     key: "invoice_number",
     label: "INVOICE NO",
     render: (_v, row) => (
-      <Body className="text-[#1A3D7C] font-bold">{row.invoice_number}</Body>
+      <Link href={`/invoice?search=${row.invoice_number}`} className="hover:underline transition-all active:scale-95 block">
+        <Body className="text-blue-600 font-medium tracking-tight">{row.invoice_number}</Body>
+      </Link>
     ),
   },
   {
@@ -177,7 +187,7 @@ const invoiceColumns: Column<any>[] = [
     label: "TOTAL",
     align: "right",
     render: (_v, row) => (
-      <Accounting className="text-slate-900 font-bold">
+      <Accounting className="text-slate-950 font-medium">
         {formatIndianCurrency(row.total_invoice_value)}
       </Accounting>
     ),
@@ -190,7 +200,9 @@ const pendingColumns: Column<any>[] = [
     label: "PO NUMBER",
     width: "15%",
     render: (_v, row) => (
-      <Body className="text-[#1A3D7C] font-bold">{row.po_number}</Body>
+      <Link href={`/po?search=${row.po_number}`} className="hover:underline transition-all active:scale-95 block">
+        <Body className="text-blue-600 font-medium tracking-tight">{row.po_number}</Body>
+      </Link>
     ),
   },
   {
@@ -231,7 +243,7 @@ const pendingColumns: Column<any>[] = [
     width: "20%",
     align: "right",
     render: (_v, row) => (
-      <Accounting className="text-amber-600 font-bold">
+      <Accounting className="text-amber-600 font-medium">
         {row.pending_qty}
       </Accounting>
     ),
@@ -244,7 +256,9 @@ const reconciliationColumns: Column<any>[] = [
     label: "PO NUMBER",
     width: "15%",
     render: (_v, row) => (
-      <Body className="text-[#1A3D7C] font-bold">{row.po_number}</Body>
+      <Link href={`/po?search=${row.po_number}`} className="hover:underline transition-all active:scale-95 block">
+        <Body className="text-blue-600 font-medium">{row.po_number}</Body>
+      </Link>
     ),
   },
   {
@@ -283,7 +297,7 @@ const reconciliationColumns: Column<any>[] = [
     width: "15%",
     align: "right",
     render: (_v, row) => (
-      <Accounting className="text-emerald-600 font-bold">
+      <Accounting className="text-emerald-600 font-medium">
         {row.total_accepted}
       </Accounting>
     ),
@@ -294,7 +308,7 @@ const reconciliationColumns: Column<any>[] = [
     width: "15%",
     align: "right",
     render: (_v, row) => (
-      <Accounting className="text-rose-600 font-bold">
+      <Accounting className="text-red-500 font-medium">
         {row.total_rejected}
       </Accounting>
     ),
@@ -329,9 +343,9 @@ export default function ReportsPage() {
 
     if (activeTab === "reconciliation") {
       return [
-        { name: "Accepted", value: data.reduce((s, r) => s + (r.total_accepted || 0), 0), color: "#10B981" },
-        { name: "Rejected", value: data.reduce((s, r) => s + (r.total_rejected || 0), 0), color: "#EF4444" },
-        { name: "Pending", value: data.reduce((s, r) => s + (Math.max(0, (r.ordered_qty || 0) - (r.total_accepted || 0) - (r.total_rejected || 0))), 0), color: "#F59E0B" },
+        { name: "Accepted", value: data.reduce((s, r) => s + (r.total_accepted || 0), 0), color: "#10b981" }, // Emerald 500
+        { name: "Rejected", value: data.reduce((s, r) => s + (r.total_rejected || 0), 0), color: "#ef4444" }, // Red 500
+        { name: "Pending", value: data.reduce((s, r) => s + (Math.max(0, (r.ordered_qty || 0) - (r.total_accepted || 0) - (r.total_rejected || 0))), 0), color: "#f59e0b" }, // Amber 500
       ].filter(d => d.value > 0);
     }
 
@@ -348,7 +362,7 @@ export default function ReportsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, startDate, endDate]);
 
-  const loadReport = async () => {
+  const loadReport = useCallback(async () => {
     setLoading(true);
     setData([]);
     try {
@@ -381,7 +395,7 @@ export default function ReportsPage() {
       const finalData = Array.isArray(result)
         ? result.map((item: any, index: number) => ({
           ...item,
-          unique_id: `${activeTab}-${index}-${item.id || item.number || item.po_number || item.dc_number || item.invoice_number || ""}`,
+          unique_id: `report-${activeTab}-${item.po_number || item.dc_number || item.invoice_number || 'NA'}-${index}`,
         }))
         : [];
 
@@ -391,9 +405,9 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, startDate, endDate]);
 
-  const handleExport = () => {
+  const handleExport = useCallback(() => {
     const baseUrl = api.baseUrl || "http://localhost:8000";
     let endpoint = "";
     const dateParams = `start_date=${startDate}&end_date=${endDate}`;
@@ -417,15 +431,20 @@ export default function ReportsPage() {
     }
 
     window.open(`${baseUrl}${endpoint}?export=true&${dateParams}`, "_blank");
-  };
+  }, [activeTab, startDate, endDate]);
+
+  // --- CALCULATIONS: Lifted for reuse in UI and KPIs ---
+  const { totalOrdered, totalRec } = useMemo(() => {
+    if (!data || data.length === 0) return { totalOrdered: 0, totalRec: 0 };
+    return {
+      totalOrdered: data.reduce((s, r) => s + (r.ordered_qty || r.ord_qty || 0), 0),
+      totalRec: data.reduce((s, r) => s + (r.total_accepted || r.delivered_qty || 0), 0)
+    };
+  }, [data]);
 
   // --- FIX 3: Memoize KPIs for premium feel ---
   const kpiCards = useMemo((): SummaryCardProps[] => {
     if (!data || data.length === 0) return [];
-
-    // Calculate total value for percentage bars
-    const totalOrdered = data.reduce((s, r) => s + (r.ordered_qty || r.ord_qty || 0), 0);
-    const totalRec = data.reduce((s, r) => s + (r.total_accepted || r.delivered_qty || 0), 0);
 
     switch (activeTab) {
       case "sales":
@@ -433,7 +452,7 @@ export default function ReportsPage() {
           {
             title: "Projected Revenue",
             value: (
-              <span className="font-bold tracking-tight font-sans">
+              <span className="font-medium tracking-tight font-sans text-2xl text-slate-950">
                 {formatIndianCurrency(data.reduce((s, r) => s + (r.total_value || 0), 0))}
               </span>
             ),
@@ -444,7 +463,7 @@ export default function ReportsPage() {
           {
             title: "Tax Contribution",
             value: (
-              <span className="font-bold tracking-tight font-sans">
+              <span className="font-medium tracking-tight font-sans text-2xl text-slate-950">
                 {formatIndianCurrency(data.reduce((s, r) => s + (r.total_cgst || 0) + (r.total_sgst || 0), 0))}
               </span>
             ),
@@ -455,8 +474,8 @@ export default function ReportsPage() {
             title: "Global Volatility",
             value: (
               <div className="flex items-baseline gap-1">
-                <span className="font-bold tracking-tight font-sans">+14.2</span>
-                <span className="text-sm font-semibold opacity-80 font-sans">%</span>
+                <span className="font-medium tracking-tight font-sans text-2xl text-slate-950">+14.2</span>
+                <span className="text-sm font-medium opacity-80 font-sans">%</span>
               </div>
             ),
             icon: <Activity size={20} />,
@@ -468,18 +487,22 @@ export default function ReportsPage() {
         return [
           {
             title: "Active Shortages",
-            value: <span className="font-black tracking-tighter font-sans">{data.length}</span>,
-            icon: <AlertTriangle size={24} className="opacity-90 font-black" />,
+            value: (
+              <Accounting className="text-2xl text-slate-950 font-medium">
+                {data.length}
+              </Accounting>
+            ),
+            icon: <AlertTriangle size={20} className="text-amber-500" />,
             variant: "warning",
           },
           {
             title: "Fill Rate",
             value: (
               <div className="flex items-baseline gap-1">
-                <span className="font-black tracking-tighter font-sans">
+                <span className="font-medium tracking-tight font-sans text-2xl text-slate-950">
                   {totalOrdered > 0 ? ((totalRec / totalOrdered) * 100).toFixed(1) : "0"}
                 </span>
-                <span className="text-[10px] font-bold opacity-80 font-sans">%</span>
+                <span className="text-[10px] font-medium opacity-80 font-sans">%</span>
               </div>
             ),
             icon: <Activity size={24} className="opacity-90" />,
@@ -492,10 +515,10 @@ export default function ReportsPage() {
             title: "Audit Score",
             value: (
               <div className="flex items-baseline gap-1">
-                <span className="font-black tracking-tighter font-sans">
+                <span className="font-medium tracking-tight font-sans text-2xl text-slate-950">
                   {data.length > 0 ? "98.4" : "N/A"}
                 </span>
-                <span className="text-[10px] font-bold opacity-80 font-sans">PTS</span>
+                <span className="text-[10px] font-medium opacity-80 font-sans">PTS</span>
               </div>
             ),
             icon: <PieChartIcon size={24} className="opacity-90" />,
@@ -505,10 +528,10 @@ export default function ReportsPage() {
             title: "Defect Ratio",
             value: (
               <div className="flex items-baseline gap-1">
-                <span className="font-black tracking-tighter font-sans">
+                <span className="font-medium tracking-tight font-sans text-2xl text-slate-950">
                   {data.reduce((s, r) => s + (r.total_rejected || 0), 0)}
                 </span>
-                <span className="text-[10px] font-bold opacity-80 font-sans">UNIT</span>
+                <span className="text-[10px] font-medium opacity-80 font-sans">UNIT</span>
               </div>
             ),
             icon: <AlertTriangle size={24} className="opacity-90" />,
@@ -519,7 +542,7 @@ export default function ReportsPage() {
         return [
           {
             title: "Total Records",
-            value: <span className="font-black tracking-tighter font-sans">{data.length}</span>,
+            value: <span className="font-medium tracking-tight font-sans text-2xl text-slate-950">{data.length}</span>,
             icon: <FileText size={24} className="opacity-80" />,
             variant: "primary",
           }
@@ -551,14 +574,14 @@ export default function ReportsPage() {
   // --- OPTIMIZATION: Toolbar Portal Content ---
   const toolbarContent = (
     <div className="flex items-center gap-3">
-      <div className="flex items-center bg-[#F8FAFC]/40 backdrop-blur-xl border border-slate-200/50 rounded-2xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.03)] p-1">
+      <div className="flex items-center bg-white/45 backdrop-blur-xl border border-slate-200/50 rounded-2xl overflow-hidden shadow-sm p-1">
         <div className="flex items-center gap-3 px-4 py-2 hover:bg-white/40 transition-colors rounded-xl group">
-          <Calendar size={16} className="text-indigo-500 group-hover:scale-110 transition-transform" />
+          <Calendar size={16} className="text-blue-500 group-hover:scale-110 transition-transform" />
           <input
             type="date"
             value={startDate}
             onChange={(e) => setStartDate(e.target.value)}
-            className="text-[11px] font-black uppercase tracking-wider outline-none bg-transparent text-slate-600"
+            className="text-[11px] font-medium uppercase tracking-wider outline-none bg-transparent text-slate-600 cursor-pointer"
           />
         </div>
         <div className="w-[1px] h-6 bg-slate-200/50 mx-1" />
@@ -567,15 +590,15 @@ export default function ReportsPage() {
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
-            className="text-[11px] font-black uppercase tracking-wider outline-none bg-transparent text-slate-600"
+            className="text-[11px] font-medium uppercase tracking-wider outline-none bg-transparent text-slate-600 cursor-pointer"
           />
         </div>
       </div>
       <button
         onClick={handleExport}
-        className="group flex items-center gap-3 px-6 py-3 bg-slate-900 text-white rounded-2xl hover:bg-black shadow-[0_8px_24px_rgba(0,0,0,0.1)] transition-all active:scale-95 text-[11px] font-black uppercase tracking-[0.1em]"
+        className="group flex items-center gap-2.5 px-6 py-3 bg-slate-950 text-white rounded-2xl hover:bg-slate-900 shadow-md transition-all active:scale-95 text-[11px] font-medium uppercase tracking-[0.1em]"
       >
-        <Download size={16} className="group-hover:translate-y-0.5 transition-transform" />
+        <Download size={14} className="group-hover:translate-y-0.5 transition-transform" />
         Export
       </button>
     </div>
@@ -597,23 +620,23 @@ export default function ReportsPage() {
           className="w-full"
         >
           <TabsList className="w-full justify-start overflow-x-auto bg-transparent border-none gap-2">
-            <TabsTrigger value="sales" className="rounded-sm px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none border border-transparent data-[state=active]:border-blue-700 text-xs font-semibold uppercase tracking-wide text-slate-600 transition-all">
+            <TabsTrigger value="sales" className="rounded-xl px-5 py-2.5 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 border border-transparent text-[11px] font-semibold uppercase tracking-wider text-slate-500 transition-all hover:text-slate-900">
               <TrendingUp size={14} className="mr-2" />
               Growth
             </TabsTrigger>
-            <TabsTrigger value="dc_register" className="rounded-sm px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none border border-transparent data-[state=active]:border-blue-700 text-xs font-semibold uppercase tracking-wide text-slate-600 transition-all">
+            <TabsTrigger value="dc_register" className="rounded-xl px-5 py-2.5 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 border border-transparent text-[11px] font-semibold uppercase tracking-wider text-slate-500 transition-all hover:text-slate-900">
               <Truck size={14} className="mr-2" />
               DC Register
             </TabsTrigger>
-            <TabsTrigger value="invoice_register" className="rounded-sm px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none border border-transparent data-[state=active]:border-blue-700 text-xs font-semibold uppercase tracking-wide text-slate-600 transition-all">
+            <TabsTrigger value="invoice_register" className="rounded-xl px-5 py-2.5 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 border border-transparent text-[11px] font-semibold uppercase tracking-wider text-slate-500 transition-all hover:text-slate-900">
               <Receipt size={14} className="mr-2" />
               Invoices
             </TabsTrigger>
-            <TabsTrigger value="pending" className="rounded-sm px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none border border-transparent data-[state=active]:border-blue-700 text-xs font-semibold uppercase tracking-wide text-slate-600 transition-all">
+            <TabsTrigger value="pending" className="rounded-xl px-5 py-2.5 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 border border-transparent text-[11px] font-semibold uppercase tracking-wider text-slate-500 transition-all hover:text-slate-900">
               <AlertTriangle size={14} className="mr-2" />
               Shortages
             </TabsTrigger>
-            <TabsTrigger value="reconciliation" className="rounded-sm px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none border border-transparent data-[state=active]:border-blue-700 text-xs font-semibold uppercase tracking-wide text-slate-600 transition-all">
+            <TabsTrigger value="reconciliation" className="rounded-xl px-5 py-2.5 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg data-[state=active]:scale-105 border border-transparent text-[11px] font-semibold uppercase tracking-wider text-slate-500 transition-all hover:text-slate-900">
               <Activity size={14} className="mr-2" />
               Ledger Audit
             </TabsTrigger>
@@ -633,9 +656,9 @@ export default function ReportsPage() {
               <div className="lg:col-span-2 p-6 rounded-sm bg-white border border-slate-300 shadow-sm">
                 <div className="flex items-center justify-between mb-4 border-b border-slate-200 pb-2">
                   <div>
-                    <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide">
+                    <H3 className="text-slate-700 uppercase tracking-wider">
                       {activeTab === "sales" ? "Revenue Momentum" : "Quality Distribution"}
-                    </h3>
+                    </H3>
                   </div>
                 </div>
 
@@ -683,7 +706,7 @@ export default function ReportsPage() {
                           formatter={(value: any) => [typeof value === 'number' ? Math.round(value) : value, '']}
                           contentStyle={{ borderRadius: '2px', border: '1px solid #CBD5E1', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}
                         />
-                        <Bar dataKey="value" radius={[0, 2, 2, 0]} barSize={24} fill="#1D4ED8">
+                        <Bar dataKey="value" radius={[0, 4, 4, 0]} barSize={32} fill="#2563EB">
                           {chartData.map((entry: any, index: number) => (
                             <Cell key={`cell-${index}`} fill={entry.color} />
                           ))}
@@ -695,41 +718,47 @@ export default function ReportsPage() {
               </div>
 
               <div className="grid grid-cols-1 gap-4">
-                <div className="p-4 rounded-sm bg-blue-50 border border-blue-200 flex flex-col justify-center items-center text-center">
+                <div className="p-4 rounded-xl bg-blue-50/50 border border-blue-200/50 flex flex-col justify-center items-center text-center">
                   <div className="relative w-32 h-32 flex items-center justify-center">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
                         <Pie
-                          data={[
-                            { name: 'Growth', value: 75, fill: '#1D4ED8' },
-                            { name: 'Remaining', value: 25, fill: '#E2E8F0' }
+                          data={activeTab === 'reconciliation' ? chartData : [
+                            { name: 'On Time', value: 85, fill: '#10b981' },
+                            { name: 'Delayed', value: 15, fill: '#E2E8F0' }
                           ]}
                           cx="50%"
                           cy="50%"
-                          innerRadius={50}
-                          outerRadius={65}
+                          innerRadius={45}
+                          outerRadius={60}
                           dataKey="value"
                           startAngle={90}
                           endAngle={-270}
                           stroke="none"
-                        />
+                        >
+                          {activeTab === 'reconciliation' && chartData.map((entry: any, index: number) => (
+                            <Cell key={`cell-pie-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-2xl font-bold text-blue-900">75%</span>
-                      <span className="text-[10px] text-blue-600 uppercase tracking-wide">Margin</span>
+                      <span className="text-xl font-medium text-blue-900">
+                        {activeTab === 'reconciliation' ? `${((data.reduce((s, r) => s + (r.total_accepted || 0), 0) / (data.reduce((s, r) => s + (r.ordered_qty || 0), 0) || 1)) * 100).toFixed(0)}%` : '85%'}
+                      </span>
+                      <span className="text-[9px] text-blue-600 uppercase tracking-widest font-medium">Compliance</span>
                     </div>
                   </div>
-                  <div className="mt-2">
-                    <h4 className="text-xs font-bold text-blue-900 uppercase">Gross Profit Margin</h4>
+                  <div className="mt-2 text-center">
+                    <h4 className="text-[10px] font-medium text-slate-500 uppercase tracking-widest leading-none">Status Breakdown</h4>
                   </div>
                 </div>
 
                 <div className="p-4 rounded-sm bg-white border border-slate-300 flex flex-col justify-between">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Quick Ratio</p>
-                      <h4 className="text-2xl font-bold text-slate-800 mt-1">0.9:8</h4>
+                      <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider">Fill Rate Velocity</p>
+                      <H2 className="text-slate-950 mt-1 font-medium">{totalOrdered > 0 ? ((totalRec / totalOrdered) * 100).toFixed(1) : "0"}%</H2>
                     </div>
                     <Activity className="text-slate-400" size={20} />
                   </div>

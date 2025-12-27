@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -61,7 +61,7 @@ const columns: Column<SRVListItem>[] = [
     width: "10%",
     render: (_value, srv) => (
       <Link href={`/srv/${srv.srv_number}`} className="block">
-        <div className="text-[#1A3D7C] font-medium hover:underline">
+        <div className="text-blue-600 font-medium hover:underline">
           SRV-{srv.srv_number}
         </div>
       </Link>
@@ -73,7 +73,7 @@ const columns: Column<SRVListItem>[] = [
     sortable: true,
     width: "10%",
     render: (v) => (
-      <div className="text-[12px] text-[#6B7280]">
+      <div className="text-[12px] text-slate-500 font-medium">
         {formatDate(v as string)}
       </div>
     ),
@@ -140,7 +140,7 @@ const columns: Column<SRVListItem>[] = [
     align: "right",
     width: "8%",
     render: (v) => (
-      <Accounting className="font-medium text-[#1A3D7C]">{v}</Accounting>
+      <Accounting className="font-medium text-blue-600">{v}</Accounting>
     ),
   },
   {
@@ -148,14 +148,14 @@ const columns: Column<SRVListItem>[] = [
     label: "ACCEPTED",
     align: "right",
     width: "8%",
-    render: (v) => <Accounting className="text-[#16A34A]">{v}</Accounting>,
+    render: (v) => <Accounting className="text-emerald-600 font-medium">{v}</Accounting>,
   },
   {
     key: "total_rejected_qty",
     label: "REJECTED",
     align: "right",
     width: "8%",
-    render: (v) => <Accounting className="text-[#DC2626]">{v}</Accounting>,
+    render: (v) => <Accounting className="text-red-600 font-medium">{v}</Accounting>,
   },
   // Note: Actions column with Delete needs a handler.
   // We can inject a custom component or handle it differently if we want strict static.
@@ -176,7 +176,7 @@ const columns: Column<SRVListItem>[] = [
 
 export default function SRVPage() {
   const router = useRouter();
-  const [srvs, setSrvs] = useState<SRVListItem[]>([]);
+  const [srvs, setSrvs] = useState<any[]>([]);
   const [stats, setStats] = useState<SRVStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -207,7 +207,7 @@ export default function SRVPage() {
     loadData();
   }, []);
 
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       const [srvRes, statsRes] = await Promise.all([
         fetch(`${API_BASE_URL}/api/srv`),
@@ -215,20 +215,24 @@ export default function SRVPage() {
       ]);
       const srvData = await srvRes.json();
       const statsData = await statsRes.json();
-      setSrvs(Array.isArray(srvData) ? srvData : []);
+      const srvWithKeys = (Array.isArray(srvData) ? srvData : []).map((srv, idx) => ({
+        ...srv,
+        unique_id: `srv-${srv.srv_number}-${idx}`
+      }));
+      setSrvs(srvWithKeys);
       setStats(statsData);
     } catch (error) {
       console.error("Load Error:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) setSelectedFiles(Array.from(e.target.files));
-  };
+  }, []);
 
-  const handleUpload = async () => {
+  const handleUpload = useCallback(async () => {
     if (selectedFiles.length === 0) return;
     setUploading(true);
     setUploadProgress({ current: 0, total: selectedFiles.length });
@@ -257,9 +261,9 @@ export default function SRVPage() {
     } finally {
       setUploading(false);
     }
-  };
+  }, [selectedFiles, loadData]);
 
-  const handleDelete = async (e: React.MouseEvent, srv_number: string) => {
+  const handleDelete = useCallback(async (e: React.MouseEvent, srv_number: string) => {
     e.stopPropagation();
     if (!confirm(`Delete SRV ${srv_number}?`)) return;
     try {
@@ -270,7 +274,7 @@ export default function SRVPage() {
     } catch (err) {
       console.error("Delete Error:", err);
     }
-  };
+  }, [loadData]);
 
   const filteredSrvs = useMemo(
     () =>
@@ -297,15 +301,15 @@ export default function SRVPage() {
             variant="ghost"
             size="sm"
             onClick={(e) => handleDelete(e as any, srv.srv_number)}
-            className="text-[#DC2626] hover:text-[#991B1B]"
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
           >
             <Trash2 size={16} />
           </Button>
         ),
       } as Column<SRVListItem>,
     ],
-    [],
-  ); // Empty dependency array as handleDelete is stable? No, handleDelete depends on state/closure?
+    [handleDelete],
+  );
   // Actually, handleDelete calls loadData which depends on closure?
   // loadData is defined inside.
   // To be safe, we should include handleDelete in dependency, but handleDelete changes on every render.
@@ -374,12 +378,12 @@ export default function SRVPage() {
         <Card className="p-4 flex items-center gap-4 min-w-96">
           {uploading ? (
             <>
-              <Loader2 className="animate-spin text-[#1A3D7C]" size={20} />
+              <Loader2 className="animate-spin text-blue-600" size={20} />
               <div className="flex-1">
-                <div className="text-[14px] font-semibold">
+                <div className="text-[14px] font-semibold text-slate-900">
                   Uploading SRVs...
                 </div>
-                <div className="text-[12px] text-[#6B7280]">
+                <div className="text-[12px] text-slate-500 font-medium">
                   {uploadProgress.current} of {uploadProgress.total} processed
                 </div>
               </div>
@@ -442,7 +446,7 @@ export default function SRVPage() {
       summaryCards={summaryCards}
       columns={memoizedColumns}
       data={filteredSrvs}
-      keyField="srv_number"
+      keyField="unique_id"
       loading={loading}
       emptyMessage="No store receipt vouchers found"
     />

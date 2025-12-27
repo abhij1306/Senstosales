@@ -18,10 +18,10 @@ interface LabelProps extends React.LabelHTMLAttributes<HTMLLabelElement> {
 }
 
 // Heading: 28px, medium
-export const H1 = ({ className, children, ...props }: TypographyProps) => (
+const H1Internal = ({ className, children, ...props }: TypographyProps) => (
   <h1
     className={cn(
-      "text-[28px] font-medium leading-tight text-[#111827]",
+      "text-[28px] font-medium leading-tight text-slate-950 uppercase",
       className,
     )}
     {...props}
@@ -29,12 +29,13 @@ export const H1 = ({ className, children, ...props }: TypographyProps) => (
     {children}
   </h1>
 );
+export const H1 = React.memo(H1Internal);
 
 // Subheading: 20px, medium
-export const H2 = ({ className, children, ...props }: TypographyProps) => (
+const H2Internal = ({ className, children, ...props }: TypographyProps) => (
   <h2
     className={cn(
-      "text-[20px] font-medium leading-tight text-[#111827]",
+      "text-[20px] font-medium leading-tight text-slate-950",
       className,
     )}
     {...props}
@@ -42,9 +43,10 @@ export const H2 = ({ className, children, ...props }: TypographyProps) => (
     {children}
   </h2>
 );
+export const H2 = React.memo(H2Internal);
 
 // Section heading: 16px, medium
-export const H3 = ({ className, children, ...props }: TypographyProps) => (
+const H3Internal = ({ className, children, ...props }: TypographyProps) => (
   <h3
     className={cn(
       "text-[16px] font-medium leading-normal text-slate-950",
@@ -55,9 +57,10 @@ export const H3 = ({ className, children, ...props }: TypographyProps) => (
     {children}
   </h3>
 );
+export const H3 = React.memo(H3Internal);
 
 // Body text (Value): 13px, medium
-export const Body = ({ className, children, ...props }: TypographyProps) => (
+const BodyInternal = ({ className, children, ...props }: TypographyProps) => (
   <p
     className={cn(
       "text-[13px] font-medium leading-relaxed text-slate-950",
@@ -68,9 +71,10 @@ export const Body = ({ className, children, ...props }: TypographyProps) => (
     {children}
   </p>
 );
+export const Body = React.memo(BodyInternal);
 
 // Label text: 10px, semibold, uppercase
-export const Label = ({ className, children, ...props }: LabelProps) => (
+const LabelInternal = ({ className, children, ...props }: LabelProps) => (
   <label
     className={cn(
       "text-[10px] font-semibold text-slate-600 uppercase tracking-wider block mb-1",
@@ -81,6 +85,7 @@ export const Label = ({ className, children, ...props }: LabelProps) => (
     {children}
   </label>
 );
+export const Label = React.memo(LabelInternal);
 
 // Small/Secondary text: 11px, medium
 const SmallTextInternal = ({
@@ -97,14 +102,14 @@ const SmallTextInternal = ({
 );
 export const SmallText = React.memo(SmallTextInternal);
 
-// Table text: 12px, normal
+// Table text: 12px, medium
 const TableTextInternal = ({
   className,
   children,
   ...props
 }: TypographyProps) => (
   <span
-    className={cn("text-[12px] font-normal text-slate-900", className)}
+    className={cn("text-[12px] font-medium text-slate-900", className)}
     {...props}
   >
     {children}
@@ -153,7 +158,7 @@ const AccountingInternal = ({
 export const Accounting = React.memo(AccountingInternal);
 
 // Mono/Code text: 12px, mono font
-export const MonoCode = ({
+const MonoCodeInternal = ({
   className,
   children,
   ...props
@@ -168,3 +173,4 @@ export const MonoCode = ({
     {children}
   </code>
 );
+export const MonoCode = React.memo(MonoCodeInternal);

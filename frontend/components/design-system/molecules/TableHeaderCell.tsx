@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 /**
  * TableHeaderCell Molecule - Atomic Design System v1.0
- * Composition: Typography (12px) + Sort Icon + Button behavior
+ * Composition: Typography (11px) + Sort Icon + Button behavior
  */
 
 export interface TableHeaderCellProps extends React.ThHTMLAttributes<HTMLTableCellElement> {
@@ -42,12 +42,12 @@ export const TableHeaderCell: React.FC<TableHeaderCellProps> = ({
   return (
     <th
       className={cn(
-        "h-10 px-3 text-[12px] font-semibold text-[#6B7280] uppercase tracking-wide",
-        "bg-[#F6F8FB] border-b border-[#E5E7EB]",
+        "h-10 px-3 text-[11px] font-semibold text-slate-500 uppercase tracking-[0.12em]",
+        "bg-slate-50 border-b border-slate-200",
         "sticky top-0 z-10",
         alignClasses[align],
         sortable &&
-          "cursor-pointer select-none hover:bg-[#F6F8FB]/80 transition-colors",
+        "cursor-pointer select-none hover:bg-slate-100 transition-colors",
         className,
       )}
       onClick={sortable ? onSort : undefined}
@@ -66,7 +66,7 @@ export const TableHeaderCell: React.FC<TableHeaderCellProps> = ({
             size={14}
             className={cn(
               "transition-colors",
-              sortDirection ? "text-[#1A3D7C]" : "text-[#9CA3AF]",
+              sortDirection ? "text-blue-600" : "text-slate-300",
             )}
           />
         )}

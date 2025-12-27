@@ -6,38 +6,38 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 /**
- * Button Atom - Atomic Design System v1.0
+ * Button Atom - Atomic Design System v1.1
  * Spec: 40px height, 8px radius, 16px padding
- * Colors: Primary #1A3D7C, Secondary #2BB7A0, Destructive #DC2626
+ * Colors: Blue 600 (Primary), Emerald 600 (Secondary), Red 600 (Destructive)
  */
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A3D7C] focus-visible:ring-offset-2",
+  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-[13px] font-medium transition-all duration-200 disabled:pointer-events-none disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2",
   {
     variants: {
       variant: {
-        // Primary: #1A3D7C background, white text
+        // Primary: Blue 600
         default:
-          "bg-[#1A3D7C] text-white hover:bg-[#152F61] active:bg-[#0F2346]",
+          "bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 shadow-sm",
 
-        // Secondary: Transparent bg, #2BB7A0 border and text
+        // Secondary: White/Ghost background with slate border
         secondary:
-          "bg-transparent text-[#2BB7A0] border border-[#2BB7A0] hover:bg-[#F6F8FB] active:bg-[#E5E7EB]",
+          "bg-white/50 text-slate-700 border border-slate-200 hover:bg-white active:bg-slate-50",
 
-        // Destructive: #DC2626 background, white text
+        // Destructive: Red background or Red text
         destructive:
-          "bg-[#DC2626] text-white hover:bg-[#B91C1C] active:bg-[#991B1B]",
+          "bg-red-50 text-red-600 hover:bg-red-100 active:bg-red-200 border border-red-100",
 
         // Ghost: Transparent, subtle hover
         ghost:
-          "bg-transparent text-[#111827] hover:bg-[#F6F8FB] active:bg-[#E5E7EB]",
+          "bg-transparent text-slate-700 hover:bg-slate-100/50 active:bg-slate-100",
 
         // Outline: Border with transparent background
         outline:
-          "bg-transparent text-[#111827] border border-[#D1D5DB] hover:bg-[#F6F8FB] active:bg-[#E5E7EB]",
+          "bg-transparent text-slate-700 border border-slate-300 hover:bg-slate-50 active:bg-slate-100",
 
         // Link: No background, underline on hover
-        link: "text-[#1A3D7C] underline-offset-4 hover:underline",
+        link: "text-blue-600 underline-offset-4 hover:underline",
       },
       size: {
         // Default: 40px height, 16px horizontal padding
@@ -62,8 +62,8 @@ const buttonVariants = cva(
 
 export interface ButtonProps
   extends
-    React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  VariantProps<typeof buttonVariants> {
   asChild?: boolean;
 }
 

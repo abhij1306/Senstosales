@@ -25,7 +25,7 @@ export default function RootLayout({
 
             <div className="flex-1 flex flex-col relative overflow-hidden bg-transparent">
               {/* Optimized Master Header */}
-              <header className="px-8 py-3.5 flex items-center gap-8 shrink-0 z-50 backdrop-blur-xl bg-[#F8FAFC]/90 border-b border-slate-200/50 shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
+              <header className="px-8 py-3.5 flex items-center gap-8 shrink-0 z-50 backdrop-blur-xl bg-slate-50/90 border-b border-slate-200/50 shadow-[0_1px_2px_rgba(0,0,0,0.01)]">
                 {/* Master Search Bar (Flush Left/Center) */}
                 <div className="flex-1">
                   <Suspense

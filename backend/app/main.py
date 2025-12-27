@@ -10,7 +10,7 @@ import logging
 
 # Import Routers
 from app.routers import (
-    health,
+    system,
     dashboard,
     po,
     dc,
@@ -44,7 +44,7 @@ app.add_middleware(
 )
 
 # Include Routers
-app.include_router(health.router, prefix="/api", tags=["Health"])
+app.include_router(system.router, prefix="/api/system", tags=["System"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["Dashboard"])
 app.include_router(po.router, prefix="/api/po", tags=["Purchase Orders"])
 app.include_router(dc.router, prefix="/api/dc", tags=["Delivery Challans"])

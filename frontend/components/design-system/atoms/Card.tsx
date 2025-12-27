@@ -5,30 +5,27 @@ import { cn } from "@/lib/utils";
 
 /**
  * Card Atom - Atomic Design System v1.0
- * Spec: 8px radius, 20px padding, white background, subtle shadow
+ * Professional "Glassmorphism" for high-density business intelligence.
+ * Surface: bg-white/45 | backdrop-blur-xl (24px) | border-white/20.
  */
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  children: React.ReactNode;
+  glass?: boolean;
 }
 
-const CardInternal = React.forwardRef<HTMLDivElement, CardProps>(
-  ({ className, children, ...props }, ref) => {
-    return (
-      <div
-        ref={ref}
-        className={cn(
-          "rounded-2xl bg-white/70 backdrop-blur-xl p-5 border border-white/40",
-          "shadow-[0_8px_30px_rgb(0,0,0,0.04)]",
-          className,
-        )}
-        {...props}
-      >
-        {children}
-      </div>
-    );
-  },
-);
-CardInternal.displayName = "CardInternal";
+const CardInternal = ({ className, glass = true, ...props }: CardProps) => {
+  return (
+    <div
+      className={cn(
+        "rounded-2xl border transition-all duration-200",
+        glass
+          ? "bg-white/45 backdrop-blur-xl border-white/20 shadow-sm"
+          : "bg-white border-slate-200 shadow-sm",
+        className,
+      )}
+      {...props}
+    />
+  );
+};
 
 export const Card = React.memo(CardInternal);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/design-system/atoms/Button";
 import { Badge } from "@/components/design-system/atoms/Badge";
 import { Dialog } from "@/components/design-system/molecules/Dialog";
@@ -143,118 +143,122 @@ export default function BuyersSettingsPage() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {buyers.map((buyer) => (
-          <SpotlightCard
-            key={buyer.id}
-            active={buyer.is_default}
-            className={cn(
-              "flex flex-col h-full border-none shadow-premium bg-white/40 backdrop-blur-xl transition-all",
-              buyer.is_default
-                ? "ring-2 ring-emerald-500/40"
-                : "hover:bg-white/60 hover:shadow-2xl",
-            )}
-          >
-            <div className="p-8 flex flex-col h-full gap-6">
-              {/* Header */}
-              <div className="flex justify-between items-start">
-                <div className="flex gap-4">
-                  <div
-                    className={cn(
-                      "p-3 rounded-2xl",
-                      buyer.is_default
-                        ? "bg-emerald-500/10 text-emerald-600"
-                        : "bg-slate-100 text-slate-500",
-                    )}
-                  >
-                    <Building size={24} />
-                  </div>
-                  <div className="space-y-1">
-                    <H3
-                      className="text-slate-900 leading-tight line-clamp-1"
-                      title={buyer.name}
-                    >
-                      {buyer.name}
-                    </H3>
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] px-2 py-0 h-5 font-mono text-slate-500 border-slate-200 bg-white/50"
-                      >
-                        {buyer.gstin}
-                      </Badge>
-                      {buyer.is_default && (
-                        <Badge
-                          variant="success"
-                          className="text-[10px] px-2 py-0 h-5 gap-1 uppercase transition-all animate-in fade-in zoom-in duration-300"
-                        >
-                          <CheckCircle size={10} /> Primary
-                        </Badge>
+        {loading
+          ? [...Array(2)].map((_, i) => (
+            <div key={i} className="h-[400px] bg-slate-50/50 rounded-3xl border border-slate-100 animate-pulse" />
+          ))
+          : buyers.map((buyer) => (
+            <SpotlightCard
+              key={buyer.id}
+              active={buyer.is_default}
+              className={cn(
+                "flex flex-col h-full border-none shadow-premium bg-white/40 backdrop-blur-xl transition-all",
+                buyer.is_default
+                  ? "ring-2 ring-emerald-500/40"
+                  : "hover:bg-white/60 hover:shadow-2xl",
+              )}
+            >
+              <div className="p-8 flex flex-col h-full gap-6">
+                {/* Header */}
+                <div className="flex justify-between items-start">
+                  <div className="flex gap-4">
+                    <div
+                      className={cn(
+                        "p-3 rounded-2xl",
+                        buyer.is_default
+                          ? "bg-emerald-500/10 text-emerald-600"
+                          : "bg-slate-100 text-slate-500",
                       )}
+                    >
+                      <Building size={24} />
+                    </div>
+                    <div className="space-y-1">
+                      <H3
+                        className="text-slate-900 leading-tight line-clamp-1"
+                        title={buyer.name}
+                      >
+                        {buyer.name}
+                      </H3>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] px-2 py-0 h-5 font-mono text-slate-500 border-slate-200 bg-white/50"
+                        >
+                          {buyer.gstin}
+                        </Badge>
+                        {buyer.is_default && (
+                          <Badge
+                            variant="success"
+                            className="text-[10px] px-2 py-0 h-5 gap-1 uppercase transition-all animate-in fade-in zoom-in duration-300"
+                          >
+                            <CheckCircle size={10} /> Primary
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex gap-1 -mt-2 -mr-2">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => openEdit(buyer)}
-                    className="h-9 w-9 p-0 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                  >
-                    <Edit2 size={16} className="text-slate-400" />
-                  </Button>
-                  {!buyer.is_default && (
+                  <div className="flex gap-1 -mt-2 -mr-2">
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => handleDelete(buyer.id)}
-                      className="h-9 w-9 p-0 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors"
+                      onClick={() => openEdit(buyer)}
+                      className="h-9 w-9 p-0 rounded-full hover:bg-blue-50 hover:text-blue-600 transition-colors"
                     >
-                      <Trash2 size={16} className="text-slate-400" />
+                      <Edit2 size={16} className="text-slate-400" />
                     </Button>
+                    {!buyer.is_default && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDelete(buyer.id)}
+                        className="h-9 w-9 p-0 rounded-full hover:bg-red-50 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={16} className="text-slate-400" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Details Grid */}
+                <div className="grid grid-cols-2 gap-y-6 gap-x-8 py-6 border-t border-white/20 mt-2 flex-grow">
+                  <DetailField label="State Name" value={buyer.state} />
+                  <DetailField label="State Code" value={buyer.state_code} />
+                  <div className="col-span-2 space-y-1">
+                    <Label>Authorized Designation</Label>
+                    <Body className="text-slate-600 truncate">
+                      {buyer.designation || "---"}
+                    </Body>
+                  </div>
+                  <div className="col-span-2 space-y-1">
+                    <Label>Place of Supply</Label>
+                    <Body className="text-slate-600 line-clamp-2 font-medium">
+                      {buyer.place_of_supply}
+                    </Body>
+                  </div>
+                </div>
+
+                {/* Actions Footer */}
+                <div className="pt-6 border-t border-white/20 flex justify-end">
+                  {!buyer.is_default ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleSetDefault(buyer.id)}
+                      className="text-slate-500 hover:text-blue-600 hover:bg-blue-50/50 w-full justify-center gap-2 rounded-xl h-10 transition-all active:scale-95"
+                    >
+                      <Star size={14} /> Set as Primary Profile
+                    </Button>
+                  ) : (
+                    <div className="w-full py-2.5 flex justify-center items-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-500/10 backdrop-blur-sm rounded-xl border border-emerald-500/20 tracking-wide uppercase">
+                      <Star size={12} fill="currentColor" /> Active Billing
+                      Profile
+                    </div>
                   )}
                 </div>
               </div>
-
-              {/* Details Grid */}
-              <div className="grid grid-cols-2 gap-y-6 gap-x-8 py-6 border-t border-white/20 mt-2 flex-grow">
-                <DetailField label="State Name" value={buyer.state} />
-                <DetailField label="State Code" value={buyer.state_code} />
-                <div className="col-span-2 space-y-1">
-                  <Label>Authorized Designation</Label>
-                  <Body className="text-slate-600 truncate">
-                    {buyer.designation || "---"}
-                  </Body>
-                </div>
-                <div className="col-span-2 space-y-1">
-                  <Label>Place of Supply</Label>
-                  <Body className="text-slate-600 line-clamp-2 font-medium">
-                    {buyer.place_of_supply}
-                  </Body>
-                </div>
-              </div>
-
-              {/* Actions Footer */}
-              <div className="pt-6 border-t border-white/20 flex justify-end">
-                {!buyer.is_default ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSetDefault(buyer.id)}
-                    className="text-slate-500 hover:text-blue-600 hover:bg-blue-50/50 w-full justify-center gap-2 rounded-xl h-10 transition-all active:scale-95"
-                  >
-                    <Star size={14} /> Set as Primary Profile
-                  </Button>
-                ) : (
-                  <div className="w-full py-2.5 flex justify-center items-center gap-2 text-xs font-bold text-emerald-600 bg-emerald-500/10 backdrop-blur-sm rounded-xl border border-emerald-500/20 tracking-wide uppercase">
-                    <Star size={12} fill="currentColor" /> Active Billing
-                    Profile
-                  </div>
-                )}
-              </div>
-            </div>
-          </SpotlightCard>
-        ))}
+            </SpotlightCard>
+          ))}
 
         {/* Empty State Card */}
         {buyers.length === 0 && !loading && (

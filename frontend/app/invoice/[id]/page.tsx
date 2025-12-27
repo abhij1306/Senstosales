@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, Suspense, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -79,7 +79,14 @@ function InvoiceDetailContent() {
         const invoiceData = await api.getInvoiceDetail(
           decodeURIComponent(invoiceId),
         );
-        setData(invoiceData);
+        const invoiceWithKeys = {
+          ...invoiceData,
+          items: (invoiceData.items || []).map((item: any, idx: number) => ({
+            ...item,
+            unique_id: `inv-item-${item.material_code || 'NA'}-${idx}`
+          }))
+        };
+        setData(invoiceWithKeys);
       } catch (err) {
         console.error("Invoice Error:", err);
       } finally {
@@ -92,18 +99,47 @@ function InvoiceDetailContent() {
   if (loading || !data || !data.header) {
     return (
       <DocumentTemplate
-        title={loading ? "Synchronizing..." : "Invoice Not Found"}
+        title={loading ? "INV #---" : "Invoice Not Found"}
         description={
           loading
-            ? "Retrieving record data from ledger"
+            ? "Retrieving record data from ledger..."
             : "Traceback failure in record retrieval"
         }
         onBack={() => router.push("/invoice")}
       >
         <div className="space-y-6">
-          <div className="h-8 w-64 bg-slate-100 rounded-full animate-pulse" />
-          <div className="h-10 w-full bg-slate-100 rounded-xl animate-pulse" />
-          <div className="h-[200px] w-full bg-slate-50 rounded-xl border border-slate-100 animate-pulse" />
+          {/* Top Info Bar Skeleton */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-16 bg-slate-50 border border-slate-100/50 rounded-xl animate-pulse" />
+            ))}
+          </div>
+
+          {/* Journey Skeleton */}
+          <div className="h-1 bg-slate-100 rounded-full w-full relative overflow-hidden animate-pulse">
+            <div className="absolute inset-y-0 left-0 w-2/3 bg-blue-100" />
+          </div>
+
+          {/* Tabs Skeleton */}
+          <div className="flex gap-2 mb-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-10 w-24 bg-slate-100 rounded-xl animate-pulse" />
+            ))}
+          </div>
+
+          {/* Content Area Skeleton */}
+          <div className="h-40 bg-slate-50/50 rounded-2xl border border-slate-100 animate-pulse" />
+
+          {/* Table Skeleton */}
+          <div className="space-y-3">
+            <div className="h-6 w-32 bg-slate-100 rounded animate-pulse" />
+            <div className="h-64 bg-white rounded-2xl shadow-sm border border-slate-100 animate-pulse" />
+          </div>
+
+          {/* Totals Skeleton */}
+          <div className="flex justify-end">
+            <div className="h-32 w-64 bg-slate-50 rounded-xl animate-pulse" />
+          </div>
         </div>
       </DocumentTemplate>
     );
@@ -135,11 +171,11 @@ function InvoiceDetailContent() {
       <Button
         variant="default"
         size="sm"
-        onClick={() =>
+        onClick={useCallback(() =>
           router.push(
             `/invoice/edit?id=${encodeURIComponent(header.invoice_number)}`,
-          )
-        }
+          ),
+          [router, header.invoice_number])}
       >
         <Edit2 size={16} />
         Edit
@@ -164,7 +200,7 @@ function InvoiceDetailContent() {
             {row.material_description || row.description}
           </div>
           {row.drg_no && (
-            <div className="text-[10px] text-[#1A3D7C] font-medium uppercase tracking-tight">
+            <div className="text-[10px] text-blue-600 font-semibold uppercase tracking-[0.12em]">
               DRG: {row.drg_no}
             </div>
           )}
@@ -325,7 +361,7 @@ function InvoiceDetailContent() {
                         Challan Number
                       </Label>
                       <Accounting
-                        className="text-[#1A3D7C] cursor-pointer hover:underline"
+                        className="text-blue-600 cursor-pointer hover:underline"
                         onClick={() => router.push(`/dc/${header.dc_number}`)}
                       >
                         {header.dc_number || "-"}
@@ -427,11 +463,8 @@ function InvoiceDetailContent() {
           </H3>
           <DataTable
             columns={itemColumns}
-            data={items.map((item: any, idx: number) => ({
-              ...item,
-              _uniqueKey: `item-${idx}-${item.id || idx}`,
-            }))}
-            keyField="_uniqueKey"
+            data={items}
+            keyField="unique_id"
           />
         </div>
 
@@ -482,15 +515,15 @@ function InvoiceDetailContent() {
         {/* Linked DCs */}
         {linked_dcs && linked_dcs.length > 0 && (
           <Card className="p-6 border-none shadow-sm bg-slate-50/30">
-            <H3 className="mb-4 text-[13px] font-medium text-slate-600 uppercase tracking-widest">
+            <H3 className="mb-4 text-[13px] font-medium text-slate-500 uppercase tracking-[0.15em]">
               Linked Delivery Challans
             </H3>
             <div className="flex gap-2 flex-wrap">
-              {linked_dcs.map((dc: any) => (
+              {linked_dcs.map((dc: any, idx: number) => (
                 <Badge
-                  key={dc.dc_number}
+                  key={`linked-dc-${dc.dc_number}-${idx}`}
                   variant="outline"
-                  className="cursor-pointer hover:bg-slate-200 transition-colors font-medium text-slate-600"
+                  className="cursor-pointer hover:bg-slate-200 transition-colors font-medium text-slate-600 py-1"
                   onClick={() => router.push(`/dc/${dc.dc_number}`)}
                 >
                   {dc.dc_number}

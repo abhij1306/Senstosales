@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { H1, Body } from "../atoms/Typography";
+import { H1, H2, H3, Body } from "../atoms/Typography";
 import { SummaryCards, SummaryCardProps } from "../organisms/SummaryCards";
 import {
   ReportsToolbar,
@@ -52,10 +52,13 @@ export interface ReportsPageTemplateProps<T = any> {
   className?: string;
 }
 
+import { Card } from "../atoms/Card";
+
 export const ReportsPageTemplate = React.memo(
   <T extends Record<string, any>>({
     title,
     subtitle,
+    toolbar,
     kpiCards,
     charts,
     tableTitle,
@@ -72,65 +75,77 @@ export const ReportsPageTemplate = React.memo(
     className,
   }: ReportsPageTemplateProps<T>) => {
     return (
-      <div className={cn("space-y-6 pb-12 w-full max-w-full overflow-hidden bg-slate-50 min-h-screen", className)}>
+      <div className={cn("space-y-6 pb-12 w-full max-w-full overflow-hidden bg-slate-50/50 min-h-screen", className)}>
         {/* Enterprise Header - Compact & Functional */}
-        <div className="bg-white border-b border-slate-300 px-6 py-4 flex items-center justify-between shadow-sm">
+        <div className="bg-white/80 backdrop-blur-md border-b border-slate-200 px-8 py-6 flex flex-col md:flex-row md:items-center justify-between shadow-sm sticky top-0 z-10 -mx-6 mb-4">
           <div className="flex flex-col">
-            <H1 className="text-slate-800 font-bold tracking-tight text-xl">
+            <H1 className="text-slate-950 tracking-tight">
               {title}
             </H1>
             {subtitle && (
-              <Body className="text-slate-500 font-medium text-xs">
+              <Body className="text-slate-500 font-medium mt-1">
                 {subtitle}
               </Body>
             )}
           </div>
-          {/* Right side could hold global actions or date picker portal */}
+
+          {/* Integrated Toolbar Portal or Direct usage */}
+          <div id="header-action-portal" className="flex items-center gap-3 mt-4 md:mt-0" />
         </div>
 
-        <div className="px-6 space-y-6">
+        <div className="px-8 space-y-8 max-w-[1600px] mx-auto w-full">
+          {/* Optional Direct Toolbar if not portalled */}
+          {toolbar && !document.getElementById('header-action-portal') && (
+            <ReportsToolbar
+              startDate={toolbar.startDate || ""}
+              endDate={toolbar.endDate || ""}
+              onDateChange={toolbar.onDateChange || (() => { })}
+              onExport={toolbar.onExport}
+              loading={loading || toolbar.loading}
+            />
+          )}
+
           {/* KPI Summary Cards - Enterprise Grid (Standard Component) */}
           {((kpiCards && kpiCards.length > 0) || loading) && (
             <SummaryCards cards={kpiCards || []} loading={loading} />
           )}
 
           {/* Main Content: Charts or Table */}
-          <div className="space-y-4 w-full">
+          <div className="space-y-6 w-full">
             {charts && (
-              <div className="bg-white rounded-sm border border-slate-300 shadow-sm p-5 w-full overflow-hidden">
-                <div className="mb-4 border-b border-slate-200 pb-2">
-                  <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide">Analytics Overview</h3>
+              <Card glass={true} className="p-6 w-full overflow-hidden border-white/20">
+                <div className="mb-6 border-b border-slate-200/50 pb-3 flex items-center justify-between">
+                  <H3 className="text-slate-700 uppercase tracking-[0.1em]">Analytics Overview</H3>
                 </div>
                 {charts}
-              </div>
+              </Card>
             )}
 
             {columns && data && (
-              <div className="space-y-2 w-full">
+              <div className="space-y-4 w-full">
                 {tableTitle && (
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wide">
+                  <div className="flex items-center justify-between px-1">
+                    <H2 className="text-slate-800 uppercase tracking-wide">
                       {tableTitle}
-                    </h2>
+                    </H2>
                   </div>
                 )}
 
-                <div className="bg-white rounded-sm border border-slate-300 shadow-sm overflow-hidden w-full">
-                  <div className="w-full overflow-x-auto">
-                    {/* Reuse DataTable but ensure it fits the theme */}
-                    <DataTable
-                      columns={columns}
-                      data={data}
-                      keyField={keyField}
-                      page={page}
-                      pageSize={pageSize}
-                      totalItems={totalItems}
-                      onPageChange={onPageChange}
-                      loading={loading}
-                      error={error}
-                      emptyMessage={emptyMessage}
-                    />
-                  </div>
+                <div className="w-full">
+                  <DataTable
+                    columns={columns}
+                    data={data}
+                    keyField={keyField}
+                    page={page}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    onPageChange={onPageChange}
+                    loading={loading}
+                    error={error}
+                    emptyMessage={emptyMessage}
+                    className="w-full"
+                    glass={true}
+                  />
                 </div>
               </div>
             )}

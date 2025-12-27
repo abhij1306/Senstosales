@@ -145,7 +145,7 @@ export default function CreatePOPage() {
       title="Create Purchase Order"
       description="Enter procurement contract details manually"
       actions={topActions}
-      icon={<FileText size={20} className="text-[#1A3D7C]" />}
+      icon={<FileText size={20} className="text-blue-600" />}
       iconLayoutId="create-po-icon"
     >
       <div className="mb-6">
@@ -204,7 +204,7 @@ export default function CreatePOPage() {
                           onChange={(e) =>
                             updateHeader("po_date", e.target.value)
                           }
-                          className="font-bold text-slate-800 bg-transparent border-none p-0 focus:ring-0 cursor-pointer text-sm"
+                          className="font-semibold text-slate-800 bg-transparent border-none p-0 focus:ring-0 cursor-pointer text-sm"
                         />
                       </div>
                     </div>

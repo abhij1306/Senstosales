@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
+import { useEffect, useState, Suspense, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -125,7 +125,8 @@ function DCDetailContent() {
           if (data.items) {
             setItems(
               data.items.map((item: any, idx: number) => ({
-                id: `item-${idx}`,
+                id: item.material_code || `item-${idx}`,
+                unique_id: `dc-item-${item.material_code || 'NA'}-${idx}`,
                 lot_no: item.lot_no?.toString() || (idx + 1).toString(),
                 material_code: item.material_code || "",
                 description:
@@ -195,7 +196,7 @@ function DCDetailContent() {
         <div className="space-y-0.5">
           <div className="font-medium text-slate-950">{row.description}</div>
           {row.drg_no && (
-            <div className="text-[10px] text-[#1A3D7C] font-medium uppercase tracking-tight">
+            <div className="text-[10px] text-blue-600 font-semibold uppercase tracking-[0.12em]">
               DRG: {row.drg_no}
             </div>
           )}
@@ -279,7 +280,7 @@ function DCDetailContent() {
               Create Invoice
             </Button>
           )}
-          <Button variant="default" size="sm" onClick={() => setEditMode(true)}>
+          <Button variant="default" size="sm" onClick={useCallback(() => setEditMode(true), [])}>
             <Edit2 size={16} />
             Edit
           </Button>
@@ -312,18 +313,42 @@ function DCDetailContent() {
   if (loading || !formData.dc_number) {
     return (
       <DocumentTemplate
-        title={loading ? "Synchronizing..." : "Challan Not Found"}
+        title={loading ? "DC #---" : "Challan Not Found"}
         description={
           loading
-            ? "Retrieving record data from ledger"
+            ? "Retrieving record data from ledger..."
             : "Traceback failure in record retrieval"
         }
         onBack={() => router.push("/dc")}
       >
         <div className="space-y-6">
-          <div className="h-8 w-64 bg-slate-100 rounded-full animate-pulse" />
-          <div className="h-10 w-full bg-slate-100 rounded-xl animate-pulse" />
-          <div className="h-[200px] w-full bg-slate-50 rounded-xl border border-slate-100 animate-pulse" />
+          {/* Top Info Bar Skeleton */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-16 bg-slate-50 border border-slate-100/50 rounded-xl animate-pulse" />
+            ))}
+          </div>
+
+          {/* Journey Skeleton */}
+          <div className="h-1 bg-slate-100 rounded-full w-full relative overflow-hidden animate-pulse">
+            <div className="absolute inset-y-0 left-0 w-1/3 bg-emerald-100" />
+          </div>
+
+          {/* Tabs Skeleton */}
+          <div className="flex gap-2 mb-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-10 w-24 bg-slate-100 rounded-xl animate-pulse" />
+            ))}
+          </div>
+
+          {/* Content Area Skeleton */}
+          <div className="h-48 bg-slate-50/50 rounded-2xl border border-slate-100 animate-pulse" />
+
+          {/* Table Skeleton */}
+          <div className="space-y-3">
+            <div className="h-6 w-32 bg-slate-100 rounded animate-pulse" />
+            <div className="h-64 bg-white rounded-2xl shadow-sm border border-slate-100 animate-pulse" />
+          </div>
         </div>
       </DocumentTemplate>
     );
@@ -343,24 +368,24 @@ function DCDetailContent() {
         <DocumentJourney currentStage="DC" className="mb-2" />
 
         {error && (
-          <Card className="p-4 bg-[#DC2626]/10 border-[#DC2626]/20">
-            <div className="flex items-center gap-2 text-[#DC2626]">
+          <Card className="p-4 bg-red-50/50 border-red-200/50">
+            <div className="flex items-center gap-2 text-red-600">
               <AlertCircle size={16} />
-              <SmallText className="font-semibold">{error}</SmallText>
+              <SmallText className="font-medium">{error}</SmallText>
             </div>
           </Card>
         )}
 
         {/* Delete Confirmation Dialog */}
         {showDeleteConfirm && (
-          <Card className="p-6 bg-[#FEF2F2] border-[#DC2626]/30">
+          <Card className="p-6 bg-red-50/80 border-red-200/60 shadow-lg">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
-                <div className="p-2 bg-[#DC2626]/10 rounded-full">
-                  <Trash2 size={20} className="text-[#DC2626]" />
+                <div className="p-2 bg-red-100 rounded-full">
+                  <Trash2 size={20} className="text-red-600" />
                 </div>
                 <div>
-                  <H3 className="text-[15px] font-semibold text-slate-930">
+                  <H3 className="text-[15px] font-medium text-slate-950 uppercase tracking-tight">
                     Delete Delivery Challan?
                   </H3>
                   <SmallText className="text-slate-600 mt-1">
@@ -426,7 +451,7 @@ function DCDetailContent() {
                       <Input
                         value={formData.dc_number}
                         readOnly
-                        className="bg-[#F9FAFB] font-medium text-slate-930 border-none h-8"
+                        className="bg-slate-50/80 font-medium text-slate-950 border-none h-8"
                       />
                     </div>
                     <div className="space-y-1.5">
@@ -450,7 +475,7 @@ function DCDetailContent() {
                       <Input
                         value={formData.po_number}
                         readOnly
-                        className="bg-[#F9FAFB] cursor-pointer font-medium text-slate-930 border-none h-8"
+                        className="bg-slate-50/80 cursor-pointer font-medium text-slate-950 border-none h-8"
                         onClick={() => router.push(`/po/${formData.po_number}`)}
                       />
                     </div>
@@ -573,19 +598,19 @@ function DCDetailContent() {
           <H3 className="px-1 text-[13px] font-medium text-slate-600 uppercase tracking-widest">
             Dispatched Items ({items.length})
           </H3>
-          <DataTable columns={itemColumns} data={items} keyField="id" />
+          <DataTable columns={itemColumns} data={items} keyField="unique_id" />
         </div>
 
         {/* Notes */}
         {notes.length > 0 && (
           <Card className="p-6 border-none shadow-sm bg-slate-50/30">
-            <H3 className="mb-4 text-[13px] font-medium text-slate-600 uppercase tracking-widest">
+            <H3 className="mb-4 text-[13px] font-medium text-slate-500 uppercase tracking-[0.15em]">
               Notes
             </H3>
             <div className="space-y-2">
               {notes.map((note, idx) => (
                 <div
-                  key={idx}
+                  key={`note-${idx}`}
                   className="p-3 bg-white/50 rounded-lg border border-slate-100 italic text-[13px] text-slate-600"
                 >
                   {note}

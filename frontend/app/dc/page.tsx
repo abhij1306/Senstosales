@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -35,11 +35,9 @@ const columns: Column<DCListItem>[] = [
     render: (_value, dc) => (
       <Link
         href={`/dc/${dc.dc_number}`}
-        className="text-[#1A3D7C] font-medium hover:underline"
+        className="text-blue-600 font-medium hover:text-blue-700 transition-colors"
       >
-        <motion.span layoutId={`dc-title-${dc.dc_number}`}>
-          {dc.dc_number}
-        </motion.span>
+        {dc.dc_number}
       </Link>
     ),
   },
@@ -49,7 +47,7 @@ const columns: Column<DCListItem>[] = [
     sortable: true,
     width: "15%",
     render: (_value, dc) => (
-      <Body className="text-[#6B7280]">{formatDate(dc.dc_date)}</Body>
+      <Body className="text-slate-500 font-medium">{formatDate(dc.dc_date)}</Body>
     ),
   },
   {
@@ -59,7 +57,7 @@ const columns: Column<DCListItem>[] = [
     width: "35%",
     render: (_value, dc) => (
       <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-[#1A3D7C]/10 flex items-center justify-center text-[#1A3D7C] font-medium text-[10px] shrink-0">
+        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 font-medium text-[10px] shrink-0">
           {dc.consignee_name
             ? dc.consignee_name.substring(0, 2).toUpperCase()
             : "CN"}
@@ -74,7 +72,9 @@ const columns: Column<DCListItem>[] = [
     sortable: true,
     width: "18%",
     render: (_value, dc) => (
-      <span className="text-[#6B7280]">{dc.po_number || "N/A"}</span>
+      <Link href={`/po?search=${dc.po_number}`} className="hover:underline transition-all block">
+        <Body className="text-slate-500 font-medium hover:text-blue-600">{dc.po_number || "N/A"}</Body>
+      </Link>
     ),
   },
   {
@@ -123,7 +123,11 @@ export default function DCListPage() {
           api.listDCs(),
           api.getDCStats(),
         ]);
-        setDCs(dcData || []);
+        const dcWithKeys = (dcData || []).map((dc, idx) => ({
+          ...dc,
+          unique_id: `dc-${dc.dc_number}-${idx}`
+        }));
+        setDCs(dcWithKeys);
         setStats(statsData);
       } catch (err) {
         console.error("DC Load Error:", err);
@@ -152,7 +156,7 @@ export default function DCListPage() {
       {
         title: "Total Challans",
         value: (
-          <Accounting short className="text-xl text-white">
+          <Accounting short className="text-2xl text-white font-medium">
             {stats?.total_challans || dcs.length}
           </Accounting>
         ),
@@ -162,7 +166,7 @@ export default function DCListPage() {
       {
         title: "Delivered",
         value: (
-          <Accounting short className="text-xl text-white">
+          <Accounting short className="text-2xl text-white font-medium">
             {stats?.completed_delivery || 0}
           </Accounting>
         ),
@@ -172,7 +176,7 @@ export default function DCListPage() {
       {
         title: "Total Value",
         value: (
-          <Accounting isCurrency short className="text-xl text-white">
+          <Accounting isCurrency short className="text-2xl text-white font-medium">
             {stats?.total_value || 0}
           </Accounting>
         ),
@@ -182,7 +186,7 @@ export default function DCListPage() {
       {
         title: "In Transit",
         value: (
-          <Accounting short className="text-xl text-white">
+          <Accounting short className="text-2xl text-white font-medium">
             {stats?.pending_delivery || 0}
           </Accounting>
         ),
@@ -209,7 +213,7 @@ export default function DCListPage() {
         <Button
           variant="default"
           size="sm"
-          onClick={() => router.push("/dc/create")}
+          onClick={useCallback(() => router.push("/dc/create"), [router])}
         >
           <Plus size={16} />
           Create New
@@ -226,18 +230,18 @@ export default function DCListPage() {
       summaryCards={summaryCards}
       columns={columns}
       data={filteredDCs}
-      keyField="dc_number"
+      keyField="unique_id"
       page={page}
       pageSize={pageSize}
       totalItems={filteredDCs.length}
-      onPageChange={(newPage) => setPage(newPage)}
+      onPageChange={useCallback((newPage: number) => setPage(newPage), [])}
       exportable
-      onExport={() =>
+      onExport={useCallback(() =>
         window.open(
           `${api.baseUrl}/api/reports/register/dc?export=true`,
           "_blank",
-        )
-      }
+        ),
+        [])}
       loading={loading}
       emptyMessage="No delivery challans found"
     />
