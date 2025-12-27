@@ -18,8 +18,8 @@ const CardInternal = React.forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          "rounded-lg bg-white p-5 border border-[#E5E7EB]",
-          "shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1)]",
+          "rounded-2xl bg-white/70 backdrop-blur-xl p-5 border border-white/40",
+          "shadow-[0_8px_30px_rgb(0,0,0,0.04)]",
           className,
         )}
         {...props}

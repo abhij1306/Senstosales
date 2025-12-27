@@ -2,7 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Save, Search, AlertCircle, Loader2, Plus, Trash2, Truck } from "lucide-react";
+import { Save, Search, AlertCircle, Loader2, Plus, Trash2, Truck, Calendar } from "lucide-react";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { DCItemRow, POHeader } from "@/types";
@@ -312,16 +312,19 @@ function CreateDCPageContent() {
               <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">
                 DC Date
               </Label>
-              <Input
-                id="dc-date"
-                name="dc-date"
-                type="date"
-                value={formData.dc_date}
-                onChange={(e) =>
-                  setFormData({ ...formData, dc_date: e.target.value })
-                }
-                className="font-medium text-slate-930"
-              />
+              <div className="bg-white/40 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/50 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/10 transition-all flex items-center gap-2">
+                <Calendar size={14} className="text-blue-600" />
+                <Input
+                  id="dc-date"
+                  name="dc-date"
+                  type="date"
+                  value={formData.dc_date}
+                  onChange={(e) =>
+                    setFormData({ ...formData, dc_date: e.target.value })
+                  }
+                  className="font-bold text-slate-800 bg-transparent border-none p-0 focus:ring-0 cursor-pointer text-sm"
+                />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">

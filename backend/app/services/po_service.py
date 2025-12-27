@@ -137,6 +137,7 @@ class POService:
                     total_rejected_quantity=total_rejected,
                     total_pending_quantity=total_pending,
                     total_items_count=total_items,
+                    drg_no=db.execute("SELECT drg_no FROM purchase_order_items WHERE po_number = ? LIMIT 1", (po_num,)).fetchone()[0] if total_items > 0 else None,
                     created_at=row["created_at"],
                 )
             )

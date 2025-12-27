@@ -241,7 +241,7 @@ const DataTableComponent = <T extends Record<string, any>>({
             style={{ display: "table" }}
           >
             <thead>
-              <tr className="bg-[#FAFBFC] border-b border-[#E5E7EB]">
+              <tr className="bg-slate-500/5 border-b border-slate-200/50">
                 {selectable && (
                   <th className="h-12 px-4 w-12">
                     <Checkbox
@@ -262,9 +262,9 @@ const DataTableComponent = <T extends Record<string, any>>({
                           ? "text-center"
                           : "text-left",
                       column.sortable &&
-                        (currentSortKey === column.key
-                          ? "bg-slate-200/50 text-slate-950"
-                          : "hover:bg-slate-100/50 cursor-pointer"),
+                      (currentSortKey === column.key
+                        ? "bg-slate-200/50 text-slate-950"
+                        : "hover:bg-slate-100/50 cursor-pointer"),
                     )}
                     style={{ width: column.width }}
                     onClick={
@@ -289,59 +289,59 @@ const DataTableComponent = <T extends Record<string, any>>({
                 ))}
               </tr>
             </thead>
-            <tbody className="bg-white">
+            <tbody className="bg-transparent">
               {loading
                 ? Array.from({ length: pageSize || 5 }).map((_, i) => (
-                    <tr key={`skeleton-${i}`}>
-                      <td colSpan={columns.length + (selectable ? 1 : 0)}>
-                        <TableRowSkeleton columns={columns.length} />
-                      </td>
-                    </tr>
-                  ))
+                  <tr key={`skeleton-${i}`}>
+                    <td colSpan={columns.length + (selectable ? 1 : 0)}>
+                      <TableRowSkeleton columns={columns.length} />
+                    </td>
+                  </tr>
+                ))
                 : processedData.map((row) => {
-                    const rowKey = String(row[keyField]);
-                    const isSelected = selectedRows.includes(rowKey);
+                  const rowKey = String(row[keyField]);
+                  const isSelected = selectedRows.includes(rowKey);
 
-                    return (
-                      <tr
-                        key={rowKey}
-                        className={cn(
-                          "border-b border-[#F3F4F6] transition-colors",
-                          "hover:bg-[#F6F8FB]",
-                          isSelected && "bg-[#1A3D7C]/5",
-                        )}
-                      >
-                        {selectable && (
-                          <td className="px-4 py-4">
-                            <Checkbox
-                              checked={isSelected}
-                              onChange={(e) =>
-                                handleSelectRow(rowKey, e.target.checked)
-                              }
-                              aria-label={`Select row`}
-                            />
-                          </td>
-                        )}
-                        {columns.map((column) => (
-                          <td
-                            key={column.key}
-                            className={cn(
-                              "py-3 px-4 text-[13px] font-medium text-slate-950 tabular-nums align-top",
-                              column.align === "right"
-                                ? "text-right"
-                                : column.align === "center"
-                                  ? "text-center"
-                                  : "text-left",
-                            )}
-                          >
-                            {column.render
-                              ? column.render(row[column.key], row)
-                              : row[column.key]}
-                          </td>
-                        ))}
-                      </tr>
-                    );
-                  })}
+                  return (
+                    <tr
+                      key={rowKey}
+                      className={cn(
+                        "border-b border-slate-200/30 transition-colors",
+                        "hover:bg-blue-500/5",
+                        isSelected && "bg-blue-500/10",
+                      )}
+                    >
+                      {selectable && (
+                        <td className="px-4 py-4">
+                          <Checkbox
+                            checked={isSelected}
+                            onChange={(e) =>
+                              handleSelectRow(rowKey, e.target.checked)
+                            }
+                            aria-label={`Select row`}
+                          />
+                        </td>
+                      )}
+                      {columns.map((column) => (
+                        <td
+                          key={column.key}
+                          className={cn(
+                            "py-3 px-4 text-[13px] font-medium text-slate-950 tabular-nums align-top",
+                            column.align === "right"
+                              ? "text-right"
+                              : column.align === "center"
+                                ? "text-center"
+                                : "text-left",
+                          )}
+                        >
+                          {column.render
+                            ? column.render(row[column.key], row)
+                            : row[column.key]}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
         </div>

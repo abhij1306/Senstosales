@@ -5,6 +5,19 @@ All notable changes to SenstoSales ERP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.0] - 2025-12-27 - UI Update
+
+### Changed
+- **Enterprise Sidebar**: Finalized a clean, Light Theme sidebar for the Pro Enterprise interface.
+- **KPI Cards**:
+  - Restored original "Gradient" aesthetic with high-contrast White text.
+  - Implemented a "Sit Down" Staggered Spring Transition (0.05s stagger, stiffness 400) for premium feel.
+  - Compact sizing and non-italic typography for professional readability.
+- **Reports Page**: Removed custom KPI overrides to respect global `SummaryCards` system.
+
+### Fixed
+- **Animation Performance**: Optimized Framer Motion transitions to be virtually instant with a subtle spring finish per user request.
+
 ## [3.4.0] - 2025-12-27
 
 ### Added

@@ -55,14 +55,21 @@ def get_po_reconciliation_by_date(
     FROM purchase_order_items poi
     JOIN purchase_orders po ON poi.po_number = po.po_number
     WHERE po.po_date BETWEEN ? AND ?
+       OR EXISTS (
+         SELECT 1 FROM delivery_challans dc 
+         WHERE dc.po_number = po.po_number AND dc.dc_date BETWEEN ? AND ?
+       )
     ORDER BY poi.po_number, poi.po_item_no;
     """
 
     # Use pandas for easy DataFrame handling
     try:
-        df = pd.read_sql_query(query, db, params=[start_date, end_date])
+        df = pd.read_sql_query(query, db, params=[start_date, end_date, start_date, end_date])
         # Add a calculated 'total_received' column for the frontend
         df['total_received'] = df['total_accepted'] + df['total_rejected']
+        # Ensure numeric types
+        for col in ['ordered_qty', 'total_dispatched', 'total_accepted', 'total_rejected', 'total_received']:
+            df[col] = pd.to_numeric(df[col], errors='coerce').fillna(0)
         return df
     except Exception as e:
         print(f"Error generating PO reconciliation report: {e}")

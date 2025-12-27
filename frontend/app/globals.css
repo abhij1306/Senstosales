@@ -4,10 +4,10 @@
 
 @layer base {
   :root {
-    --background: 210 40% 98%;
+    --background: 222 47% 11%;
     --foreground: 222 47% 11%;
-    --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-    --font-heading: "Inter", system-ui, sans-serif;
+    --font-sans: "Inter", system-ui, sans-serif;
+    --font-heading: "Outfit", system-ui, sans-serif;
     --font-mono: "JetBrains Mono", monospace;
     --radius: 0.75rem;
     --accent: #3b82f6;
@@ -83,17 +83,19 @@
 
   body {
     background:
-      radial-gradient(at 0% 0%, hsla(253, 16%, 93%, 1) 0, transparent 50%),
-      radial-gradient(at 50% 100%, hsla(225, 39%, 95%, 1) 0, transparent 50%),
-      radial-gradient(at 100% 0%, hsla(339, 49%, 95%, 1) 0, transparent 50%),
-      #f8fafc;
+      radial-gradient(at 0% 0%, hsla(222, 100%, 98%, 1) 0, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(210, 40%, 96%, 1) 0, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(215, 30%, 92%, 1) 0, transparent 50%),
+      radial-gradient(at 0% 100%, hsla(210, 20%, 94%, 1) 0, transparent 50%),
+      linear-gradient(rgba(15, 23, 42, 0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(15, 23, 42, 0.02) 1px, transparent 1px),
+      #f1f5f9;
+    background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 40px 40px, 40px 40px, auto;
     background-attachment: fixed;
-    color: #1e293b;
+    color: #0f172a;
     font-family: var(--font-sans);
     font-size: 13px;
-    /* Compact global font size */
     font-weight: 500;
-    /* Medium weight globally */
     -webkit-font-smoothing: antialiased;
   }
 
@@ -104,8 +106,8 @@
   h5,
   h6 {
     font-family: var(--font-heading);
-    font-weight: 600;
-    letter-spacing: -0.025em;
+    letter-spacing: -0.02em;
+    font-weight: 700;
     color: #0f172a;
   }
 

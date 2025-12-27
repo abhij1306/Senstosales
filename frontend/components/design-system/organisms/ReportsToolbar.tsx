@@ -39,20 +39,20 @@ export const ReportsToolbar: React.FC<ReportsToolbarProps> = ({
     >
       {/* Date Range Selection */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 bg-slate-100/80 p-1 rounded-lg border border-slate-200">
-          <Calendar size={14} className="text-slate-400 ml-1.5" />
+        <div className="flex items-center gap-2 bg-white/40 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/40 shadow-[0_2px_10px_rgba(0,0,0,0.02)] focus-within:ring-2 focus-within:ring-blue-500/10 transition-all">
+          <Calendar size={14} className="text-blue-600 mr-0.5" />
           <input
             type="date"
             value={startDate}
             onChange={(e) => onDateChange(e.target.value, endDate)}
-            className="bg-transparent border-none text-[12px] font-medium focus:ring-0 w-32"
+            className="bg-transparent border-none text-[12px] font-bold text-slate-800 focus:ring-0 w-32 cursor-pointer"
           />
-          <span className="text-slate-300">→</span>
+          <span className="text-slate-300 font-black">→</span>
           <input
             type="date"
             value={endDate}
             onChange={(e) => onDateChange(startDate, e.target.value)}
-            className="bg-transparent border-none text-[12px] font-medium focus:ring-0 w-32"
+            className="bg-transparent border-none text-[12px] font-bold text-slate-800 focus:ring-0 w-32 cursor-pointer"
           />
         </div>
       </div>

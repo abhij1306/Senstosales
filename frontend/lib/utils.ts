@@ -56,13 +56,19 @@ export function formatIndianCurrency(
 ): string {
   if (amount === null || amount === undefined) return "₹0";
 
-  if (amount >= 10000000) {
-    return `₹${(amount / 10000000).toFixed(2)} Cr`;
-  } else if (amount >= 100000) {
-    return `₹${(amount / 100000).toFixed(2)} L`;
+  const isNeg = amount < 0;
+  const absAmount = Math.abs(amount);
+
+  let formatted = "";
+  if (absAmount >= 10000000) {
+    formatted = `${(absAmount / 10000000).toFixed(2)} Cr`;
+  } else if (absAmount >= 100000) {
+    formatted = `${(absAmount / 100000).toFixed(2)} L`;
   } else {
-    return `₹${amount.toLocaleString("en-IN")}`;
+    formatted = absAmount.toLocaleString("en-IN");
   }
+
+  return `${isNeg ? "- " : ""}₹${formatted}`;
 }
 
 function numberToWords(num: number): string {

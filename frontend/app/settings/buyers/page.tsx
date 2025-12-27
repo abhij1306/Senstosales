@@ -148,10 +148,10 @@ export default function BuyersSettingsPage() {
             key={buyer.id}
             active={buyer.is_default}
             className={cn(
-              "flex flex-col h-full border-none shadow-premium bg-white/45 backdrop-blur-xl transition-all",
+              "flex flex-col h-full border-none shadow-premium bg-white/40 backdrop-blur-xl transition-all",
               buyer.is_default
                 ? "ring-2 ring-emerald-500/40"
-                : "hover:bg-white/55",
+                : "hover:bg-white/60 hover:shadow-2xl",
             )}
           >
             <div className="p-8 flex flex-col h-full gap-6">
@@ -228,7 +228,7 @@ export default function BuyersSettingsPage() {
                 </div>
                 <div className="col-span-2 space-y-1">
                   <Label>Place of Supply</Label>
-                  <Body className="text-slate-600 line-clamp-2">
+                  <Body className="text-slate-600 line-clamp-2 font-medium">
                     {buyer.place_of_supply}
                   </Body>
                 </div>
@@ -258,7 +258,7 @@ export default function BuyersSettingsPage() {
 
         {/* Empty State Card */}
         {buyers.length === 0 && !loading && (
-          <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-200/60 rounded-3xl bg-white/20 backdrop-blur-sm">
+          <div className="col-span-full py-20 text-center border-2 border-dashed border-white/30 rounded-3xl bg-white/10 backdrop-blur-sm shadow-inner">
             <SmallText className="text-slate-400 text-[14px] block mb-4">
               No billing entities configured yet.
             </SmallText>
@@ -327,7 +327,7 @@ export default function BuyersSettingsPage() {
               <textarea
                 id="buyer_billing_address"
                 name="buyer_billing_address"
-                className="w-full min-h-[80px] px-3 py-2 rounded-lg border border-slate-200 bg-white/50 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                className="w-full min-h-[80px] px-3 py-2 rounded-lg border border-white/40 bg-white/20 focus:ring-2 focus:ring-blue-500/30 outline-none text-sm font-medium transition-all backdrop-blur-sm"
                 value={formData.billing_address}
                 onChange={(e) =>
                   setFormData({ ...formData, billing_address: e.target.value })
@@ -345,7 +345,7 @@ export default function BuyersSettingsPage() {
               <textarea
                 id="buyer_shipping_address"
                 name="buyer_shipping_address"
-                className="w-full min-h-[60px] px-3 py-2 rounded-lg border border-slate-200 bg-white/50 focus:ring-2 focus:ring-blue-500 outline-none text-sm font-medium"
+                className="w-full min-h-[60px] px-3 py-2 rounded-lg border border-white/40 bg-white/20 focus:ring-2 focus:ring-blue-500/30 outline-none text-sm font-medium transition-all backdrop-blur-sm"
                 value={formData.shipping_address}
                 onChange={(e) =>
                   setFormData({ ...formData, shipping_address: e.target.value })

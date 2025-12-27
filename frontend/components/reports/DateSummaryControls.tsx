@@ -48,20 +48,20 @@ export default function DateSummaryControls({
       </div>
 
       {/* Date Range */}
-      <div className="flex items-center gap-2">
-        <Calendar className="w-4 h-4 text-text-secondary" />
+      <div className="flex items-center gap-2 bg-white/40 backdrop-blur-md px-4 py-2 rounded-xl border border-white/50 shadow-[0_2px_10px_rgba(0,0,0,0.02)] focus-within:ring-2 focus-within:ring-blue-500/10 transition-all">
+        <Calendar className="w-4 h-4 text-blue-600" />
         <input
           type="date"
           value={startDate}
           onChange={(e) => setStartDate(e.target.value)}
-          className="px-3 py-2 border border-border rounded-lg text-sm text-text-primary bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="bg-transparent border-none text-sm font-bold text-slate-800 focus:ring-0 w-36 cursor-pointer"
         />
-        <span className="text-text-secondary">to</span>
+        <span className="text-slate-300 font-black px-1">→</span>
         <input
           type="date"
           value={endDate}
           onChange={(e) => setEndDate(e.target.value)}
-          className="px-3 py-2 border border-border rounded-lg text-sm text-text-primary bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="bg-transparent border-none text-sm font-bold text-slate-800 focus:ring-0 w-36 cursor-pointer"
         />
       </div>
 

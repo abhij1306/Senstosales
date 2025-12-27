@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { api, POListItem, POStats } from "@/lib/api";
 import { Dialog } from "@/components/design-system/molecules/Dialog";
 import { FileText, Activity, Clock, Plus, Upload, X } from "lucide-react";
-import { formatDate, formatIndianCurrency } from "@/lib/utils";
+import { formatDate, formatIndianCurrency, cn } from "@/lib/utils";
 import { useDebouncedValue } from "@/lib/hooks/useDebounce";
 import { H1 } from "@/components/design-system/atoms/Typography";
 import {
@@ -127,6 +127,21 @@ export default function POListPage() {
   const isCancelled = useRef(false);
 
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        document.getElementById("po-search")?.focus();
+      }
+      if (e.key === "/" && document.activeElement?.tagName !== "INPUT") {
+        e.preventDefault();
+        document.getElementById("po-search")?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
         const [posData, statsData] = await Promise.all([
@@ -155,7 +170,7 @@ export default function POListPage() {
     let processedCount = 0;
 
     try {
-      const CHUNK_SIZE = 25;
+      const CHUNK_SIZE = 10;
       for (let i = 0; i < selectedFiles.length; i += CHUNK_SIZE) {
         if (isCancelled.current) break;
         const chunk = selectedFiles.slice(i, i + CHUNK_SIZE);
@@ -165,6 +180,9 @@ export default function POListPage() {
           current: processedCount,
           total: selectedFiles.length,
         });
+
+        // Brief delay to allow main thread to process UI updates
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
 
       if (!isCancelled.current) {
@@ -305,11 +323,21 @@ export default function POListPage() {
         title={uploading ? "Uploading Purchase Orders" : "Confirm Upload"}
         maxWidth="max-w-md"
         footer={
-          !uploading && (
-            <Button variant="default" onClick={handleUpload} className="w-full">
-              Start Upload
-            </Button>
-          )
+          <div className="flex flex-col gap-3 w-full">
+            {!uploading ? (
+              <Button variant="default" onClick={handleUpload} className="w-full">
+                Start Upload
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => { isCancelled.current = true; }}
+                className="w-full"
+              >
+                Cancel Upload
+              </Button>
+            )}
+          </div>
         }
       >
         <div className="space-y-4">

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Save, Plus, Trash2, Package, Loader2, FileText } from "lucide-react";
+import { Save, Plus, Trash2, Package, Loader2, FileText, Calendar } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   H3,
@@ -167,10 +167,10 @@ export default function CreatePOPage() {
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.2 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.15, ease: "easeOut" }}
             >
               <Card className="p-6">
                 <TabsContent value="basic" className="mt-0">
@@ -194,16 +194,19 @@ export default function CreatePOPage() {
                       <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">
                         PO Date
                       </Label>
-                      <Input
-                        id="po-date"
-                        name="po-date"
-                        type="date"
-                        value={header.po_date}
-                        onChange={(e) =>
-                          updateHeader("po_date", e.target.value)
-                        }
-                        className="font-medium text-slate-930"
-                      />
+                      <div className="bg-white/40 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/50 shadow-sm focus-within:ring-2 focus-within:ring-blue-500/10 transition-all flex items-center gap-2">
+                        <Calendar size={14} className="text-blue-600" />
+                        <Input
+                          id="po-date"
+                          name="po-date"
+                          type="date"
+                          value={header.po_date}
+                          onChange={(e) =>
+                            updateHeader("po_date", e.target.value)
+                          }
+                          className="font-bold text-slate-800 bg-transparent border-none p-0 focus:ring-0 cursor-pointer text-sm"
+                        />
+                      </div>
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-[10px] uppercase tracking-widest text-slate-600 font-medium">

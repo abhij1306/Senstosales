@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { H1, SmallText } from "@/components/design-system/atoms/Typography";
+import { H1 } from "@/components/design-system/atoms/Typography";
 import {
   Tabs,
   TabsList,
@@ -27,42 +27,40 @@ export default function SettingsLayout({
     TABS.find((tab) => pathname.startsWith(tab.href))?.value || "my-details";
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/50">
-      {/* Settings Header - Flush with Master Header */}
-      <div className="px-8 pt-2 pb-6 bg-white/40 backdrop-blur-md border-b border-white/20 shrink-0">
-        <div className="max-w-[1400px] mx-auto flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-1">
-            <H1 className="uppercase tracking-tight text-[24px]">Settings</H1>
-            <SmallText className="text-slate-500 font-medium">
-              Configure your business profile and buyer entities
-            </SmallText>
-          </div>
-
-          <Tabs
-            value={currentTab}
-            onValueChange={(val) => {
-              const tab = TABS.find((t) => t.value === val);
-              if (tab) router.push(tab.href);
-            }}
-          >
-            <TabsList className="bg-slate-200/40 border border-white/40 shadow-sm backdrop-blur-sm">
-              {TABS.map((tab) => (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
-                  className="px-6 py-2"
-                >
-                  {tab.name}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+    <div className="space-y-8">
+      {/* Settings Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/20 pb-8">
+        <div className="space-y-2">
+          <H1 className="uppercase tracking-tight">Settings</H1>
+          <p className="text-[14px] text-[#6B7280]">
+            Configure your business profile and buyer entities
+          </p>
         </div>
+
+        <Tabs
+          value={currentTab}
+          onValueChange={(val) => {
+            const tab = TABS.find((t) => t.value === val);
+            if (tab) router.push(tab.href);
+          }}
+        >
+          <TabsList className="bg-white/40 border border-white/40 shadow-sm backdrop-blur-sm p-1 rounded-xl">
+            {TABS.map((tab) => (
+              <TabsTrigger
+                key={tab.value}
+                value={tab.value}
+                className="px-6 py-2 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all font-bold text-[11px] uppercase tracking-wider"
+              >
+                {tab.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </div>
 
-      {/* Content Area - Gutter aligned with Header */}
-      <div className="flex-1 overflow-auto bg-gradient-to-b from-transparent to-slate-100/30">
-        <div className="max-w-[1400px] mx-auto py-8 mb-20">{children}</div>
+      {/* Content Area */}
+      <div className="pb-20">
+        {children}
       </div>
     </div>
   );

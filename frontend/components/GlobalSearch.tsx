@@ -287,12 +287,12 @@ export default function GlobalSearch() {
   const portalContent = position ? (
     <div
       ref={portalRef}
-      className="fixed z-[9999] flex flex-col bg-white/95 backdrop-blur-3xl border border-slate-200/60 shadow-2xl rounded-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 ring-1 ring-black/5"
+      className="fixed z-[9999] flex flex-col bg-white/70 backdrop-blur-3xl border border-white/40 shadow-[0_32px_128px_rgba(0,0,0,0.15)] rounded-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 ring-1 ring-white/20"
       style={{
         top: position.top,
         left: position.left,
         width: position.width,
-        height: 480, // Reduced from 550
+        height: 480,
         transformOrigin: "top center",
       }}
     >
@@ -350,7 +350,7 @@ export default function GlobalSearch() {
             >
               {/* Header for Nav if present */}
               {filteredNavItems.length > 0 && (
-                <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-widest sticky top-0 bg-slate-50/95 backdrop-blur z-10">
+                <div className="px-4 py-2 text-[10px] font-black text-slate-400 uppercase tracking-[0.25em] sticky top-0 bg-white/50 backdrop-blur z-10 border-b border-white/20">
                   Commands
                 </div>
               )}
@@ -407,14 +407,14 @@ export default function GlobalSearch() {
         </div>
 
         {/* Right Pane: Preview */}
-        <div className="w-[50%] bg-white p-8 flex flex-col border-l border-white/50">
+        <div className="w-[50%] bg-white/40 backdrop-blur-md p-8 flex flex-col border-l border-white/20">
           {selectedItem ? (
             <div className="animate-in fade-in zoom-in-95 duration-300">
               <div className="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-6 shadow-sm">
                 {renderIcon(selectedItem, "w-7 h-7 text-slate-600")}
               </div>
 
-              <h3 className="text-xl font-bold text-slate-900 leading-tight mb-1">
+              <h3 className="text-2xl font-black text-slate-900 leading-tight mb-1 font-heading uppercase tracking-tight">
                 {selectedItem.type === "NAV"
                   ? selectedItem.label
                   : selectedItem.number}
@@ -512,12 +512,12 @@ export default function GlobalSearch() {
 
   return (
     <>
-      <div ref={searchRef} className="relative w-[850px] max-w-full group z-50">
+      <div ref={searchRef} className="relative max-w-[700px] w-full group z-50">
         <div
           className={cn(
             "flex items-center gap-4 px-6 py-3 bg-slate-100/40 hover:bg-slate-100/60 border border-slate-200/50 hover:border-slate-300 rounded-2xl transition-all duration-300",
             isOpen &&
-              "bg-white border-blue-400/50 shadow-xl shadow-blue-500/5 ring-4 ring-blue-500/10",
+            "bg-white border-blue-400/50 shadow-xl shadow-blue-500/5 ring-4 ring-blue-500/10",
           )}
         >
           {loading ? (

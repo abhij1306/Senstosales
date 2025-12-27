@@ -100,6 +100,7 @@ class POListItem(BaseModel):
     total_rejected_quantity: float = 0.0
     total_pending_quantity: float = 0.0
     total_items_count: int = 0  # NEW: Total line items count
+    drg_no: Optional[str] = None  # Added for summary visibility
     created_at: Optional[str] = None
 
 

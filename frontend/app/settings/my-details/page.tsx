@@ -10,6 +10,7 @@ import {
   Phone,
   MapPin,
   Fingerprint,
+  FileText,
 } from "lucide-react";
 import ResetDatabase from "@/components/ResetDatabase";
 import {
@@ -112,7 +113,7 @@ export default function MyDetailsPage() {
     <div className="space-y-10">
       {/* 1. Supplier Identity Section */}
       <SpotlightCard className="overflow-hidden border-none shadow-premium bg-white/40 backdrop-blur-xl">
-        <div className="px-8 py-6 border-b border-white/20 bg-gradient-to-r from-slate-900/5 to-transparent flex items-center justify-between">
+        <div className="px-8 py-6 border-b border-white/20 bg-gradient-to-r from-blue-600/5 to-transparent flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="p-2.5 bg-blue-600/10 rounded-xl text-blue-600">
               <Building size={22} />
@@ -191,7 +192,7 @@ export default function MyDetailsPage() {
                   setSettings({ ...settings, supplier_address: e.target.value })
                 }
                 rows={3}
-                className="w-full px-4 py-3 text-[13px] font-medium border border-slate-200 rounded-xl bg-slate-50/50 focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all resize-none"
+                className="w-full px-4 py-3 text-[13px] font-medium border border-white/40 rounded-xl bg-white/20 focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500/50 outline-none transition-all resize-none backdrop-blur-sm"
               />
             </div>
 
@@ -231,12 +232,22 @@ export default function MyDetailsPage() {
           </div>
 
           {/* Visual Sidebar Preview */}
-          <div className="lg:col-span-4 bg-slate-50/50 rounded-2xl border border-slate-200/60 p-6 space-y-6">
+          <div className="lg:col-span-4 bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30 p-6 space-y-6">
             <Label className="text-blue-600">Document Header Preview</Label>
-            <Card className="p-4 border-dashed border-slate-300 bg-white shadow-sm space-y-3">
-              <div className="h-4 w-2/3 bg-slate-200 rounded animate-pulse" />
-              <div className="h-3 w-full bg-slate-100 rounded" />
-              <div className="h-3 w-1/2 bg-slate-100 rounded" />
+            <Card className="p-5 border-dashed border-slate-300 bg-white/80 shadow-inner space-y-2 relative overflow-hidden group/doc">
+              <div className="absolute top-0 right-0 p-2 opacity-10 group-hover/doc:opacity-30 transition-opacity">
+                <FileText size={40} />
+              </div>
+              <div className="text-[12px] font-black text-slate-900 uppercase leading-tight">
+                {settings.supplier_name || "BUSINESS NAME"}
+              </div>
+              <div className="text-[9px] text-slate-500 leading-tight line-clamp-2 max-w-[180px]">
+                {settings.supplier_address || "Registered Address Street, City, State"}
+              </div>
+              <div className="pt-1 flex items-center gap-1.5 grayscale opacity-60">
+                <div className="h-1 w-12 bg-blue-600 rounded-full" />
+                <div className="h-1 w-4 bg-slate-300 rounded-full" />
+              </div>
             </Card>
             <div className="space-y-4 pt-4">
               <DetailField
@@ -303,7 +314,7 @@ export default function MyDetailsPage() {
               </div>
             </div>
           ) : (
-            <div className="text-center py-10 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+            <div className="text-center py-10 bg-white/10 backdrop-blur-sm rounded-2xl border border-dashed border-white/30">
               <Body className="text-slate-400 mb-4">
                 No default billing entity selected.
               </Body>

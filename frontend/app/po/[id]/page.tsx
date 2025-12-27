@@ -335,6 +335,85 @@ function PODetailContent() {
     );
   };
 
+  // 🎨 VISUAL UPGRADE: Floating Action Bar
+  const floatingActions = (
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+      <motion.div
+        initial={{ y: 100 }}
+        animate={{ y: 0 }}
+        className="flex items-center gap-3 p-2 bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 ring-1 ring-black/20"
+      >
+        {editMode ? (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setEditMode(false)}
+              className="text-white hover:bg-white/10 text-[11px]"
+            >
+              <X className="w-4 h-4 mr-2" />
+              DISCARD
+            </Button>
+            <div className="w-[1px] h-6 bg-white/10 mx-1" />
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleSave}
+              className="bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20 text-[11px]"
+            >
+              <Save className="w-4 h-4 mr-2" />
+              SAVE CHANGES
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className="text-white hover:bg-white/10 text-[11px]"
+            >
+              <a
+                href={`${API_BASE_URL}/api/po/${header.po_number}/download`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                <FileDown className="w-4 h-4 mr-2" />
+                EXCEL
+              </a>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                hasDC && dcId
+                  ? router.push(`/dc/${dcId}`)
+                  : router.push(`/dc/create?po=${header.po_number}`)
+              }
+              className={cn(
+                "text-white hover:bg-white/10 text-[11px]",
+                hasDC && "text-emerald-400"
+              )}
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              {hasDC ? "VIEW DC" : "GENERATE DC"}
+            </Button>
+            <div className="w-[1px] h-6 bg-white/10 mx-1" />
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => setEditMode(true)}
+              className="bg-white text-slate-900 hover:bg-slate-100 shadow-lg text-[11px]"
+            >
+              <Edit2 className="w-4 h-4 mr-2 text-blue-600" />
+              MODIFY RECORD
+            </Button>
+          </>
+        )}
+      </motion.div>
+    </div>
+  );
+
   return (
     <DocumentTemplate
       title={`PO #${header.po_number}`}
@@ -882,7 +961,7 @@ function PODetailContent() {
                               className={cn(
                                 "p-1.5 rounded-md transition-all text-slate-400 hover:text-slate-700",
                                 expandedItems.has(item.po_item_no) &&
-                                  "text-blue-600 bg-blue-50",
+                                "text-blue-600 bg-blue-50",
                               )}
                             >
                               {expandedItems.has(item.po_item_no) ? (
@@ -946,7 +1025,7 @@ function PODetailContent() {
                                   </thead>
                                   <tbody>
                                     {item.deliveries &&
-                                    item.deliveries.length > 0 ? (
+                                      item.deliveries.length > 0 ? (
                                       item.deliveries.map((d, dIdx) => (
                                         <tr
                                           key={dIdx}
@@ -986,8 +1065,8 @@ function PODetailContent() {
                                                 value={
                                                   d.dely_date
                                                     ? new Date(d.dely_date)
-                                                        .toISOString()
-                                                        .split("T")[0]
+                                                      .toISOString()
+                                                      .split("T")[0]
                                                     : ""
                                                 }
                                                 onChange={(e) => {
@@ -1051,6 +1130,7 @@ function PODetailContent() {
           </div>
         </div>
       </div>
+      {floatingActions}
     </DocumentTemplate>
   );
 }

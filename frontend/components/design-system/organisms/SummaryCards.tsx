@@ -42,6 +42,8 @@ const trendStyles = {
   neutral: "text-[#6B7280]",
 };
 
+import { motion, AnimatePresence } from "framer-motion";
+
 export const SummaryCard = React.memo(function SummaryCard({
   title,
   value,
@@ -53,62 +55,65 @@ export const SummaryCard = React.memo(function SummaryCard({
   const isColored = variant !== "default";
 
   return (
-    <Card
+    <div
       className={cn(
-        "flex items-center gap-4 transition-all duration-200 hover:shadow-lg min-h-[100px]",
+        "relative flex flex-col justify-between p-4 rounded-xl transition-all duration-200 min-h-[110px] border hover:shadow-lg hover:-translate-y-1",
+        // Restore original colored backgrounds
         variantStyles[variant],
         className,
       )}
     >
-      {/* Icon */}
-      {icon && (
-        <div
-          className={cn(
-            "p-3 rounded-full shrink-0",
-            isColored ? "bg-white/20" : "bg-[#1A3D7C]/10",
-          )}
-        >
-          <div className={isColored ? "text-white" : "text-[#1A3D7C]"}>
-            {icon}
-          </div>
-        </div>
-      )}
-
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <H2
-          className={cn(
-            "mb-1 tabular-nums transition-all truncate",
-            isColored ? "text-white" : "text-[#111827]",
-          )}
-        >
-          {value}
-        </H2>
-        <SmallText
-          className={cn(
-            "uppercase tracking-wide",
-            isColored ? "text-white/80" : "text-[#6B7280]",
-          )}
-        >
+      <div className="flex justify-between items-start">
+        <SmallText className={cn(
+          "uppercase tracking-wider font-semibold text-[10px]",
+          isColored ? "text-white" : "text-slate-500/90"
+        )}>
           {title}
         </SmallText>
+
+        {/* Icon - Clean Circle */}
+        {icon && (
+          <div
+            className={cn(
+              "w-8 h-8 rounded-full flex items-center justify-center text-base",
+              variant === "primary" ? "bg-white/20 text-white" :
+                variant === "success" ? "bg-white/20 text-white" :
+                  variant === "warning" ? "bg-white/20 text-white" :
+                    variant === "secondary" ? "bg-white/20 text-white" :
+                      "bg-slate-50 text-slate-600"
+            )}
+          >
+            {icon}
+          </div>
+        )}
+      </div>
+
+      <div className="mt-3">
+        <div className={cn(
+          "text-2xl font-bold tracking-tight",
+          isColored ? "text-white" : "text-slate-900"
+        )}>
+          {value}
+        </div>
 
         {/* Trend indicator */}
         {trend && (
           <div
             className={cn(
               "text-[10px] font-medium mt-1 flex items-center gap-1",
-              isColored ? "text-white/90" : trendStyles[trend.direction],
+              isColored ? "text-white" : trendStyles[trend.direction],
             )}
           >
-            {trend.direction === "up" && "↑"}
-            {trend.direction === "down" && "↓"}
-            {trend.direction === "neutral" && "→"}
+            <span>{trend.direction === 'up' ? '↑' : trend.direction === 'down' ? '↓' : '•'}</span>
             <span>{trend.value}</span>
+            <span className={cn(
+              "ml-1",
+              isColored ? "text-white" : "text-slate-400"
+            )}>vs last month</span>
           </div>
         )}
       </div>
-    </Card>
+    </div>
   );
 });
 
@@ -121,6 +126,29 @@ export interface SummaryCardsProps {
   loading?: boolean;
   className?: string;
 }
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05
+    }
+  }
+};
+
+const item = {
+  hidden: { opacity: 0, y: -20 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      type: "spring",
+      stiffness: 400,
+      damping: 25
+    } as any
+  }
+};
 
 export const SummaryCards = React.memo(function SummaryCards({
   cards,
@@ -143,15 +171,20 @@ export const SummaryCards = React.memo(function SummaryCards({
   }
 
   return (
-    <div
+    <motion.div
+      variants={container}
+      initial="hidden"
+      animate="show"
       className={cn(
         "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4",
         className,
       )}
     >
       {cards.map((card, index) => (
-        <SummaryCard key={index} {...card} />
+        <motion.div key={index} variants={item}>
+          <SummaryCard {...card} />
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 });
