@@ -1,0 +1,22 @@
+{
+    "module": "backend",
+    "audit_date": "2025-12-28T13:20:33+05:30",
+    "debt_found": true,
+    "severity": "medium",
+    "items": [
+        {
+            "id": "TD001",
+            "description": "FastAPI regex deprecation warnings",
+            "file": "app/routers/reports.py",
+            "severity": "low",
+            "auto_fixable": true
+        },
+        {
+            "id": "TD002",
+            "description": "useFetch hook unused but present",
+            "file": "frontend/hooks/useFetch.ts",
+            "severity": "medium",
+            "auto_fixable": true
+        }
+    ]
+}
