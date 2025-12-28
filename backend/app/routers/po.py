@@ -11,7 +11,7 @@ from typing import List
 import sqlite3
 from bs4 import BeautifulSoup
 from app.services.po_scraper import extract_po_header, extract_items
-from app.services.ingestion.po_ingestion_service import POIngestionService
+from app.services.ingest_po import POIngestionService
 from app.services.srv_po_linker import update_srvs_on_po_upload
 
 from app.services.po_service import po_service

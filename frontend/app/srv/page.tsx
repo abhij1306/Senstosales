@@ -47,8 +47,10 @@ import {
   DialogTitle,
 } from "@/components/design-system/molecules/Dialog";
 import { StatusBadge } from "@/components/design-system/organisms/StatusBadge";
-import type { Column } from "@/components/design-system/organisms/DataTable";
-import type { SummaryCardProps } from "@/components/design-system/organisms/SummaryCards";
+import { SearchBar } from "@/components/design-system/molecules/SearchBar";
+import { type Column } from "@/components/design-system/organisms/DataTable";
+import { type SummaryCardProps } from "@/components/design-system/organisms/SummaryCards";
+import { Flex, Stack, Box } from "@/components/design-system/atoms/Layout";
 
 export default function SRVListPage() {
   const router = useRouter();
@@ -68,15 +70,11 @@ export default function SRVListPage() {
   const isCancelled = useRef(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  useEffect(() => {
-    loadData();
-  }, [searchQuery, page, pageSize]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
       const [srvData, statsData] = await Promise.all([
-        api.listSRVs(undefined, (page - 1) * pageSize, pageSize),
+        api.listSRVs(),
         api.getSRVStats()
       ]);
 
@@ -88,13 +86,17 @@ export default function SRVListPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    loadData();
+  }, [loadData, searchQuery, page, pageSize]);
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) setSelectedFiles(Array.from(e.target.files));
-  };
+  }, []);
 
-  const handleUpload = async () => {
+  const handleUpload = useCallback(async () => {
     if (selectedFiles.length === 0) return;
     setUploading(true);
     setUploadProgress({ current: 0, total: selectedFiles.length });
@@ -125,7 +127,7 @@ export default function SRVListPage() {
       setUploading(false);
       isCancelled.current = false;
     }
-  };
+  }, [selectedFiles, loadData]);
 
   const handleDelete = useCallback(async (srvNumber: string) => {
     if (!confirm(`Permanently delete SRV #${srvNumber}?`)) return;
@@ -135,7 +137,7 @@ export default function SRVListPage() {
     } catch (err) {
       console.error(err);
     }
-  }, []);
+  }, [loadData]);
 
   const columns: Column<any>[] = useMemo(() => [
     {
@@ -143,13 +145,18 @@ export default function SRVListPage() {
       label: "SRV VOUCHER",
       width: "15%",
       render: (v: any) => (
-        <div className="flex flex-col">
-          <Link href={`/srv/${v}`} className="font-black text-blue-600 hover:underline flex items-center gap-1">
-            #{v}
-            <ChevronRight size={12} />
+        <Stack>
+          <Link
+            href={`/srv/${v}`}
+            className="group flex items-center gap-1"
+          >
+            <Body className="font-black text-blue-600 group-hover:underline">#{v}</Body>
+            <ChevronRight size={12} className="text-blue-400 group-hover:text-blue-600 transition-colors" />
           </Link>
-          <SmallText className="text-slate-400 font-medium uppercase tracking-tighter">Inbound Receipt</SmallText>
-        </div>
+          <SmallText className="text-slate-400 font-medium uppercase tracking-tighter leading-none">
+            Inbound Receipt
+          </SmallText>
+        </Stack>
       ),
     },
     {
@@ -157,7 +164,7 @@ export default function SRVListPage() {
       label: "DATE",
       width: "12%",
       render: (v) => (
-        <span className="text-slate-600 font-bold">{formatDate(v as string)}</span>
+        <Body className="text-slate-600">{formatDate(v as string)}</Body>
       ),
     },
     {
@@ -165,14 +172,14 @@ export default function SRVListPage() {
       label: "PO REFERENCE",
       width: "12%",
       render: (v, row) => (
-        <div className="flex items-center gap-2">
-          <Link href={`/po/${v}`} className="px-2 py-1 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-black border border-slate-200 hover:bg-slate-200 transition-colors">
-            {v}
+        <Flex align="center" gap={2}>
+          <Link href={`/po/${v}`} className="px-2 py-1 rounded-lg bg-slate-100/50 text-slate-700 hover:bg-slate-100 transition-colors border border-slate-200/50 flex items-center gap-1.5">
+            <SmallText className="font-extrabold tracking-tight leading-none">#{v}</SmallText>
           </Link>
           {!row.po_found && (
             <AlertCircle size={14} className="text-rose-500" />
           )}
-        </div>
+        </Flex>
       ),
     },
     {
@@ -180,6 +187,7 @@ export default function SRVListPage() {
       label: "ACCEPTED",
       align: "right",
       width: "12%",
+      isNumeric: true,
       render: (v) => (
         <Accounting className="text-emerald-600 font-black">{v}</Accounting>
       ),
@@ -189,8 +197,15 @@ export default function SRVListPage() {
       label: "REJECTED",
       align: "right",
       width: "12%",
+      isNumeric: true,
       render: (v) => (
-        <Accounting className={cn(Number(v) > 0 ? "text-rose-500 font-bold" : "text-slate-300 font-medium")}>{v}</Accounting>
+        <Accounting
+          className={cn(
+            Number(v) > 0 ? "text-rose-500 font-bold" : "text-slate-300 font-medium",
+          )}
+        >
+          {v}
+        </Accounting>
       ),
     },
     {
@@ -216,13 +231,13 @@ export default function SRVListPage() {
       title: "Accepted Volume",
       value: stats?.total_received_qty || 0,
       icon: <CheckCircle2 size={20} />,
-      variant: "success",
+      variant: "default",
     },
     {
       title: "Rejection Rate",
       value: `${stats?.rejection_rate || 0}%`,
       icon: <XCircle size={20} />,
-      variant: "warning",
+      variant: "default",
     },
   ], [stats]);
 
@@ -237,25 +252,24 @@ export default function SRVListPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleUploadClick = () => {
+  const handleUploadClick = useCallback(() => {
     fileInputRef.current?.click();
-  };
+  }, []);
 
   // Master Reference: Toolbar Construction (Atomic)
+  const handleSearch = useCallback((val: string) => {
+    setSearchQuery(val);
+  }, []);
+
   const toolbar = (
-    <div className="flex items-center gap-4 w-full justify-between">
-      <div className="w-80 relative">
-        <Input
-          id="srv-search"
-          name="srv-search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Filter by SRV or PO..."
-          className="pl-10 h-11 bg-white/50 border-slate-200/60 rounded-xl focus:ring-2 focus:ring-blue-500/20"
-        />
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-      </div>
-      <div className="flex items-center gap-3">
+    <Flex align="center" justify="between" className="w-full" gap={4}>
+      <SearchBar
+        value={searchQuery}
+        onChange={handleSearch}
+        placeholder="Filter by SRV or PO..."
+        className="w-80"
+      />
+      <Flex align="center" gap={3}>
         <input
           ref={fileInputRef}
           type="file"
@@ -273,8 +287,8 @@ export default function SRVListPage() {
           <Upload size={16} className="mr-2" />
           Ingest HTML
         </Button>
-      </div>
-    </div>
+      </Flex>
+    </Flex>
   );
 
   return (
@@ -295,7 +309,7 @@ export default function SRVListPage() {
       />
 
       {/* Floating Action Button (FAB) - Appears when files selected */}
-      <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-50">
+      <Stack className="fixed bottom-8 right-8 z-50" gap={4}>
         <AnimatePresence>
           {selectedFiles.length > 0 && !uploading && (
             <motion.button
@@ -306,18 +320,18 @@ export default function SRVListPage() {
               className="group flex items-center gap-3 px-6 py-4 bg-emerald-600 text-white rounded-2xl shadow-[0_20px_40px_rgba(16,185,129,0.3)] hover:bg-emerald-700 hover:shadow-[0_25px_50px_rgba(16,185,129,0.4)] transition-all active:scale-95"
             >
               <Upload size={20} className="group-hover:bounce" />
-              <span className="font-black uppercase tracking-[0.15em]">
+              <Body className="font-black uppercase tracking-[0.15em] text-white leading-none">
                 Process {selectedFiles.length} SRVs
-              </span>
+              </Body>
             </motion.button>
           )}
         </AnimatePresence>
-      </div>
+      </Stack>
 
       <Dialog
-        open={uploading || selectedFiles.length > 0}
-        onOpenChange={(open) => {
-          if (!open && !uploading) setSelectedFiles([]);
+        isOpen={uploading || selectedFiles.length > 0}
+        onClose={() => {
+          if (!uploading) setSelectedFiles([]);
         }}
       >
         <DialogContent className="max-w-md">
@@ -325,21 +339,21 @@ export default function SRVListPage() {
             <DialogTitle>{uploading ? "BATCH INGESTION" : "CONFIRM SRV UPLOAD"}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-6 py-4">
+          <Stack gap={6} className="py-4">
             {!uploading ? (
-              <div className="text-center space-y-2">
-                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Stack align="center" gap={2} className="text-center">
+                <Box className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                   <FileText size={32} />
-                </div>
+                </Box>
                 <H3>{selectedFiles.length} Documents Selected</H3>
                 <Body className="text-slate-500">
                   SRV HTML files will be parsed, items extracted, and linked to POs.
                 </Body>
-              </div>
+              </Stack>
             ) : (
-              <div className="space-y-8">
+              <Stack gap={8}>
                 {/* Cinematic Card Stack Animation */}
-                <div className="relative h-32 flex items-center justify-center perspective-1000">
+                <Flex align="center" justify="center" className="relative h-32 perspective-1000">
                   <AnimatePresence mode="popLayout">
                     {selectedFiles
                       .slice(uploadProgress.current, uploadProgress.current + 3)
@@ -366,52 +380,52 @@ export default function SRVListPage() {
                             zIndex: 10 - idx,
                           }}
                         >
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
+                          <Flex align="center" gap={2}>
+                            <Box className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
                               <FileText size={12} className="text-white" />
-                            </div>
+                            </Box>
                             <SmallText className="uppercase text-slate-400 truncate w-full">
                               {file.name}
                             </SmallText>
-                          </div>
-                          <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                          </Flex>
+                          <Box className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
                             <motion.div
                               className="h-full bg-emerald-500"
                               initial={{ width: "0%" }}
                               animate={{ width: idx === 0 ? "100%" : "0%" }}
                               transition={{ duration: 0.5 }}
                             />
-                          </div>
+                          </Box>
                         </motion.div>
                       ))}
                   </AnimatePresence>
-                </div>
+                </Flex>
 
-                <div className="space-y-3">
-                  <div className="flex justify-between items-end">
-                    <div>
+                <Stack gap={3}>
+                  <Flex justify="between" align="end">
+                    <Stack>
                       <Label className="text-blue-600 uppercase mb-1">
                         Status
                       </Label>
-                      <Body className="text-slate-900 font-medium">
+                      <Body className="text-slate-900 font-medium whitespace-nowrap">
                         Processing {uploadProgress.current} of{" "}
                         {uploadProgress.total} files
                       </Body>
-                    </div>
-                    <div className="text-right">
+                    </Stack>
+                    <Stack align="end">
                       <Label className="text-slate-400 uppercase mb-1">
                         Progress
                       </Label>
-                      <div className="text-sm font-mono font-bold text-slate-900">
+                      <Body className="text-sm font-mono font-bold text-slate-900">
                         {Math.round(
                           (uploadProgress.current / uploadProgress.total) * 100,
                         ) || 0}
                         %
-                      </div>
-                    </div>
-                  </div>
+                      </Body>
+                    </Stack>
+                  </Flex>
 
-                  <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                  <Box className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                     <motion.div
                       className="bg-blue-600 h-full"
                       initial={{ width: 0 }}
@@ -420,13 +434,13 @@ export default function SRVListPage() {
                       }}
                       transition={{ duration: 0.3 }}
                     />
-                  </div>
-                </div>
-              </div>
+                  </Box>
+                </Stack>
+              </Stack>
             )}
-          </div>
+          </Stack>
 
-          <div className="flex flex-col gap-3 w-full mt-4">
+          <Stack gap={3} className="w-full mt-4">
             {!uploading ? (
               <Button
                 variant="default"
@@ -448,7 +462,7 @@ export default function SRVListPage() {
                 Halt Operation
               </Button>
             )}
-          </div>
+          </Stack>
         </DialogContent>
       </Dialog>
     </>

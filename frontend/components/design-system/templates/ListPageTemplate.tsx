@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { H1 } from "../atoms/Typography";
-import { SummaryCards, SummaryCardProps } from "../organisms/SummaryCards";
-import { DataTable, Column } from "../organisms/DataTable";
+import { H1, Body, SmallText } from "../atoms/Typography";
+import { SummaryCards, type SummaryCardProps } from "../organisms/SummaryCards";
+import { DataTable, type Column } from "../organisms/DataTable";
 import { cn } from "@/lib/utils";
 
 /**
@@ -78,46 +78,56 @@ export function ListPageTemplate<T extends Record<string, any>>({
   children,
 }: ListPageTemplateProps<T>) {
   return (
-    <div className={cn("space-y-6", className)}>
-      {/* Page Header */}
-      <div className="space-y-2">
-        <H1 className="uppercase tracking-tight">{title}</H1>
-        {subtitle && <p className="text-[14px] text-[#6B7280]">{subtitle}</p>}
+    <div className={cn("min-h-screen will-change-[transform,opacity]", className)}>
+      {/* Premium Header Strip */}
+      <div className="header-strip sticky top-0 z-10">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <H1 className="tracking-tight">{title}</H1>
+            {subtitle && (
+              <SmallText className="text-slate-500 font-medium block">
+                {subtitle}
+              </SmallText>
+            )}
+          </div>
+          {toolbar && <div className="flex items-center gap-3">{toolbar}</div>}
+        </div>
       </div>
 
-      {/* Toolbar */}
-      {toolbar && <div>{toolbar}</div>}
+      <div className="space-y-4">
 
-      {/* Summary Cards */}
-      {summaryCards && summaryCards.length > 0 && (
-        <SummaryCards cards={summaryCards} loading={loading} />
-      )}
+        {/* Summary Cards */}
+        {summaryCards && summaryCards.length > 0 && (
+          <SummaryCards cards={summaryCards} loading={loading} />
+        )}
 
-      {/* Custom Content (e.g. Grid) or DataTable */}
-      {children ? (
-        <div className="min-h-[400px]">{children}</div>
-      ) : (
-        <DataTable
-          columns={columns}
-          data={data}
-          keyField={keyField}
-          page={page}
-          pageSize={pageSize}
-          totalItems={totalItems}
-          onPageChange={onPageChange}
-          sortKey={sortKey}
-          sortDirection={sortDirection}
-          onSort={onSort}
-          selectable={selectable}
-          selectedRows={selectedRows}
-          onSelectionChange={onSelectionChange}
-          exportable={exportable}
-          onExport={onExport}
-          loading={loading}
-          error={error}
-          emptyMessage={emptyMessage}
-        />
-      )}
+        <div className="pb-6 min-h-[500px]">
+          {children ? (
+            <div className="min-h-[400px]">{children}</div>
+          ) : (
+            <DataTable
+              columns={columns}
+              data={data}
+              keyField={keyField}
+              page={page}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              onPageChange={onPageChange}
+              sortKey={sortKey}
+              sortDirection={sortDirection}
+              onSort={onSort}
+              selectable={selectable}
+              selectedRows={selectedRows}
+              onSelectionChange={onSelectionChange}
+              exportable={exportable}
+              onExport={onExport}
+              loading={loading}
+              error={error}
+              emptyMessage={emptyMessage}
+            />
+          )}
+        </div>
+      </div>
     </div>
   );
 }

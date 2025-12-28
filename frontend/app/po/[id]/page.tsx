@@ -44,7 +44,7 @@ import { DocumentTemplate } from "@/components/design-system/templates/DocumentT
 import { GlassContainer } from "@/components/design-system/atoms/GlassContainer";
 import { Button } from "@/components/design-system/atoms/Button";
 import { Badge } from "@/components/design-system/atoms/Badge";
-import { H1, H3, SmallText } from "@/components/design-system/atoms/Typography";
+import { H1, H3, SmallText, Label } from "@/components/design-system/atoms/Typography";
 import { Input } from "@/components/design-system/atoms/Input";
 import { DetailField } from "@/components/design-system/molecules/DetailField";
 import {
@@ -53,8 +53,6 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@/components/design-system/molecules/Tabs";
-// import { DataTable, Column } from "@/components/design-system/organisms/DataTable"; // Removed unused import
-// import { DocumentJourney } from "@/components/design-system/molecules/DocumentJourney"; // Converted to dynamic
 import { Accounting } from "@/components/design-system/atoms/Typography";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
@@ -317,7 +315,7 @@ function PODetailContent() {
           <Input
             value={value ?? ""}
             onChange={(e) => updateHeader(field, e.target.value)}
-            className="h-7 text-[13px] px-2 border-none bg-slate-100/50 focus:bg-white transition-all shadow-none focus:shadow-sm font-medium text-slate-950"
+            className="h-7 text-[13px] px-2 py-1 border-none bg-slate-100/50 focus:bg-white transition-all shadow-none focus:shadow-sm font-medium text-slate-950"
           />
         ) : (
           <div
@@ -431,38 +429,23 @@ function PODetailContent() {
         {/* V2 Layout: Comprehensive Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="mb-4 bg-slate-100/30 p-1 rounded-xl">
-            <TabsTrigger
-              value="basic"
-              className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930"
-            >
+            <TabsTrigger value="basic">
               <Info className="w-3.5 h-3.5 mr-1.5" />
               Basic
             </TabsTrigger>
-            <TabsTrigger
-              value="references"
-              className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930"
-            >
+            <TabsTrigger value="references">
               <FileText className="w-3.5 h-3.5 mr-1.5" />
               Refs
             </TabsTrigger>
-            <TabsTrigger
-              value="financial"
-              className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930"
-            >
+            <TabsTrigger value="financial">
               <Landmark className="w-3.5 h-3.5 mr-1.5" />
               Finance
             </TabsTrigger>
-            <TabsTrigger
-              value="issuer"
-              className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930"
-            >
+            <TabsTrigger value="issuer">
               <ShieldCheck className="w-3.5 h-3.5 mr-1.5" />
               Issuer
             </TabsTrigger>
-            <TabsTrigger
-              value="srvs"
-              className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930"
-            >
+            <TabsTrigger value="srvs">
               <Receipt className="w-3.5 h-3.5 mr-1.5" />
               SRVs ({srvs.length})
             </TabsTrigger>
@@ -770,16 +753,16 @@ function PODetailContent() {
                     <th className="py-2.5 px-4 text-[10px] font-medium text-slate-600 uppercase tracking-widest text-right w-28">
                       Rate
                     </th>
-                    <th className="py-2.5 px-4 text-[10px] font-medium text-slate-600 uppercase tracking-widest text-center w-16">
+                    <th className="py-2.5 px-2 text-[10px] font-medium text-slate-600 uppercase tracking-widest text-center w-32">
                       Ord
                     </th>
-                    <th className="py-2.5 px-4 text-[10px] font-medium text-slate-600 uppercase tracking-widest text-center w-16">
+                    <th className="py-2.5 px-2 text-[10px] font-medium text-slate-600 uppercase tracking-widest text-center w-32">
                       Dlv
                     </th>
-                    <th className="py-2.5 px-4 text-[10px] font-medium text-slate-600 uppercase tracking-widest text-center w-16">
+                    <th className="py-2.5 px-2 text-[10px] font-medium text-slate-600 uppercase tracking-widest text-center w-32">
                       Bal
                     </th>
-                    <th className="py-2.5 px-4 text-[10px] font-medium text-slate-600 uppercase tracking-widest text-center w-16">
+                    <th className="py-2.5 px-2 text-[10px] font-medium text-slate-600 uppercase tracking-widest text-center w-32">
                       Rec
                     </th>
                     <th className="py-2.5 px-4 w-12"></th>
@@ -806,7 +789,7 @@ function PODetailContent() {
                               onChange={(e) =>
                                 updateItem(idx, "material_code", e.target.value)
                               }
-                              className="h-7 text-[13px] w-full px-1.5 border-none bg-slate-100/50 font-medium text-slate-930"
+                              className="h-7 text-[13px] w-full px-1.5 py-1 border-none bg-slate-100/50 font-medium text-slate-930"
                             />
                           ) : (
                             <Accounting className="tracking-tighter">
@@ -826,7 +809,7 @@ function PODetailContent() {
                                     e.target.value,
                                   )
                                 }
-                                className="h-7 text-[13px] font-medium w-full px-1.5 border-none bg-slate-100/50 text-slate-950"
+                                className="h-7 text-[13px] font-medium w-full px-1.5 py-1 border-none bg-slate-100 text-slate-950"
                               />
                               <Input
                                 value={item.drg_no}
@@ -834,7 +817,7 @@ function PODetailContent() {
                                   updateItem(idx, "drg_no", e.target.value)
                                 }
                                 placeholder="Drawing"
-                                className="h-6 text-[11px] w-32 px-1.5 border-none bg-slate-200/80 font-medium text-slate-950"
+                                className="h-6 text-[11px] w-32 px-1.5 py-0.5 border-none bg-slate-200 font-medium text-slate-950"
                               />
                             </div>
                           ) : (
@@ -860,18 +843,19 @@ function PODetailContent() {
                               onChange={(e) =>
                                 updateItem(idx, "unit", e.target.value)
                               }
-                              className="h-7 text-[13px] w-14 px-1 border-none bg-slate-100/50 font-medium text-slate-950"
+                              className="h-7 text-[13px] w-14 px-1 py-1 border-none bg-slate-100 font-medium text-slate-950"
                             />
                           ) : (
-                            <span className="text-[11px] font-medium text-slate-600 uppercase">
+                            <SmallText className="text-slate-600 uppercase font-bold">
                               {item.unit}
-                            </span>
+                            </SmallText>
                           )}
                         </td>
                         <td className="py-2 px-4 text-right align-top pt-3">
                           {editMode ? (
                             <Input
                               type="number"
+                              variant="ghost"
                               value={item.po_rate}
                               onChange={(e) =>
                                 updateItem(
@@ -880,18 +864,21 @@ function PODetailContent() {
                                   parseFloat(e.target.value),
                                 )
                               }
-                              className="h-7 text-[13px] text-right w-full px-1.5 border-none bg-slate-100/50 font-mono font-medium text-slate-930"
+                              className="h-7 text-[13px] text-right w-full px-1.5 py-1 font-mono font-medium text-slate-930 focus:bg-slate-50 transition-colors"
                             />
                           ) : (
-                            <Accounting className="tracking-tighter">
-                              {formatIndianCurrency(item.po_rate)}
-                            </Accounting>
+                            <div className="h-7 px-1.5 py-1 flex items-center justify-end">
+                              <Accounting className="tracking-tighter">
+                                {formatIndianCurrency(item.po_rate)}
+                              </Accounting>
+                            </div>
                           )}
                         </td>
-                        <td className="py-2 px-4 text-center align-top pt-3">
+                        <td className="py-2 px-2 text-center align-top pt-3">
                           {editMode ? (
                             <Input
                               type="number"
+                              variant="ghost"
                               value={item.ordered_quantity}
                               onChange={(e) =>
                                 updateItem(
@@ -900,18 +887,21 @@ function PODetailContent() {
                                   parseFloat(e.target.value),
                                 )
                               }
-                              className="h-7 text-[13px] text-center w-full px-1 font-medium border-none bg-slate-100/50 text-slate-930"
+                              className="h-7 text-[13px] text-center w-full px-1 py-1 font-medium text-slate-930 focus:bg-slate-50 transition-colors"
                             />
                           ) : (
-                            <Accounting className="tracking-tighter">
-                              {item.ordered_quantity}
-                            </Accounting>
+                            <div className="h-7 px-1 py-1 flex items-center justify-center">
+                              <Accounting className="tracking-tighter">
+                                {item.ordered_quantity}
+                              </Accounting>
+                            </div>
                           )}
                         </td>
-                        <td className="py-2 px-4 text-center align-top pt-3">
+                        <td className="py-2 px-2 text-center align-top pt-3">
                           {editMode ? (
                             <Input
                               type="number"
+                              variant="ghost"
                               value={item.delivered_quantity}
                               onChange={(e) =>
                                 updateItem(
@@ -920,24 +910,29 @@ function PODetailContent() {
                                   parseFloat(e.target.value),
                                 )
                               }
-                              className="h-7 text-[13px] text-center w-full px-1 font-medium border-none bg-blue-100/50 text-blue-930 focus:bg-white"
+                              className="h-7 text-[13px] text-center w-full px-1 py-1 font-medium text-blue-930 focus:bg-blue-50 transition-colors"
                             />
                           ) : (
-                            <Accounting className="text-blue-930 tracking-tighter">
-                              {item.delivered_quantity}
-                            </Accounting>
+                            <div className="h-7 px-1 py-1 flex items-center justify-center">
+                              <Accounting className="text-blue-930 tracking-tighter">
+                                {item.delivered_quantity}
+                              </Accounting>
+                            </div>
                           )}
                         </td>
-                        <td className="py-2 px-4 text-center align-top pt-3">
-                          <Accounting className="tracking-tighter">
-                            {(item.ordered_quantity || 0) -
-                              (item.delivered_quantity || 0)}
-                          </Accounting>
+                        <td className="py-2 px-2 text-center align-top pt-3">
+                          <div className="h-7 px-1 py-1 flex items-center justify-center">
+                            <Accounting className="tracking-tighter">
+                              {(item.ordered_quantity || 0) -
+                                (item.received_quantity || 0)}
+                            </Accounting>
+                          </div>
                         </td>
-                        <td className="py-2 px-4 text-center align-top pt-3">
+                        <td className="py-2 px-2 text-center align-top pt-3">
                           {editMode ? (
                             <Input
                               type="number"
+                              variant="ghost"
                               value={item.received_quantity}
                               onChange={(e) =>
                                 updateItem(
@@ -946,12 +941,14 @@ function PODetailContent() {
                                   parseFloat(e.target.value),
                                 )
                               }
-                              className="h-7 text-[13px] text-center w-full px-1 font-medium border-none bg-emerald-100/50 text-emerald-930 focus:bg-white"
+                              className="h-7 text-[13px] text-center w-full px-1 py-1 font-medium text-emerald-930 focus:bg-emerald-50 transition-colors"
                             />
                           ) : (
-                            <Accounting className="text-emerald-930 tracking-tighter">
-                              {item.received_quantity}
-                            </Accounting>
+                            <div className="h-7 px-1 py-1 flex items-center justify-center">
+                              <Accounting className="text-emerald-930 tracking-tighter">
+                                {item.received_quantity}
+                              </Accounting>
+                            </div>
                           )}
                         </td>
                         <td className="py-2 px-4 align-top pt-2">
@@ -1003,20 +1000,20 @@ function PODetailContent() {
                                 <table className="w-full text-left">
                                   <thead className="bg-slate-100/50">
                                     <tr>
-                                      <th className="px-4 py-2 text-[9px] uppercase font-medium text-slate-600 tracking-widest">
-                                        Lot
+                                      <th className="px-4 py-2">
+                                        <Label className="mb-0">Lot</Label>
                                       </th>
-                                      <th className="px-4 py-2 text-right text-[9px] uppercase font-medium text-slate-600 tracking-widest w-24">
-                                        Ord QTY
+                                      <th className="px-4 py-2 text-right w-24">
+                                        <Label className="mb-0">Ord QTY</Label>
                                       </th>
-                                      <th className="px-4 py-2 text-left text-[9px] uppercase font-medium text-slate-600 tracking-widest pl-8">
-                                        Dely Date
+                                      <th className="px-4 py-2 text-left pl-8">
+                                        <Label className="mb-0">Dely Date</Label>
                                       </th>
-                                      <th className="px-4 py-2 text-left text-[9px] uppercase font-medium text-slate-600 tracking-widest">
-                                        Entry Allow
+                                      <th className="px-4 py-2 text-left">
+                                        <Label className="mb-0">Entry Allow</Label>
                                       </th>
-                                      <th className="px-4 py-2 text-left text-[9px] uppercase font-medium text-slate-600 tracking-widest text-center">
-                                        Dest
+                                      <th className="px-4 py-2 text-center">
+                                        <Label className="mb-0">Dest</Label>
                                       </th>
                                       {editMode && (
                                         <th className="px-4 py-2 w-8"></th>
@@ -1036,9 +1033,10 @@ function PODetailContent() {
                                               L{d.lot_no}
                                             </span>
                                           </td>
-                                          <td className="px-4 py-1.5 text-right font-medium text-blue-900 text-[12px] font-mono tracking-tighter">
+
+                                          <td className="px-4 py-1.5 text-right">
                                             {editMode ? (
-                                              <input
+                                              <Input
                                                 type="number"
                                                 value={d.delivered_quantity}
                                                 onChange={(e) => {
@@ -1052,10 +1050,12 @@ function PODetailContent() {
                                                     items: n,
                                                   });
                                                 }}
-                                                className="w-16 text-right text-[11px] bg-blue-100/30 rounded px-1 py-0.5 border-none outline-none font-medium text-blue-900"
+                                                className="w-24 text-right bg-blue-100 text-slate-950 font-bold"
                                               />
                                             ) : (
-                                              d.delivered_quantity
+                                              <Accounting className="text-[12px] text-blue-900">
+                                                {d.delivered_quantity}
+                                              </Accounting>
                                             )}
                                           </td>
                                           <td className="px-4 py-1.5 pl-8 text-[11px] text-slate-950 font-medium font-mono">
@@ -1079,7 +1079,7 @@ function PODetailContent() {
                                                     items: n,
                                                   });
                                                 }}
-                                                className="text-[11px] bg-slate-200/80 rounded px-1 py-0.5 border-none outline-none text-slate-950 font-medium"
+                                                className="w-32 text-[11px] bg-slate-200 rounded px-1 py-0.5 border-none outline-none text-slate-950 font-bold"
                                               />
                                             ) : (
                                               formatDate(d.dely_date)
@@ -1093,14 +1093,16 @@ function PODetailContent() {
                                           </td>
                                           {editMode && (
                                             <td className="px-4 py-1.5 text-right">
-                                              <button
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
                                                 onClick={() =>
                                                   removeDelivery(idx, dIdx)
                                                 }
-                                                className="text-slate-400 hover:text-rose-600 transition-all"
+                                                className="text-slate-400 hover:text-rose-600"
                                               >
                                                 <X className="w-4 h-4" />
-                                              </button>
+                                              </Button>
                                             </td>
                                           )}
                                         </tr>
@@ -1131,7 +1133,7 @@ function PODetailContent() {
         </div>
       </div>
       {floatingActions}
-    </DocumentTemplate>
+    </DocumentTemplate >
   );
 }
 

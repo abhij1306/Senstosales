@@ -44,94 +44,63 @@ created_at TIMESTAMP DEFAULT NOW()
 updated_at TIMESTAMP DEFAULT NOW()
 ```
 
-### `po_items`
-**Purpose**: Store line items for each PO  
+### `purchase_order_items`
+**Purpose**: Store line items with real-time quantity tracking  
 **Primary Key**: `id` (Auto-increment)  
-**Foreign Key**: `po_number` → `purchase_orders.po_number`
 
 ```sql
 id INTEGER PRIMARY KEY AUTOINCREMENT
-po_number VARCHAR(50) REFERENCES purchase_orders(po_number)
-po_item_no INTEGER                 -- Item sequence number
+po_number INTEGER REFERENCES purchase_orders(po_number)
+po_item_no INTEGER
 material_code VARCHAR(100)
 material_description TEXT
-drg_no VARCHAR(100)
-unit VARCHAR(20)
 ord_qty DECIMAL(15,3)
-po_rate DECIMAL(15,2)
-item_value DECIMAL(15,2)           -- ord_qty * po_rate
+delivered_qty DECIMAL(15,3) DEFAULT 0.0  -- Tracked via DC
+received_qty DECIMAL(15,3) DEFAULT 0.0   -- Tracked via SRV
+rejected_qty DECIMAL(15,3) DEFAULT 0.0   -- Tracked via SRV
+accepted_qty DECIMAL(15,3) DEFAULT 0.0   -- ord_qty - rejected
+pending_qty DECIMAL(15,3)                -- ord_qty - delivered
 ```
 
-### `po_deliveries`
-**Purpose**: Store delivery schedule for each item  
-**Primary Key**: `id` (Auto-increment)  
-**Foreign Key**: `po_item_id` → `po_items.id`
+### `gst_invoices`
+**Purpose**: Legal GST Invoices with FY-wise uniqueness  
 
 ```sql
-id INTEGER PRIMARY KEY AUTOINCREMENT
-po_item_id INTEGER REFERENCES po_items(id)
-lot_no INTEGER
-dely_qty DECIMAL(15,3)
-dely_date DATE
-entry_allow_date DATE
-dest_code VARCHAR(50)
-```
-
-### `delivery_challans`
-**Purpose**: Store headers for Delivery Challans (DC)  
-**Primary Key**: `dc_number`
-
-```sql
-dc_number VARCHAR(50) PRIMARY KEY   -- Generated (DC + random + FY)
-dc_date DATE
-po_number VARCHAR(50) REFERENCES purchase_orders(po_number)
-consignee_name VARCHAR(200)
-status VARCHAR(20)                  -- 'Pending', 'Delivered'
-created_at TIMESTAMP DEFAULT NOW()
-```
-
-### `delivery_challan_items`
-**Purpose**: Link DCs to specific PO delivery lots
-
-```sql
-id INTEGER PRIMARY KEY AUTOINCREMENT
-dc_number VARCHAR(50) REFERENCES delivery_challans(dc_number)
-po_item_id INTEGER REFERENCES po_items(id)
-lot_no INTEGER                      -- Specific delivery lot
-quantity DECIMAL(15,3)              -- Dispatched quantity
-```
-
-### `invoices`
-**Purpose**: Store GST Invoices linked to DCs  
-**Primary Key**: `invoice_number`
-
-```sql
-invoice_number VARCHAR(50) PRIMARY KEY
+invoice_number VARCHAR(50) NOT NULL
+financial_year VARCHAR(10) NOT NULL
 invoice_date DATE
-dc_number VARCHAR(50) REFERENCES delivery_challans(dc_number)
-total_amount DECIMAL(15,2)
-tax_amount DECIMAL(15,2)
-net_amount DECIMAL(15,2)
-status VARCHAR(20)                  -- 'Pending', 'Paid'
-created_at TIMESTAMP DEFAULT NOW()
+po_numbers VARCHAR(100)
+linked_dc_numbers TEXT
+taxable_value DECIMAL(15,2)
+cgst DECIMAL(15,2)
+sgst DECIMAL(15,2)
+igst DECIMAL(15,2)
+total_invoice_value DECIMAL(15,2)
+status VARCHAR(20) DEFAULT 'Pending'
+UNIQUE(invoice_number, financial_year)
 ```
 
 ### `srvs` (Store Receipt Vouchers)
-**Purpose**: Record receipt of goods at customer site
+**Purpose**: Hardened Store Receipt data  
 
 ```sql
 srv_number VARCHAR(50) PRIMARY KEY
 srv_date DATE
-po_number VARCHAR(50) REFERENCES purchase_orders(po_number)
-raw_html_content TEXT               -- Original uploaded HTML
-status VARCHAR(20)                  -- 'Matched', 'Unmatched'
-created_at TIMESTAMP DEFAULT NOW()
+po_number VARCHAR(50)
+po_found BOOLEAN                        -- SRV-1 (Orphaned check)
+total_received_qty DECIMAL(15,3)
+total_rejected_qty DECIMAL(15,3)
+is_active BOOLEAN DEFAULT 1
 ```
 
 ---
 
-## Indexes
-- `idx_po_items_po_number` on `purchase_order_items(po_number)`
-- `idx_po_deliveries_po_item_id` on `po_deliveries(po_item_id)`
-- `idx_dci_po_item` on `delivery_challan_items(po_item_id)`
-- `idx_srv_po` on `srvs(po_number)`
+## Performance Indexes (v5.0-Stabilized)
+- `idx_poi_query`: `(po_number, po_item_no)` composite.
+- `idx_dc_fy`: `(dc_number, financial_year)` unique.
+- `idx_inv_fy`: `(invoice_number, financial_year)` unique.
+- `idx_srv_po`: `(po_number)` for reconciliation lookups.
+
+---
+**Last Updated**: 2025-12-28
+**Version**: 5.0.1

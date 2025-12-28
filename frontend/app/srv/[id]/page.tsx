@@ -26,8 +26,9 @@ import { Button } from "@/components/design-system/atoms/Button";
 import { Badge } from "@/components/design-system/atoms/Badge";
 import { Card } from "@/components/design-system/atoms/Card";
 import { DocumentTemplate } from "@/components/design-system/templates/DocumentTemplate";
-import type { Column } from "@/components/design-system/organisms/DataTable";
+import { type Column } from "@/components/design-system/organisms/DataTable";
 import { DataTable } from "@/components/design-system/organisms/DataTable";
+import { Flex, Stack, Box, Grid } from "@/components/design-system/atoms/Layout";
 
 export default function SRVDetailPage() {
   const params = useParams();
@@ -44,12 +45,12 @@ export default function SRVDetailPage() {
         label: "Item",
         width: "10%",
         render: (_v: any, row: any) => (
-          <div className="text-center">
-            <div className="font-medium text-slate-950">
+          <Stack align="center">
+            <Body className="font-medium text-slate-950 leading-none">
               ITEM-{row.po_item_no}
-            </div>
-            <SmallText className="text-slate-500">Lot {row.lot_no}</SmallText>
-          </div>
+            </Body>
+            <SmallText className="text-slate-500 leading-none">Lot {row.lot_no}</SmallText>
+          </Stack>
         ),
       },
       { key: "pmir_no", label: "PMIR", width: "8%" },
@@ -58,14 +59,14 @@ export default function SRVDetailPage() {
         label: "Challan",
         width: "12%",
         render: (_v: any, row: any) => (
-          <div>
-            <div className="font-medium text-slate-950">
+          <Stack>
+            <Body className="font-medium text-slate-950 leading-none">
               {row.challan_no || "-"}
-            </div>
-            <SmallText className="text-slate-500">
+            </Body>
+            <SmallText className="text-slate-500 leading-none">
               {row.challan_date ? formatDate(row.challan_date) : "-"}
             </SmallText>
-          </div>
+          </Stack>
         ),
       },
       {
@@ -73,9 +74,9 @@ export default function SRVDetailPage() {
         label: "Invoice",
         width: "12%",
         render: (_v: any, row: any) => (
-          <div>
-            <div
-              className="font-medium text-[#1A3D7C] cursor-pointer hover:underline"
+          <Stack>
+            <Body
+              className="font-medium text-[#1A3D7C] cursor-pointer hover:underline leading-none"
               onClick={() =>
                 row.invoice_no &&
                 window.open(
@@ -85,11 +86,11 @@ export default function SRVDetailPage() {
               }
             >
               {row.invoice_no || "-"}
-            </div>
-            <SmallText className="text-slate-500">
+            </Body>
+            <SmallText className="text-slate-500 leading-none">
               {row.invoice_date ? formatDate(row.invoice_date) : "-"}
             </SmallText>
-          </div>
+          </Stack>
         ),
       },
       { key: "unit", label: "UNIT", align: "center", width: "6%" },
@@ -175,10 +176,10 @@ export default function SRVDetailPage() {
         }
         onBack={() => router.push("/srv")}
       >
-        <div className="space-y-6">
-          <div className="h-8 w-64 bg-slate-100 rounded-full animate-pulse" />
-          <div className="h-[200px] w-full bg-slate-50 rounded-xl border border-slate-100 animate-pulse" />
-        </div>
+        <Stack gap={6}>
+          <Box className="h-8 w-64 bg-slate-100 rounded-full animate-pulse" />
+          <Box className="h-[200px] w-full bg-slate-50 rounded-xl border border-slate-100 animate-pulse" />
+        </Stack>
       </DocumentTemplate>
     );
   }
@@ -201,16 +202,16 @@ export default function SRVDetailPage() {
       onBack={() => router.back()}
       icon={<Package size={20} className="text-[#1A3D7C]" />}
       actions={
-        <div className="flex gap-3">
+        <Flex gap={3}>
           <Button variant="secondary" size="sm" onClick={() => window.print()}>
             <FileText size={16} />
             Export Report
           </Button>
-        </div>
+        </Flex>
       }
     >
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
+      <Stack gap={6}>
+        <Flex align="center" gap={3}>
           <Badge variant="default">INSPECTED</Badge>
           <Badge
             variant="outline"
@@ -219,82 +220,82 @@ export default function SRVDetailPage() {
           >
             Ref: {header.po_number}
           </Badge>
-        </div>
+        </Flex>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Grid cols="1" className="md:grid-cols-3" gap={6}>
           <Card className="p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-[#1A3D7C]/10 rounded-lg">
+            <Flex justify="between" align="start" className="mb-4">
+              <Box className="p-3 bg-[#1A3D7C]/10 rounded-lg">
                 <Package className="w-6 h-6 text-[#1A3D7C]" />
-              </div>
+              </Box>
               <Activity className="w-4 h-4 text-[#D1D5DB]" />
-            </div>
+            </Flex>
             <Label className="text-[10px] uppercase tracking-widest text-[#6B7280] mb-1">
               Receipt Volume
             </Label>
-            <div className="text-[28px] font-medium text-slate-950">
+            <Box className="text-[28px] font-medium text-slate-950">
               <Accounting>{totalReceived}</Accounting>
-            </div>
+            </Box>
             <SmallText className="text-[#1A3D7C] mt-2">
               Aggregated Units
             </SmallText>
           </Card>
 
           <Card className="p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-[#DC2626]/10 rounded-lg">
+            <Flex justify="between" align="start" className="mb-4">
+              <Box className="p-3 bg-[#DC2626]/10 rounded-lg">
                 <AlertTriangle className="w-6 h-6 text-[#DC2626]" />
-              </div>
+              </Box>
               <Activity className="w-4 h-4 text-[#D1D5DB]" />
-            </div>
+            </Flex>
             <Label className="text-[10px] uppercase tracking-widest text-[#6B7280] mb-1">
               Quality Deficiency
             </Label>
-            <div className="text-[28px] font-medium text-[#DC2626]">
+            <Box className="text-[28px] font-medium text-[#DC2626]">
               <Accounting className="text-[#DC2626] font-medium">
                 {totalRejected}
               </Accounting>
-            </div>
+            </Box>
             <SmallText className="text-[#DC2626] mt-2">
               Impacted Inventory
             </SmallText>
           </Card>
 
           <Card className="p-6">
-            <div className="flex justify-between items-start mb-4">
-              <div className="p-3 bg-[#2BB7A0]/10 rounded-lg">
+            <Flex justify="between" align="start" className="mb-4">
+              <Box className="p-3 bg-[#2BB7A0]/10 rounded-lg">
                 <ClipboardCheck className="w-6 h-6 text-[#2BB7A0]" />
-              </div>
+              </Box>
               <CheckCircle className="w-4 h-4 text-[#D1D5DB]" />
-            </div>
+            </Flex>
             <Label className="text-[10px] uppercase tracking-widest text-[#6B7280] mb-1">
               Verification Node
             </Label>
-            <div className="text-[16px] font-medium text-slate-950 truncate">
+            <Box className="text-[16px] font-medium text-slate-950 truncate">
               {items[0]?.invoice_no || "PENDING AUDIT"}
-            </div>
+            </Box>
             <SmallText className="text-[#2BB7A0] mt-2">
               {items[0]?.invoice_date
                 ? `Finalized ${formatDate(items[0].invoice_date)}`
                 : "Awaiting Sync"}
             </SmallText>
           </Card>
-        </div>
+        </Grid>
 
         {/* Items Table */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
+        <Stack gap={4}>
+          <Flex align="center" justify="between">
             <H3 className="text-[13px] font-medium text-slate-600 uppercase tracking-widest">
               Inspection Manifest
             </H3>
             <Badge variant="default" className="text-[10px]">
               {items.length} Quality Nodes
             </Badge>
-          </div>
+          </Flex>
           <DataTable columns={itemColumns} data={items} keyField="id" />
-        </div>
-      </div>
+        </Stack>
+      </Stack>
     </DocumentTemplate>
   );
 }

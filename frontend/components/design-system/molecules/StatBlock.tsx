@@ -34,7 +34,7 @@ export const StatBlock = ({
   return (
     <div
       className={cn(
-        "rounded-2xl p-5 flex items-center gap-4 transition-all duration-300 hover:shadow-lg",
+        "rounded-2xl p-5 flex items-center gap-4 transition-all duration-300 hover:shadow-lg backdrop-blur-md border border-white/20",
         variantStyles[variant],
         className,
       )}

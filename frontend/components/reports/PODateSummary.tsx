@@ -6,7 +6,7 @@
 "use client";
 
 import { useState } from "react";
-import PaginationControls from "@/components/ui/PaginationControls";
+import PaginationControls from "@/components/design-system/molecules/PaginationControls";
 import DownloadButton from "@/components/DownloadButton";
 import { API_BASE_URL } from "@/lib/api";
 
@@ -138,13 +138,12 @@ export default function PODateSummary({ data }: PODateSummaryProps) {
                 </td>
                 <td className="py-3 px-4">
                   <span
-                    className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                      row.status === "Completed"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : row.status === "In Progress"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-gray-100 text-gray-700"
-                    }`}
+                    className={`inline-block px-2 py-1 rounded text-xs font-medium ${row.status === "Completed"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : row.status === "In Progress"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-gray-100 text-gray-700"
+                      }`}
                   >
                     {row.status}
                   </span>

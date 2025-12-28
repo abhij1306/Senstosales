@@ -115,3 +115,19 @@ export const Dialog = ({
     document.body,
   );
 };
+
+// Compound component exports for shadcn/ui compatibility
+export const DialogContent = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <div className={cn("p-6", className)}>{children}</div>
+);
+
+export const DialogHeader = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <div className={cn("flex items-center justify-between px-6 py-4 border-b border-slate-100", className)}>
+    {children}
+  </div>
+);
+
+export const DialogTitle = ({ children, className }: { children: React.ReactNode; className?: string }) => (
+  <H3 className={className}>{children}</H3>
+);
+

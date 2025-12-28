@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { AlertCircle, RefreshCcw, Home } from "lucide-react";
 import { useRouter } from "next/navigation";
-import GlassCard from "@/components/ui/GlassCard";
+import { Card } from "@/components/design-system/atoms/Card";
 
 export default function Error({
   error,
@@ -20,7 +20,7 @@ export default function Error({
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50/30 p-6">
-      <GlassCard className="max-w-md w-full p-10 text-center space-y-8 border-rose-100 shadow-2xl shadow-rose-100/20">
+      <Card className="max-w-md w-full p-10 text-center space-y-8 border-rose-100 shadow-2xl shadow-rose-100/20">
         <div className="flex justify-center">
           <div className="p-6 bg-rose-50 rounded-[2.5rem] border-2 border-rose-100/50 text-rose-600 animate-bounce duration-1000">
             <AlertCircle className="w-12 h-12" />
@@ -55,7 +55,7 @@ export default function Error({
             <RefreshCcw className="w-4 h-4" /> RETRY SYNC
           </button>
         </div>
-      </GlassCard>
+      </Card>
     </div>
   );
 }

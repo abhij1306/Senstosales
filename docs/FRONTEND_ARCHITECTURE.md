@@ -35,8 +35,10 @@ We organize components hierarchically to ensure consistency and reusability.
 
 ### 1. Atoms (`components/design-system/atoms`)
 The smallest building blocks. These are highly reusable, logic-free, and style-pure.
-*   **Examples**: `Button`, `Input`, `Typography` (H1, Body, Accounting), `Badge`, `Card`.
-*   **Rule**: Atoms cannot import Molecules or Organisms.
+*   **Typography**: `H1`, `H2`, `H3`, `Body`, `SmallText`, `Accounting`.
+*   **Layout Atoms**: `Flex`, `Stack`, `Grid`, `Box` (Mandatory for structure).
+*   **UI Atoms**: `Button`, `Input`, `Badge`, `Card`, `Skeleton`.
+*   **Rule**: Atoms cannot import Molecules or Organisms. Use Layout Atoms exclusively to avoid raw HTML containers.
 
 ### 2. Molecules (`components/design-system/molecules`)
 Groups of atoms functioning together as a unit.

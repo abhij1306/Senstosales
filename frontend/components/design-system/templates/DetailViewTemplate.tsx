@@ -100,12 +100,12 @@ export const DetailViewTemplate: React.FC<DetailViewTemplateProps> = ({
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
-        <div className="space-y-2 flex-1">
+        <div className="space-y-1 flex-1">
           <div className="flex items-center gap-3">
-            <H1>{title}</H1>
+            <H1 className="uppercase tracking-tight">{title}</H1>
             {badge}
           </div>
-          {subtitle && <Body className="text-[#6B7280]">{subtitle}</Body>}
+          {subtitle && <Body className="text-slate-500 font-medium">{subtitle}</Body>}
         </div>
 
         {actions && actions.length > 0 && (
@@ -134,11 +134,11 @@ export const DetailViewTemplate: React.FC<DetailViewTemplateProps> = ({
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    "flex items-center gap-2 px-4 py-3 text-[14px] font-medium transition-all",
+                    "flex items-center gap-2 px-4 py-3 text-[11px] font-semibold uppercase tracking-widest transition-all",
                     "border-b-2 -mb-px",
                     activeTab === tab.id
-                      ? "border-[#1A3D7C] text-[#1A3D7C]"
-                      : "border-transparent text-[#6B7280] hover:text-[#111827]",
+                      ? "border-blue-600 text-blue-600"
+                      : "border-transparent text-slate-500 hover:text-slate-900",
                   )}
                 >
                   {tab.icon}

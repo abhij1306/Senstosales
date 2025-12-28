@@ -12,10 +12,11 @@ import { cn } from "@/lib/utils";
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   icon?: React.ReactNode;
   error?: string;
+  variant?: "default" | "glass" | "ghost";
 }
 
-export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type, icon, error, required, ...props }, ref) => {
+const InputInternal = React.forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, icon, error, required, variant = "default", ...props }, ref) => {
     return (
       <div className="w-full">
         <div className="relative group">
@@ -27,19 +28,16 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
           <input
             type={type}
             className={cn(
-              // Base styles matching spec
-              "flex h-[38px] w-full rounded-md border bg-white px-3 py-2",
-              "text-sm font-normal text-[#111827] placeholder:text-[#9CA3AF]",
-              "transition-all duration-200",
-              // Border states
-              error
-                ? "border-[#DC2626] focus:border-[#DC2626] focus:ring-2 focus:ring-[#DC2626]/20"
-                : "border-[#D1D5DB] focus:border-[#1A3D7C] focus:ring-2 focus:ring-[#1A3D7C]/20",
-              // Focus state
-              "focus:outline-none",
-              // Disabled state
-              "disabled:bg-[#F6F8FB] disabled:text-[#9CA3AF] disabled:cursor-not-allowed",
-              // Icon padding
+              // v5.0 Neomorphic & High Density
+              "flex h-[34px] w-full rounded-lg px-3 py-1.5",
+              "text-[13px] font-medium text-slate-950 placeholder:text-slate-400",
+              "transition-all duration-300",
+              // Variant styles
+              variant === "default" && "bg-[#f0f4f8] border-none neo-extrusion focus:shadow-inner",
+              variant === "glass" && "bg-white/40 border border-white/50 backdrop-blur-md shadow-sm",
+              variant === "ghost" && "bg-transparent border-none shadow-none focus:bg-slate-50 focus:shadow-sm p-0 h-auto rounded-md",
+              // Error state
+              error && "ring-1 ring-red-500/50",
               icon && "pl-10",
               className,
             )}
@@ -60,4 +58,6 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     );
   },
 );
-Input.displayName = "Input";
+InputInternal.displayName = "Input";
+
+export const Input = React.memo(InputInternal);

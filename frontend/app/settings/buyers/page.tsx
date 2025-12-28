@@ -5,7 +5,7 @@ import { Button } from "@/components/design-system/atoms/Button";
 import { Badge } from "@/components/design-system/atoms/Badge";
 import { Dialog } from "@/components/design-system/molecules/Dialog";
 import { FormField } from "@/components/design-system/molecules/FormField";
-import { SpotlightCard } from "@/components/design-system/atoms/SpotlightCard";
+import { Card } from "@/components/design-system/atoms/Card";
 import { DetailField } from "@/components/design-system/molecules/DetailField";
 import {
   H3,
@@ -15,7 +15,7 @@ import {
 } from "@/components/design-system/atoms/Typography";
 import { api, Buyer } from "@/lib/api";
 import { Plus, Edit2, Trash2, Star, CheckCircle, Building } from "lucide-react";
-import { useToast } from "@/components/ui/Toast";
+import { useToast } from "@/components/design-system/molecules/Toast";
 import { cn } from "@/lib/utils";
 
 export default function BuyersSettingsPage() {
@@ -128,9 +128,9 @@ export default function BuyersSettingsPage() {
             <Building size={22} />
           </div>
           <div>
-            <H3 className="text-[18px]">Billing Entities</H3>
-            <SmallText className="text-slate-500 font-medium">
-              Manage your registered buyer profiles and tax identities
+            <H3>Billing Entities</H3>
+            <SmallText className="text-slate-500 font-medium leading-none">
+              Registered buyer profiles and tax identities
             </SmallText>
           </div>
         </div>
@@ -144,13 +144,12 @@ export default function BuyersSettingsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {buyers.map((buyer) => (
-          <SpotlightCard
+          <Card
             key={buyer.id}
-            active={buyer.is_default}
             className={cn(
-              "flex flex-col h-full border-none shadow-premium bg-white/40 backdrop-blur-xl transition-all",
+              "flex flex-col h-full border-none shadow-premium bg-white/40 backdrop-blur-xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-4",
               buyer.is_default
-                ? "ring-2 ring-emerald-500/40"
+                ? "ring-1 ring-emerald-500/30"
                 : "hover:bg-white/60 hover:shadow-2xl",
             )}
           >
@@ -178,14 +177,14 @@ export default function BuyersSettingsPage() {
                     <div className="flex items-center gap-2">
                       <Badge
                         variant="outline"
-                        className="text-[10px] px-2 py-0 h-5 font-mono text-slate-500 border-slate-200 bg-white/50"
+                        className="text-[9px] px-1.5 py-0 h-4 font-mono text-slate-500 border-slate-200/60 bg-white/20"
                       >
                         {buyer.gstin}
                       </Badge>
                       {buyer.is_default && (
                         <Badge
                           variant="success"
-                          className="text-[10px] px-2 py-0 h-5 gap-1 uppercase transition-all animate-in fade-in zoom-in duration-300"
+                          className="text-[10px] px-2 py-0 h-5 gap-1 uppercase"
                         >
                           <CheckCircle size={10} /> Primary
                         </Badge>
@@ -222,13 +221,13 @@ export default function BuyersSettingsPage() {
                 <DetailField label="State Code" value={buyer.state_code} />
                 <div className="col-span-2 space-y-1">
                   <Label>Authorized Designation</Label>
-                  <Body className="text-slate-600 truncate">
+                  <Body className="text-slate-900 line-clamp-1 font-medium">
                     {buyer.designation || "---"}
                   </Body>
                 </div>
                 <div className="col-span-2 space-y-1">
                   <Label>Place of Supply</Label>
-                  <Body className="text-slate-600 line-clamp-2 font-medium">
+                  <Body className="text-slate-900 line-clamp-1 font-medium">
                     {buyer.place_of_supply}
                   </Body>
                 </div>
@@ -253,7 +252,7 @@ export default function BuyersSettingsPage() {
                 )}
               </div>
             </div>
-          </SpotlightCard>
+          </Card>
         ))}
 
         {/* Empty State Card */}

@@ -5,6 +5,16 @@ All notable changes to SenstoSales ERP will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.1] - 2025-12-28
+
+### Fixed
+- **Dashboard Consistency**: Harmonized Dashboard KPI cards to match the "Gold Standard" PO List design (24px icons, standard H2 typography).
+- **PO Input Layout**: Fixed "jumping" layout shifts and unwanted shadows by introducing a `variant="ghost"` to the Input component.
+- **Hydration Errors**: Resolved invalid HTML nesting (spans inside tr) in PO Detail page.
+
+### Changed
+- **Input Component**: Added `ghost` and `glass` variants to the Atomic Design System for broader styling support.
+
 ## [3.5.0] - 2025-12-27 - UI Update
 
 ### Changed

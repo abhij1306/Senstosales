@@ -33,9 +33,9 @@ export const DocumentTemplate = ({
   iconLayoutId,
 }: DocumentTemplateProps) => {
   return (
-    <div className={cn("space-y-4", className)}>
+    <div className={cn("space-y-4 will-change-[transform,opacity]", className)}>
       {/* Compact Header */}
-      <div className="flex items-center justify-between px-1 mb-2">
+      <div className="flex items-center justify-between px-1 mb-2 min-h-[40px]">
         <div className="flex items-center gap-4">
           {onBack && (
             <Button
@@ -70,7 +70,7 @@ export const DocumentTemplate = ({
               </H1>
             )}
             {description && (
-              <div className="text-[10px] font-medium uppercase tracking-widest text-slate-500 mt-0.5">
+              <div className="text-[10px] font-semibold uppercase tracking-widest text-slate-500 mt-0.5">
                 {description}
               </div>
             )}

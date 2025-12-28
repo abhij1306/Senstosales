@@ -15,7 +15,7 @@ export interface CheckboxProps extends Omit<
   label?: string;
 }
 
-export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
+const CheckboxInternal = React.forwardRef<HTMLInputElement, CheckboxProps>(
   ({ className, label, id, ...props }, ref) => {
     const checkboxId =
       id || `checkbox-${Math.random().toString(36).substr(2, 9)}`;
@@ -47,4 +47,6 @@ export const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
     );
   },
 );
-Checkbox.displayName = "Checkbox";
+CheckboxInternal.displayName = "Checkbox";
+
+export const Checkbox = React.memo(CheckboxInternal);

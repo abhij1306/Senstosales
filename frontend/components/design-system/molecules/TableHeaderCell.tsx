@@ -42,12 +42,12 @@ export const TableHeaderCell: React.FC<TableHeaderCellProps> = ({
   return (
     <th
       className={cn(
-        "h-10 px-3 text-[12px] font-semibold text-[#6B7280] uppercase tracking-wide",
-        "bg-[#F6F8FB] border-b border-[#E5E7EB]",
+        "h-9 px-3 text-[10px] font-extrabold text-slate-500 uppercase tracking-widest",
+        "bg-slate-50/50 border-b border-slate-100",
         "sticky top-0 z-10",
         alignClasses[align],
         sortable &&
-          "cursor-pointer select-none hover:bg-[#F6F8FB]/80 transition-colors",
+        "cursor-pointer select-none hover:bg-slate-100/50 transition-colors",
         className,
       )}
       onClick={sortable ? onSort : undefined}

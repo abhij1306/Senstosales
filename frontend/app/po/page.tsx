@@ -26,9 +26,12 @@ import { Button } from "@/components/design-system/atoms/Button";
 import { Badge } from "@/components/design-system/atoms/Badge";
 import { Input } from "@/components/design-system/atoms/Input";
 import { StatusBadge } from "@/components/design-system/organisms/StatusBadge";
+import { SearchBar } from "@/components/design-system/molecules/SearchBar";
 import { ListPageTemplate } from "@/components/design-system/templates/ListPageTemplate";
-import { Column } from "@/components/design-system/organisms/DataTable";
-import { SummaryCardProps } from "@/components/design-system/organisms/SummaryCards";
+import { type Column } from "@/components/design-system/organisms/DataTable";
+import { type SummaryCardProps } from "@/components/design-system/organisms/SummaryCards";
+import { useCallback } from "react";
+import { Flex, Stack, Box } from "@/components/design-system/atoms/Layout";
 
 // --- OPTIMIZATION: Static Columns Definitions ---
 const columns: Column<POListItem>[] = [
@@ -38,9 +41,9 @@ const columns: Column<POListItem>[] = [
     width: "10%",
     render: (_value, po) => (
       <Link href={`/po/${po.po_number}`} className="block">
-        <div className="text-blue-600 font-semibold hover:underline">
+        <Body className="text-blue-600 font-semibold hover:underline">
           {po.po_number}
-        </div>
+        </Body>
       </Link>
     ),
   },
@@ -49,7 +52,7 @@ const columns: Column<POListItem>[] = [
     label: "DATE",
     width: "10%",
     render: (v) => (
-      <span className="text-slate-600 font-medium">{formatDate(String(v))}</span>
+      <Body className="text-slate-600">{formatDate(String(v))}</Body>
     ),
   },
   {
@@ -57,50 +60,51 @@ const columns: Column<POListItem>[] = [
     label: "VALUE",
     width: "13%",
     align: "right",
-    render: (v) => <Accounting isCurrency>{Number(v)}</Accounting>,
+    isCurrency: true,
   },
   {
     key: "total_items_count",
     label: "Items",
     width: "7%",
     align: "center",
-    render: (v) => <Accounting className="text-slate-500">{Number(v)}</Accounting>,
+    isNumeric: true,
   },
   {
     key: "total_ordered_quantity",
     label: "Ord",
     width: "9%",
     align: "right",
-    render: (v) => <Accounting>{Number(v)}</Accounting>,
+    isNumeric: true,
   },
   {
     key: "total_dispatched_quantity",
     label: "Dlv",
     width: "10%",
     align: "right",
-    render: (v) => <Accounting className="text-green-600">{Number(v)}</Accounting>,
+    isNumeric: true,
+    render: (v) => <Accounting className="text-emerald-600">{Number(v)}</Accounting>,
   },
   {
     key: "total_pending_quantity",
     label: "Bal",
     width: "9%",
     align: "right",
-    render: (v) => <Accounting className="text-orange-600">{Number(v)}</Accounting>,
+    isNumeric: true,
+    render: (v) => <Accounting className="text-amber-500">{Number(v)}</Accounting>,
   },
   {
     key: "total_received_quantity",
     label: "Rec",
     width: "10%",
     align: "right",
+    isNumeric: true,
     render: (v) => <Accounting className="text-blue-600">{Number(v)}</Accounting>,
   },
   {
     key: "po_status",
     label: "Status",
     width: "12%",
-    render: (v) => (
-      <StatusBadge status={String(v)} />
-    ),
+    render: (v) => <StatusBadge status={String(v)} />,
   },
 ];
 
@@ -112,12 +116,15 @@ export default function POListPage() {
   const [pageSize] = useState(10);
   const [pos, setPOs] = useState<POListItem[]>([]);
   const [stats, setStats] = useState<POStats>({
-    total_count: 0,
+    total_pos: 0,
     active_count: 0,
     total_value: 0,
+    pending_pos: 0,
+    completed_pos: 0,
     total_value_ytd: 0,
     open_orders_count: 0,
     pending_approval_count: 0,
+    total_value_change: 0,
   });
   const [loading, setLoading] = useState(true);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -221,61 +228,45 @@ export default function POListPage() {
         title: "Total Orders",
         value: pos.length,
         icon: <FileText size={24} />,
-        variant: "primary",
+        variant: "default",
       },
       {
         title: "Open Orders",
         value: stats?.open_orders_count || 0,
         icon: <Activity size={24} />,
-        variant: "success",
+        variant: "default",
       },
       {
         title: "Pending Approval",
         value: stats?.pending_approval_count || 0,
         icon: <Clock size={24} />,
-        variant: "warning",
+        variant: "default",
       },
       {
         title: "Total Value",
         value: formatIndianCurrency(stats?.total_value_ytd || 0),
         icon: <Activity size={24} />,
-        variant: "secondary",
+        variant: "default",
       },
     ],
     [pos.length, stats],
   );
 
   // Master Reference: Toolbar Construction (Atomic)
-  const toolbar = (
-    <div className="flex items-center gap-3">
-      <div className="relative">
-        <Input
-          id="po-search"
-          name="po-search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search POs..."
-          className="w-64 pl-9 bg-white/50 border-slate-200 focus:bg-white transition-all"
-        />
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
-        </div>
-      </div>
+  const handleSearch = useCallback((val: string) => {
+    setSearchQuery(val);
+  }, []);
 
-      <div className="relative">
+  const toolbar = (
+    <Flex align="center" gap={3}>
+      <SearchBar
+        value={searchQuery}
+        onChange={handleSearch}
+        placeholder="Search POs..."
+        className="w-64"
+      />
+
+      <Box className="relative">
         <input
           type="file"
           multiple
@@ -291,13 +282,13 @@ export default function POListPage() {
             asChild
             className="cursor-pointer bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-sm"
           >
-            <span>
+            <Flex align="center">
               <Upload size={16} className="mr-2 text-slate-500" />
-              Upload HTML
-            </span>
+              <Body className="text-inherit">Upload HTML</Body>
+            </Flex>
           </Button>
         </label>
-      </div>
+      </Box>
 
       <Button
         variant="default"
@@ -305,10 +296,12 @@ export default function POListPage() {
         onClick={() => router.push("/po/create")}
         className="bg-slate-900 text-white hover:bg-slate-800 shadow-md shadow-slate-900/10"
       >
-        <Plus size={16} className="mr-2" />
-        New PO
+        <Flex align="center">
+          <Plus size={16} className="mr-2" />
+          <Body className="text-inherit">New PO</Body>
+        </Flex>
       </Button>
-    </div>
+    </Flex>
   );
 
   return (
@@ -330,7 +323,7 @@ export default function POListPage() {
       />
 
       {/* Floating Action Button (FAB) */}
-      <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-50">
+      <Stack className="fixed bottom-8 right-8 z-50" gap={4}>
         <AnimatePresence>
           {selectedFiles.length > 0 && !uploading && (
             <motion.button
@@ -341,9 +334,9 @@ export default function POListPage() {
               className="group flex items-center gap-3 px-6 py-4 bg-emerald-600 text-white rounded-2xl shadow-[0_20px_40px_rgba(16,185,129,0.3)] hover:bg-emerald-700 hover:shadow-[0_25px_50px_rgba(16,185,129,0.4)] transition-all active:scale-95"
             >
               <Upload size={20} className="group-hover:bounce" />
-              <span className="font-black uppercase tracking-[0.15em]">
+              <Body className="font-black uppercase tracking-[0.15em] text-white">
                 Process {selectedFiles.length} Docs
-              </span>
+              </Body>
             </motion.button>
           )}
         </AnimatePresence>
@@ -352,18 +345,18 @@ export default function POListPage() {
           onClick={() => router.push("/po/create")}
           className="w-16 h-16 bg-slate-900 text-white rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.2)] hover:bg-black hover:scale-110 transition-all active:scale-95 flex items-center justify-center group relative overflow-hidden"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <Box className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <Plus
             size={28}
             className="group-hover:rotate-90 transition-transform duration-500"
           />
         </button>
-      </div>
+      </Stack>
 
       <Dialog
-        open={uploading || selectedFiles.length > 0}
-        onOpenChange={(open) => {
-          if (!open && !uploading) setSelectedFiles([]);
+        isOpen={uploading || selectedFiles.length > 0}
+        onClose={() => {
+          if (!uploading) setSelectedFiles([]);
         }}
       >
         <DialogContent className="max-w-md">
@@ -371,22 +364,22 @@ export default function POListPage() {
             <DialogTitle>{uploading ? "BATCH INGESTION" : "CONFIRM UPLOAD"}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-6 py-4">
+          <Stack gap={6} className="py-4">
             {!uploading ? (
-              <div className="text-center space-y-2">
-                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Stack align="center" gap={2} className="text-center">
+                <Box className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
                   <FileText size={32} />
-                </div>
+                </Box>
                 <H3>{selectedFiles.length} Documents Ready</H3>
                 <Body className="text-slate-500">
                   Purchase orders will be parsed and synchronized with the central
                   ledger.
                 </Body>
-              </div>
+              </Stack>
             ) : (
-              <div className="space-y-8">
+              <Stack gap={8}>
                 {/* Cinematic Card Stack Animation */}
-                <div className="relative h-32 flex items-center justify-center perspective-1000">
+                <Flex align="center" justify="center" className="relative h-32 perspective-1000">
                   <AnimatePresence mode="popLayout">
                     {selectedFiles
                       .slice(uploadProgress.current, uploadProgress.current + 3)
@@ -413,30 +406,30 @@ export default function POListPage() {
                             zIndex: 10 - idx,
                           }}
                         >
-                          <div className="flex items-center gap-2">
-                            <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
+                          <Flex align="center" gap={2}>
+                            <Box className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
                               <FileText size={12} className="text-white" />
-                            </div>
+                            </Box>
                             <SmallText className="uppercase text-slate-400 truncate w-full">
                               {file.name}
                             </SmallText>
-                          </div>
-                          <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                          </Flex>
+                          <Box className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
                             <motion.div
                               className="h-full bg-emerald-500"
                               initial={{ width: "0%" }}
                               animate={{ width: idx === 0 ? "100%" : "0%" }}
                               transition={{ duration: 0.5 }}
                             />
-                          </div>
+                          </Box>
                         </motion.div>
                       ))}
                   </AnimatePresence>
-                </div>
+                </Flex>
 
-                <div className="space-y-3">
-                  <div className="flex justify-between items-end">
-                    <div>
+                <Stack gap={3}>
+                  <Flex justify="between" align="end">
+                    <Stack>
                       <Label className="text-blue-600 uppercase mb-1">
                         Status
                       </Label>
@@ -444,21 +437,21 @@ export default function POListPage() {
                         Processing {uploadProgress.current} of{" "}
                         {uploadProgress.total} files
                       </Body>
-                    </div>
-                    <div className="text-right">
+                    </Stack>
+                    <Stack className="text-right">
                       <Label className="text-slate-400 uppercase mb-1">
                         Progress
                       </Label>
-                      <div className="text-sm font-mono font-bold text-slate-900">
+                      <Body className="text-sm font-mono font-bold text-slate-900">
                         {Math.round(
                           (uploadProgress.current / uploadProgress.total) * 100,
                         )}
                         %
-                      </div>
-                    </div>
-                  </div>
+                      </Body>
+                    </Stack>
+                  </Flex>
 
-                  <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                  <Box className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                     <motion.div
                       className="bg-blue-600 h-full"
                       initial={{ width: 0 }}
@@ -467,13 +460,13 @@ export default function POListPage() {
                       }}
                       transition={{ duration: 0.3 }}
                     />
-                  </div>
-                </div>
-              </div>
+                  </Box>
+                </Stack>
+              </Stack>
             )}
-          </div>
+          </Stack>
 
-          <div className="flex flex-col gap-3 w-full mt-4">
+          <Stack gap={3} className="w-full mt-4">
             {!uploading ? (
               <Button
                 variant="default"
@@ -495,7 +488,7 @@ export default function POListPage() {
                 Halt Operation
               </Button>
             )}
-          </div>
+          </Stack>
         </DialogContent>
       </Dialog>
     </>

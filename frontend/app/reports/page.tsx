@@ -38,6 +38,8 @@ import {
   Accounting,
   Body,
   TableText,
+  SmallText,
+  Label,
 } from "@/components/design-system/atoms/Typography";
 import type { SummaryCardProps } from "@/components/design-system/organisms/SummaryCards";
 import type { Column } from "@/components/design-system/organisms/DataTable";
@@ -46,6 +48,9 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/design-system/molecules/Tabs";
+import { ReportNavGrid } from "@/components/design-system/organisms/ReportNavGrid";
+import { GlassContainer } from "@/components/design-system/atoms/GlassContainer";
+import { Flex, Stack, Box, Grid } from "@/components/design-system/atoms/Layout";
 
 type ReportType =
   | "sales"
@@ -198,11 +203,11 @@ const pendingColumns: Column<any>[] = [
     label: "MATERIAL",
     width: "30%",
     render: (_v, row) => (
-      <div className="w-[180px] lg:w-[280px] truncate" title={row.material_description}>
+      <Box className="w-[180px] lg:w-[280px] truncate" title={row.material_description}>
         <TableText className="truncate block">
           {row.material_description}
         </TableText>
-      </div>
+      </Box>
     ),
   },
   {
@@ -252,11 +257,11 @@ const reconciliationColumns: Column<any>[] = [
     label: "ITEM",
     width: "35%",
     render: (_v, row) => (
-      <div className="w-[200px] lg:w-[320px] truncate" title={row.item_description}>
+      <Box className="w-[200px] lg:w-[320px] truncate" title={row.item_description}>
         <TableText className="truncate block">
           {row.item_description}
         </TableText>
-      </div>
+      </Box>
     ),
   },
   {
@@ -342,13 +347,7 @@ export default function ReportsPage() {
     setHeaderPortal(document.getElementById("header-action-portal"));
   }, []);
 
-  useEffect(() => {
-    setPage(1);
-    loadReport();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, startDate, endDate]);
-
-  const loadReport = async () => {
+  const loadReport = useCallback(async () => {
     setLoading(true);
     setData([]);
     try {
@@ -391,9 +390,14 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab, startDate, endDate]);
 
-  const handleExport = () => {
+  useEffect(() => {
+    setPage(1);
+    loadReport();
+  }, [loadReport]);
+
+  const handleExport = useCallback(() => {
     const baseUrl = api.baseUrl || "http://localhost:8000";
     let endpoint = "";
     const dateParams = `start_date=${startDate}&end_date=${endDate}`;
@@ -417,7 +421,7 @@ export default function ReportsPage() {
     }
 
     window.open(`${baseUrl}${endpoint}?export=true&${dateParams}`, "_blank");
-  };
+  }, [activeTab, startDate, endDate]);
 
   // --- FIX 3: Memoize KPIs for premium feel ---
   const kpiCards = useMemo((): SummaryCardProps[] => {
@@ -550,9 +554,9 @@ export default function ReportsPage() {
 
   // --- OPTIMIZATION: Toolbar Portal Content ---
   const toolbarContent = (
-    <div className="flex items-center gap-3">
-      <div className="flex items-center bg-[#F8FAFC]/40 backdrop-blur-xl border border-slate-200/50 rounded-2xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.03)] p-1">
-        <div className="flex items-center gap-3 px-4 py-2 hover:bg-white/40 transition-colors rounded-xl group">
+    <Flex align="center" gap={3}>
+      <Flex align="center" className="bg-[#F8FAFC]/40 backdrop-blur-xl border border-slate-200/50 rounded-2xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.03)] p-1">
+        <Flex align="center" gap={3} className="px-4 py-2 hover:bg-white/40 transition-colors rounded-xl group">
           <Calendar size={16} className="text-indigo-500 group-hover:scale-110 transition-transform" />
           <input
             type="date"
@@ -560,17 +564,17 @@ export default function ReportsPage() {
             onChange={(e) => setStartDate(e.target.value)}
             className="text-[11px] font-black uppercase tracking-wider outline-none bg-transparent text-slate-600"
           />
-        </div>
-        <div className="w-[1px] h-6 bg-slate-200/50 mx-1" />
-        <div className="flex items-center gap-3 px-4 py-2 hover:bg-white/40 transition-colors rounded-xl group">
+        </Flex>
+        <Box className="w-[1px] h-6 bg-slate-200/50 mx-1" />
+        <Flex align="center" gap={3} className="px-4 py-2 hover:bg-white/40 transition-colors rounded-xl group">
           <input
             type="date"
             value={endDate}
             onChange={(e) => setEndDate(e.target.value)}
             className="text-[11px] font-black uppercase tracking-wider outline-none bg-transparent text-slate-600"
           />
-        </div>
-      </div>
+        </Flex>
+      </Flex>
       <button
         onClick={handleExport}
         className="group flex items-center gap-3 px-6 py-3 bg-slate-900 text-white rounded-2xl hover:bg-black shadow-[0_8px_24px_rgba(0,0,0,0.1)] transition-all active:scale-95 text-[11px] font-black uppercase tracking-[0.1em]"
@@ -578,7 +582,7 @@ export default function ReportsPage() {
         <Download size={16} className="group-hover:translate-y-0.5 transition-transform" />
         Export
       </button>
-    </div>
+    </Flex>
   );
 
   return (
@@ -586,39 +590,22 @@ export default function ReportsPage() {
       {headerPortal && createPortal(toolbarContent, headerPortal)}
 
       <div className="space-y-6">
-        <Tabs
-          value={activeTab}
-          onValueChange={(val) => {
-            if (val === activeTab) return;
+        <ReportNavGrid
+          items={[
+            { id: "sales", title: "Growth", description: "Revenue and tax velocity trends", icon: <TrendingUp /> },
+            { id: "dc_register", title: "DC Register", description: "Dispatch and logistics tracking", icon: <Truck /> },
+            { id: "invoice_register", title: "Invoices", description: "Billing and payment ledger", icon: <Receipt /> },
+            { id: "pending", title: "Shortages", description: "Active pending supply gaps", icon: <AlertTriangle /> },
+            { id: "reconciliation", title: "Ledger Audit", description: "Physical vs System inventory audit", icon: <Activity /> },
+          ]}
+          activeId={activeTab}
+          onSelect={(id) => {
             setLoading(true);
-            setData([]); // Clear data to prevent stale render
-            setActiveTab(val as ReportType);
+            setData([]);
+            setActiveTab(id as ReportType);
           }}
           className="w-full"
-        >
-          <TabsList className="w-full justify-start overflow-x-auto bg-transparent border-none gap-2">
-            <TabsTrigger value="sales" className="rounded-sm px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none border border-transparent data-[state=active]:border-blue-700 text-xs font-semibold uppercase tracking-wide text-slate-600 transition-all">
-              <TrendingUp size={14} className="mr-2" />
-              Growth
-            </TabsTrigger>
-            <TabsTrigger value="dc_register" className="rounded-sm px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none border border-transparent data-[state=active]:border-blue-700 text-xs font-semibold uppercase tracking-wide text-slate-600 transition-all">
-              <Truck size={14} className="mr-2" />
-              DC Register
-            </TabsTrigger>
-            <TabsTrigger value="invoice_register" className="rounded-sm px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none border border-transparent data-[state=active]:border-blue-700 text-xs font-semibold uppercase tracking-wide text-slate-600 transition-all">
-              <Receipt size={14} className="mr-2" />
-              Invoices
-            </TabsTrigger>
-            <TabsTrigger value="pending" className="rounded-sm px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none border border-transparent data-[state=active]:border-blue-700 text-xs font-semibold uppercase tracking-wide text-slate-600 transition-all">
-              <AlertTriangle size={14} className="mr-2" />
-              Shortages
-            </TabsTrigger>
-            <TabsTrigger value="reconciliation" className="rounded-sm px-4 py-2 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-none border border-transparent data-[state=active]:border-blue-700 text-xs font-semibold uppercase tracking-wide text-slate-600 transition-all">
-              <Activity size={14} className="mr-2" />
-              Ledger Audit
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+        />
 
         {/* --- DYNAMIC CHART SECTION --- */}
         <AnimatePresence mode="wait">
@@ -628,119 +615,137 @@ export default function ReportsPage() {
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
-              className="grid grid-cols-1 lg:grid-cols-3 gap-6"
             >
-              <div className="lg:col-span-2 p-6 rounded-sm bg-white border border-slate-300 shadow-sm">
-                <div className="flex items-center justify-between mb-4 border-b border-slate-200 pb-2">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide">
-                      {activeTab === "sales" ? "Revenue Momentum" : "Quality Distribution"}
-                    </h3>
-                  </div>
-                </div>
+              <Grid
+                cols="1"
+                gap={6}
+                className="lg:grid-cols-3"
+              >
+                <Box className="lg:col-span-2 p-6 rounded-2xl bg-white/40 backdrop-blur-md border border-white/20 shadow-sm transition-all duration-300 hover:shadow-lg">
+                  <Flex align="center" justify="between" className="mb-6 border-b border-white/20 pb-2">
+                    <Box>
+                      <Body className="text-sm font-bold text-slate-800 uppercase tracking-wide">
+                        {activeTab === "sales" ? "Revenue Momentum" : "Quality Distribution"}
+                      </Body>
+                    </Box>
+                  </Flex>
 
-                <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    {activeTab === "sales" ? (
-                      <LineChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                        <XAxis
-                          dataKey="name"
-                          axisLine={{ stroke: '#CBD5E1' }}
-                          tickLine={false}
-                          tick={{ fontSize: 10, fontWeight: 600, fill: '#475569' }}
-                          dy={10}
-                        />
-                        <YAxis
-                          axisLine={{ stroke: '#CBD5E1' }}
-                          tickLine={false}
-                          tick={{ fontSize: 10, fontWeight: 600, fill: '#475569' }}
-                          tickFormatter={(value) => {
-                            if (value >= 10000000) return `${(value / 10000000).toFixed(1)}Cr`;
-                            if (value >= 100000) return `${(value / 100000).toFixed(1)}L`;
-                            if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
-                            return value;
-                          }}
-                        />
-                        <Tooltip
-                          contentStyle={{ borderRadius: '2px', border: '1px solid #CBD5E1', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', background: '#fff' }}
-                          labelStyle={{ fontWeight: 700, color: '#1E293B', fontSize: '12px' }}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="value"
-                          stroke="#1D4ED8"
-                          strokeWidth={2}
-                          dot={{ r: 3, fill: '#1D4ED8', strokeWidth: 1, stroke: '#fff' }}
-                          activeDot={{ r: 5, strokeWidth: 0 }}
-                        />
-                      </LineChart>
-                    ) : (
-                      <ReBarChart data={chartData} layout="vertical" margin={{ left: 40 }}>
-                        <XAxis type="number" hide />
-                        <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 600, fill: '#475569' }} />
-                        <Tooltip
-                          formatter={(value: any) => [typeof value === 'number' ? Math.round(value) : value, '']}
-                          contentStyle={{ borderRadius: '2px', border: '1px solid #CBD5E1', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}
-                        />
-                        <Bar dataKey="value" radius={[0, 2, 2, 0]} barSize={24} fill="#1D4ED8">
-                          {chartData.map((entry: any, index: number) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Bar>
-                      </ReBarChart>
-                    )}
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-4">
-                <div className="p-4 rounded-sm bg-blue-50 border border-blue-200 flex flex-col justify-center items-center text-center">
-                  <div className="relative w-32 h-32 flex items-center justify-center">
+                  <Box className="h-[300px] w-full">
                     <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={[
-                            { name: 'Growth', value: 75, fill: '#1D4ED8' },
-                            { name: 'Remaining', value: 25, fill: '#E2E8F0' }
-                          ]}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={50}
-                          outerRadius={65}
-                          dataKey="value"
-                          startAngle={90}
-                          endAngle={-270}
-                          stroke="none"
-                        />
-                      </PieChart>
+                      {activeTab === "sales" ? (
+                        <LineChart data={chartData}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0/50" />
+                          <XAxis
+                            dataKey="name"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
+                            dy={10}
+                          />
+                          <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }}
+                            tickFormatter={(value) => {
+                              if (value >= 10000000) return `${(value / 10000000).toFixed(1)}Cr`;
+                              if (value >= 100000) return `${(value / 100000).toFixed(1)}L`;
+                              if (value >= 1000) return `${(value / 1000).toFixed(1)}k`;
+                              return value;
+                            }}
+                          />
+                          <Tooltip
+                            contentStyle={{
+                              borderRadius: '16px',
+                              border: '1px solid rgba(255,255,255,0.2)',
+                              boxShadow: '0 8px 32px rgba(0,0,0,0.05)',
+                              background: 'rgba(255,255,255,0.8)',
+                              backdropFilter: 'blur(10px)',
+                              padding: '12px'
+                            }}
+                            labelStyle={{ fontWeight: 800, color: '#1E293B', fontSize: '12px', marginBottom: '4px' }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="value"
+                            stroke="#3B82F6"
+                            strokeWidth={4}
+                            dot={{ r: 4, fill: '#3B82F6', strokeWidth: 2, stroke: '#fff' }}
+                            activeDot={{ r: 6, strokeWidth: 0, fill: '#1d4ed8' }}
+                          />
+                        </LineChart>
+                      ) : (
+                        <ReBarChart data={chartData} layout="vertical" margin={{ left: 40 }}>
+                          <XAxis type="number" hide />
+                          <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fill: '#64748b' }} />
+                          <Tooltip
+                            formatter={(value: any) => [typeof value === 'number' ? Math.round(value) : value, '']}
+                            contentStyle={{
+                              borderRadius: '16px',
+                              border: '1px solid rgba(255,255,255,0.2)',
+                              boxShadow: '0 8px 32px rgba(0,0,0,0.05)',
+                              background: 'rgba(255,255,255,0.8)',
+                              backdropFilter: 'blur(10px)'
+                            }}
+                          />
+                          <Bar dataKey="value" radius={[0, 8, 8, 0]} barSize={24} fill="#3B82F6">
+                            {chartData.map((entry: any, index: number) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Bar>
+                        </ReBarChart>
+                      )}
                     </ResponsiveContainer>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-2xl font-bold text-blue-900">75%</span>
-                      <span className="text-[10px] text-blue-600 uppercase tracking-wide">Margin</span>
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <h4 className="text-xs font-bold text-blue-900 uppercase">Gross Profit Margin</h4>
-                  </div>
-                </div>
+                  </Box>
+                </Box>
 
-                <div className="p-4 rounded-sm bg-white border border-slate-300 flex flex-col justify-between">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Quick Ratio</p>
-                      <h4 className="text-2xl font-bold text-slate-800 mt-1">0.9:8</h4>
-                    </div>
-                    <Activity className="text-slate-400" size={20} />
-                  </div>
-                  <div className="mt-3">
-                    <div className="w-full bg-slate-100 h-2 rounded-sm overflow-hidden border border-slate-200">
-                      <div className="bg-amber-500 h-full w-[45%]" />
-                    </div>
-                    <p className="text-[10px] text-slate-500 mt-2">Measures liquid assets vs liabilities.</p>
-                  </div>
-                </div>
-              </div>
+                <Stack gap={4}>
+                  <Flex align="center" justify="center" direction="col" className="p-6 rounded-2xl bg-blue-500/10 backdrop-blur-md border border-blue-200/20 text-center shadow-sm">
+                    <Flex align="center" justify="center" className="relative w-32 h-32">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={[
+                              { name: 'Growth', value: 75, fill: '#3B82F6' },
+                              { name: 'Remaining', value: 25, fill: 'rgba(59, 130, 246, 0.1)' }
+                            ]}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={65}
+                            dataKey="value"
+                            startAngle={90}
+                            endAngle={-270}
+                            stroke="none"
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                      <Stack align="center" justify="center" className="absolute inset-0">
+                        <Body className="text-2xl font-black text-blue-900">75%</Body>
+                        <SmallText className="text-[10px] text-blue-600 font-bold uppercase tracking-wider leading-none">Margin</SmallText>
+                      </Stack>
+                    </Flex>
+                    <Box className="mt-4">
+                      <Body className="text-[11px] font-black text-blue-900/60 uppercase tracking-widest">Gross Profit Margin</Body>
+                    </Box>
+                  </Flex>
+
+                  <Flex justify="between" direction="col" className="p-6 rounded-2xl bg-white/40 backdrop-blur-md border border-white/20 shadow-sm transition-all duration-300 hover:shadow-lg">
+                    <Flex align="center" justify="between">
+                      <Stack>
+                        <SmallText className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Quick Ratio</SmallText>
+                        <Body className="text-2xl font-black text-slate-800 mt-1">0.9:8</Body>
+                      </Stack>
+                      <Activity className="text-blue-500/60" size={24} />
+                    </Flex>
+                    <Box className="mt-4">
+                      <Box className="w-full bg-slate-200/50 h-2.5 rounded-full overflow-hidden border border-white/20 p-[2px]">
+                        <Box className="bg-gradient-to-r from-amber-400 to-amber-600 h-full rounded-full w-[45%] shadow-[0_0_8px_rgba(245,158,11,0.3)]" />
+                      </Box>
+                      <SmallText className="text-[10px] text-slate-500 font-medium mt-3 italic text-opacity-80 leading-relaxed">Liquid assets vs Current liabilities dashboard.</SmallText>
+                    </Box>
+                  </Flex>
+                </Stack>
+              </Grid>
             </motion.div>
           )}
         </AnimatePresence>

@@ -172,3 +172,19 @@ def db_transaction(conn: sqlite3.Connection):
         conn.rollback()
         logger.error(f"Explicit transaction rolled back: {e}")
         raise
+
+
+def verify_wal_mode():
+    """Verify that the database is using WAL mode"""
+    conn = get_connection()
+    try:
+        mode = conn.execute("PRAGMA journal_mode").fetchone()[0]
+        logger.info(f"Database journal mode: {mode}")
+        if mode.lower() != "wal":
+            logger.warning(f"Database NOT in WAL mode: {mode}. Attempting to enable...")
+            conn.execute("PRAGMA journal_mode = WAL")
+            conn.commit()
+    except Exception as e:
+        logger.error(f"Failed to verify WAL mode: {e}")
+    finally:
+        conn.close()

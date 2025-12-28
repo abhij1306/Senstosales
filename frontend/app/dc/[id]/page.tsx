@@ -28,7 +28,6 @@ import {
   Label,
   Accounting,
 } from "@/components/design-system/atoms/Typography";
-// import { DocumentJourney } from "@/components/design-system/molecules/DocumentJourney";
 import { DocumentTemplate } from "@/components/design-system/templates/DocumentTemplate";
 import { Button } from "@/components/design-system/atoms/Button";
 import { Badge } from "@/components/design-system/atoms/Badge";
@@ -40,8 +39,7 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@/components/design-system/molecules/Tabs";
-import type { Column } from "@/components/design-system/organisms/DataTable";
-// import { DataTable } from "@/components/design-system/organisms/DataTable";
+import { type Column } from "@/components/design-system/organisms/DataTable";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 
@@ -193,11 +191,11 @@ function DCDetailContent() {
       width: "35%",
       render: (_v, row) => (
         <div className="space-y-0.5">
-          <div className="font-medium text-slate-950">{row.description}</div>
+          <Body className="text-slate-950">{row.description}</Body>
           {row.drg_no && (
-            <div className="text-[10px] text-[#1A3D7C] font-medium uppercase tracking-tight">
+            <SmallText className="text-[#1A3D7C] font-black uppercase tracking-widest block">
               DRG: {row.drg_no}
-            </div>
+            </SmallText>
           )}
         </div>
       ),
@@ -360,10 +358,10 @@ function DCDetailContent() {
                   <Trash2 size={20} className="text-[#DC2626]" />
                 </div>
                 <div>
-                  <H3 className="text-[15px] font-semibold text-slate-930">
+                  <H3 className="text-[15px] font-black text-slate-950">
                     Delete Delivery Challan?
                   </H3>
-                  <SmallText className="text-slate-600 mt-1">
+                  <SmallText className="text-slate-500 mt-1 block">
                     This action cannot be undone. The DC and all its items will
                     be permanently deleted.
                   </SmallText>
@@ -387,25 +385,10 @@ function DCDetailContent() {
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4 bg-slate-100/30 p-1 rounded-xl">
-            <TabsTrigger
-              value="basic"
-              className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930"
-            >
-              Basic Info
-            </TabsTrigger>
-            <TabsTrigger
-              value="supplier"
-              className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930"
-            >
-              Supplier
-            </TabsTrigger>
-            <TabsTrigger
-              value="consignee"
-              className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930"
-            >
-              Consignee
-            </TabsTrigger>
+          <TabsList className="mb-4">
+            <TabsTrigger value="basic">Basic Info</TabsTrigger>
+            <TabsTrigger value="supplier">Supplier</TabsTrigger>
+            <TabsTrigger value="consignee">Consignee</TabsTrigger>
           </TabsList>
 
           <AnimatePresence mode="wait">
@@ -420,19 +403,15 @@ function DCDetailContent() {
                 <TabsContent value="basic" className="mt-0">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        DC Number
-                      </Label>
+                      <Label>DC Number</Label>
                       <Input
                         value={formData.dc_number}
                         readOnly
-                        className="bg-[#F9FAFB] font-medium text-slate-930 border-none h-8"
+                        className="bg-slate-100/50"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        DC Date
-                      </Label>
+                      <Label>DC Date</Label>
                       <Input
                         type="date"
                         value={formData.dc_date}
@@ -440,24 +419,19 @@ function DCDetailContent() {
                           setFormData({ ...formData, dc_date: e.target.value })
                         }
                         readOnly={!editMode}
-                        className="font-medium text-slate-930 border-none h-8"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        PO Number
-                      </Label>
+                      <Label>PO Number</Label>
                       <Input
                         value={formData.po_number}
                         readOnly
-                        className="bg-[#F9FAFB] cursor-pointer font-medium text-slate-930 border-none h-8"
+                        className="bg-slate-100/50 cursor-pointer"
                         onClick={() => router.push(`/po/${formData.po_number}`)}
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        Department No
-                      </Label>
+                      <Label>Department No</Label>
                       <Input
                         value={formData.department_no}
                         onChange={(e) =>
@@ -467,13 +441,10 @@ function DCDetailContent() {
                           })
                         }
                         readOnly={!editMode}
-                        className="font-medium text-slate-930 border-none h-8"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        E-Way Bill Number
-                      </Label>
+                      <Label>E-Way Bill Number</Label>
                       <Input
                         value={formData.eway_bill_number}
                         onChange={(e) =>
@@ -483,7 +454,6 @@ function DCDetailContent() {
                           })
                         }
                         readOnly={!editMode}
-                        className="font-medium text-slate-930 border-none h-8"
                       />
                     </div>
                   </div>
@@ -492,9 +462,7 @@ function DCDetailContent() {
                 <TabsContent value="supplier" className="mt-0">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        Supplier Phone
-                      </Label>
+                      <Label>Supplier Phone</Label>
                       <Input
                         value={formData.supplier_phone}
                         onChange={(e) =>
@@ -504,13 +472,10 @@ function DCDetailContent() {
                           })
                         }
                         readOnly={!editMode}
-                        className="font-medium text-slate-930 border-none h-8"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        Supplier GSTIN
-                      </Label>
+                      <Label>Supplier GSTIN</Label>
                       <Input
                         value={formData.supplier_gstin}
                         onChange={(e) =>
@@ -520,7 +485,6 @@ function DCDetailContent() {
                           })
                         }
                         readOnly={!editMode}
-                        className="font-medium text-slate-930 border-none h-8"
                       />
                     </div>
                   </div>
@@ -529,9 +493,7 @@ function DCDetailContent() {
                 <TabsContent value="consignee" className="mt-0">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        Consignee Name
-                      </Label>
+                      <Label>Consignee Name</Label>
                       <Input
                         value={formData.consignee_name}
                         onChange={(e) =>
@@ -541,14 +503,11 @@ function DCDetailContent() {
                           })
                         }
                         readOnly={!editMode}
-                        className="font-medium text-slate-930 border-none h-8"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        Consignee Address
-                      </Label>
-                      <textarea
+                      <Label>Consignee Address</Label>
+                      <Input
                         value={formData.consignee_address}
                         onChange={(e) =>
                           setFormData({
@@ -556,9 +515,8 @@ function DCDetailContent() {
                             consignee_address: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 text-[13px] border-none bg-slate-50/50 rounded-md focus:outline-none focus:ring-0 resize-none font-medium text-slate-930"
-                        rows={2}
                         readOnly={!editMode}
+                        className="min-h-[60px]"
                       />
                     </div>
                   </div>

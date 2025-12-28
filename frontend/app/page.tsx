@@ -31,10 +31,12 @@ import {
   DataTable,
   Column,
 } from "@/components/design-system/organisms/DataTable";
+import { StatusBadge } from "@/components/design-system/organisms/StatusBadge";
 import {
   SummaryCardSkeleton,
   TableRowSkeleton,
-} from "@/components/ui/Skeleton";
+} from "@/components/design-system/atoms/Skeleton";
+import { Flex, Stack, Grid, Box } from "@/components/design-system/atoms/Layout";
 
 // --- OPTIMIZATION: Static Column Definitions ---
 // Moved outside component to prevent re-creation on render.
@@ -44,8 +46,10 @@ const createActivityColumns = (router: any): Column<ActivityItem>[] => [
     label: "RECORD",
     width: "40%",
     render: (_value, item) => (
-      <div
-        className="flex items-center gap-3 cursor-pointer group py-1"
+      <Flex
+        align="center"
+        gap={3}
+        className="cursor-pointer group py-1"
         onClick={() => {
           const path =
             item.type === "PO"
@@ -94,7 +98,7 @@ const createActivityColumns = (router: any): Column<ActivityItem>[] => [
         >
           {item.number}
         </motion.div>
-      </div>
+      </Flex>
     ),
   },
   {
@@ -113,16 +117,7 @@ const createActivityColumns = (router: any): Column<ActivityItem>[] => [
     label: "STATUS",
     width: "20%",
     render: (_value, item) => (
-      <Badge
-        variant={
-          item.status === "Completed" || item.status === "Active"
-            ? "success"
-            : "warning"
-        }
-        className="bg-opacity-50 whitespace-nowrap"
-      >
-        {item.status}
-      </Badge>
+      <StatusBadge status={item.status} className="w-24 justify-center" />
     ),
   },
   {
@@ -131,9 +126,9 @@ const createActivityColumns = (router: any): Column<ActivityItem>[] => [
     width: "20%",
     align: "right",
     render: (_value, item) => (
-      <span className="text-slate-500 text-xs font-medium whitespace-nowrap">
+      <SmallText className="text-slate-500 font-medium whitespace-nowrap leading-none">
         {item.date}
-      </span>
+      </SmallText>
     ),
   },
 ];
@@ -174,16 +169,16 @@ export default function DashboardPage() {
   // activityColumns definition moved to top-level
 
   return (
-    <div className="space-y-6">
+    <Stack gap={6}>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
+      <Flex align="center" justify="between">
+        <Stack>
           <H1>DASHBOARD</H1>
           <Body className="text-[#6B7280] mt-1">
             Business intelligence overview
           </Body>
-        </div>
-        <div className="flex items-center gap-3">
+        </Stack>
+        <Flex align="center" gap={3}>
           <Button
             variant="secondary"
             size="sm"
@@ -200,52 +195,36 @@ export default function DashboardPage() {
             <Plus size={16} />
             New Purchase Order
           </Button>
-        </div>
-      </div>
+        </Flex>
+      </Flex>
 
       {/* KPI Summary Cards */}
-      <div className="min-h-[140px]">
+      <Box className="min-h-[140px]">
         <SummaryCards
           cards={[
             {
               title: "Total Sales",
-              value: (
-                <Accounting isCurrency short className="text-xl">
-                  {summary?.total_sales_month || 0}
-                </Accounting>
-              ),
-              icon: <Receipt size={20} />,
-              variant: "primary",
+              value: formatIndianCurrency(summary?.total_sales_month || 0),
+              icon: <Receipt size={24} />,
+              variant: "default",
             },
             {
               title: "Total Purchase",
-              value: (
-                <Accounting isCurrency short className="text-xl">
-                  {summary?.total_po_value || 0}
-                </Accounting>
-              ),
-              icon: <Activity size={20} />,
-              variant: "success",
+              value: formatIndianCurrency(summary?.total_po_value || 0),
+              icon: <Activity size={24} />,
+              variant: "default",
             },
             {
               title: "Active POs",
-              value: (
-                <Accounting className="text-xl">
-                  {summary?.active_po_count || 0}
-                </Accounting>
-              ),
-              icon: <Activity size={20} />,
-              variant: "warning",
+              value: summary?.active_po_count || 0,
+              icon: <Activity size={24} />,
+              variant: "default",
             },
             {
               title: "Pipeline Volume",
-              value: (
-                <Accounting isCurrency short className="text-xl">
-                  {summary?.total_po_value || 0}
-                </Accounting>
-              ),
-              icon: <Activity size={20} />,
-              variant: "secondary",
+              value: formatIndianCurrency(summary?.total_po_value || 0),
+              icon: <Activity size={24} />,
+              variant: "default",
               trend: {
                 value: String(summary?.po_value_growth || "0%"),
                 direction: "up",
@@ -254,13 +233,14 @@ export default function DashboardPage() {
           ]}
           loading={loading}
         />
-      </div>
+      </Box>
 
       {/* Two-column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Two-column layout */}
+      <Grid cols="1" className="lg:grid-cols-12" gap={6}>
         {/* Recent Activity Table */}
-        <div className="lg:col-span-8 space-y-4">
-          <div className="flex items-center justify-between">
+        <Stack className="lg:col-span-8" gap={4}>
+          <Flex align="center" justify="between">
             <H3>Recent Activity</H3>
             <Button
               variant="ghost"
@@ -270,9 +250,9 @@ export default function DashboardPage() {
               View All
               <ArrowRight size={16} />
             </Button>
-          </div>
+          </Flex>
 
-          <div className="min-h-[400px]">
+          <Box className="min-h-[400px]">
             {loading ? (
               <Card className="p-0 overflow-hidden">
                 <TableRowSkeleton columns={4} />
@@ -289,13 +269,13 @@ export default function DashboardPage() {
                 pageSize={10}
               />
             )}
-          </div>
-        </div>
+          </Box>
+        </Stack>
 
         {/* Quick Actions */}
-        <div className="lg:col-span-4 space-y-4">
+        <Stack className="lg:col-span-4" gap={4}>
           <H3>Quick Actions</H3>
-          <div className="space-y-3">
+          <Stack gap={3}>
             <QuickActionCard
               title="Create Purchase Order"
               description="Initiate new procurement request"
@@ -317,10 +297,10 @@ export default function DashboardPage() {
               onClick={() => router.push("/invoice/create")}
               layoutId="create-invoice-icon"
             />
-          </div>
-        </div>
-      </div>
-    </div>
+          </Stack>
+        </Stack>
+      </Grid>
+    </Stack>
   );
 }
 
@@ -341,22 +321,24 @@ function QuickActionCard({
   return (
     <Card
       className={cn(
-        "p-4 flex items-center gap-4 cursor-pointer transition-all duration-200",
+        "p-4 cursor-pointer transition-all duration-200",
         "hover:shadow-lg hover:border-[#1A3D7C]/20",
       )}
       onClick={onClick}
     >
-      <motion.div
-        layoutId={layoutId}
-        className="p-3 rounded-lg bg-[#1A3D7C]/10 text-[#1A3D7C] shrink-0"
-      >
-        {icon}
-      </motion.div>
-      <div className="flex-1 min-w-0">
-        <div className="text-[14px] font-medium text-slate-950">{title}</div>
-        <SmallText className="text-[#6B7280] mt-0.5">{description}</SmallText>
-      </div>
-      <ArrowRight size={16} className="text-[#9CA3AF] shrink-0" />
+      <Flex align="center" gap={4}>
+        <motion.div
+          layoutId={layoutId}
+          className="p-3 rounded-lg bg-[#1A3D7C]/10 text-[#1A3D7C] shrink-0"
+        >
+          {icon}
+        </motion.div>
+        <Stack className="flex-1 min-w-0">
+          <Body className="text-[14px] font-medium text-slate-950 leading-none">{title}</Body>
+          <SmallText className="text-[#6B7280] mt-0.5">{description}</SmallText>
+        </Stack>
+        <ArrowRight size={16} className="text-[#9CA3AF] shrink-0" />
+      </Flex>
     </Card>
   );
 }

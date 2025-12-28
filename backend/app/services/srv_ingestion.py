@@ -45,12 +45,8 @@ def validate_srv_data(srv_data: Dict, db: sqlite3.Connection) -> Tuple[bool, str
     po_found = bool(po_exists)
 
     if not po_found:
-        # Strict Mode: Reject SRV if PO does not exist
-        return (
-            False,
-            f"Error: PO {header['po_number']} not found in database. SRV cannot be processed.",
-            False,
-        )
+        # SRV-1: Strict PO Linkage Required.
+        return False, f"Error: PO {header['po_number']} not found in database. SRV cannot be uploaded without an existing PO.", False
 
     # Validate items
     if not items or len(items) == 0:
@@ -123,12 +119,30 @@ def validate_srv_data(srv_data: Dict, db: sqlite3.Connection) -> Tuple[bool, str
                     po_found,
                 )
 
-            # Warning (not error) if dispatch qty > pending qty
-            challan_qty = item.get("challan_qty", 0)
-            pending_qty = po_item_exists["pending_qty"] or 0
-            if challan_qty > pending_qty:
-                # This is a warning, not a blocker - data may be out of sync
-                pass  # Logged elsewhere, don't fail validation
+            # INVARIANT: SRV-2 - Received quantity cannot exceed DC Dispatch quantity
+            challan_no = item.get("challan_no")
+            received_qty = item.get("received_qty", 0)
+            
+            if challan_no and po_found:
+                dc_item = db.execute(
+                    """
+                    SELECT dispatch_qty FROM delivery_challan_items 
+                    WHERE dc_number = ? AND po_item_id = (
+                        SELECT id FROM purchase_order_items 
+                        WHERE po_number = ? AND po_item_no = ?
+                    )
+                """,
+                    (challan_no, header["po_number"], item["po_item_no"]),
+                ).fetchone()
+
+                if dc_item:
+                    dispatched_qty = dc_item[0]
+                    if received_qty > dispatched_qty + 0.001:
+                        return (
+                            False,
+                            f"Item {idx + 1}: Received quantity ({received_qty}) exceeds DC {challan_no} dispatched quantity ({dispatched_qty})",
+                            po_found,
+                        )
 
     return True, "Valid", po_found
 

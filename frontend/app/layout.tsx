@@ -1,7 +1,7 @@
 import { Inter, Outfit } from "next/font/google";
 import "./globals.css";
 import { SidebarNav } from "@/components/design-system/organisms/SidebarNav";
-import GlobalSearch from "@/components/GlobalSearch";
+import GlobalSearch from "@/components/design-system/organisms/GlobalSearch";
 import { Providers } from "./providers";
 import { cn } from "@/lib/utils";
 import { Suspense } from "react";

@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { H1 } from "@/components/design-system/atoms/Typography";
+import { H1, Body, SmallText } from "@/components/design-system/atoms/Typography";
 import {
   Tabs,
   TabsList,
@@ -30,11 +30,11 @@ export default function SettingsLayout({
     <div className="space-y-8">
       {/* Settings Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-white/20 pb-8">
-        <div className="space-y-2">
-          <H1 className="uppercase tracking-tight">Settings</H1>
-          <p className="text-[14px] text-[#6B7280]">
-            Configure your business profile and buyer entities
-          </p>
+        <div className="space-y-1">
+          <H1 className="tracking-tight">Settings</H1>
+          <Body className="text-slate-500 font-medium">
+            System configuration & buyer entities
+          </Body>
         </div>
 
         <Tabs
@@ -49,7 +49,7 @@ export default function SettingsLayout({
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className="px-6 py-2 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all font-bold text-[11px] uppercase tracking-wider"
+                className="px-6 py-2 rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white transition-all font-semibold text-[10px] uppercase tracking-wider"
               >
                 {tab.name}
               </TabsTrigger>

@@ -1,20 +1,5 @@
 {
   "name": "senstosales-root",
   "private": true,
-  "scripts": {
-    "prepare": "husky"
-  },
-  "devDependencies": {
-    "husky": "^9.1.7",
-    "lint-staged": "^15.5.2"
-  },
-  "lint-staged": {
-    "frontend/**/*.{js,jsx,ts,tsx,css,json}": [
-      "prettier --write"
-    ],
-    "backend/**/*.py": [
-      "ruff check --fix",
-      "ruff format"
-    ]
-  }
+  "scripts": {}
 }

@@ -97,8 +97,8 @@ export const ReportsPageTemplate = React.memo(
           {/* Main Content: Charts or Table */}
           <div className="space-y-4 w-full">
             {charts && (
-              <div className="bg-white rounded-sm border border-slate-300 shadow-sm p-5 w-full overflow-hidden">
-                <div className="mb-4 border-b border-slate-200 pb-2">
+              <div className="bg-white/40 backdrop-blur-md border border-white/20 shadow-sm rounded-2xl p-6 w-full overflow-hidden transition-all duration-500 hover:shadow-lg">
+                <div className="mb-4 border-b border-white/20 pb-2">
                   <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wide">Analytics Overview</h3>
                 </div>
                 {charts}
@@ -106,16 +106,16 @@ export const ReportsPageTemplate = React.memo(
             )}
 
             {columns && data && (
-              <div className="space-y-2 w-full">
+              <div className="space-y-4 w-full">
                 {tableTitle && (
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between px-1">
                     <h2 className="text-sm font-bold text-slate-700 uppercase tracking-wide">
                       {tableTitle}
                     </h2>
                   </div>
                 )}
 
-                <div className="bg-white rounded-sm border border-slate-300 shadow-sm overflow-hidden w-full">
+                <div className="bg-white/40 backdrop-blur-md border border-white/20 shadow-sm rounded-2xl overflow-hidden w-full transition-all duration-300">
                   <div className="w-full overflow-x-auto">
                     {/* Reuse DataTable but ensure it fits the theme */}
                     <DataTable

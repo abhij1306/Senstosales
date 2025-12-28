@@ -5,9 +5,9 @@ import { Card } from "../atoms/Card";
 import { Button } from "../atoms/Button";
 import { Checkbox } from "../atoms/Checkbox";
 import { TableHeaderCell } from "../molecules/TableHeaderCell";
-import { Body, SmallText } from "../atoms/Typography";
+import { Body, SmallText, Accounting } from "../atoms/Typography";
 import { ChevronLeft, ChevronRight, FileDown, Inbox } from "lucide-react";
-import { TableRowSkeleton } from "@/components/ui/Skeleton";
+import { TableRowSkeleton } from "../atoms/Skeleton";
 import { cn } from "@/lib/utils";
 
 /**
@@ -23,6 +23,8 @@ export interface Column<T = any> {
   align?: "left" | "center" | "right";
   render?: (value: any, row: T) => React.ReactNode;
   width?: string;
+  isNumeric?: boolean;
+  isCurrency?: boolean;
 }
 
 export interface DataTableProps<T = any> {
@@ -136,16 +138,16 @@ const DataTableComponent = <T extends Record<string, any>>({
   ]);
 
   // Handle page change
-  const handlePageChange = (newPage: number) => {
+  const handlePageChange = React.useCallback((newPage: number) => {
     if (onPageChange) {
       onPageChange(newPage);
     } else {
       setInternalPage(newPage);
     }
-  };
+  }, [onPageChange]);
 
   // Handle sort
-  const handleSort = (key: string) => {
+  const handleSort = React.useCallback((key: string) => {
     if (onSort) {
       onSort(key);
     } else {
@@ -155,10 +157,10 @@ const DataTableComponent = <T extends Record<string, any>>({
           prev?.key === key && prev.direction === "asc" ? "desc" : "asc",
       }));
     }
-  };
+  }, [onSort]);
 
   // Handle select all
-  const handleSelectAll = (checked: boolean) => {
+  const handleSelectAll = React.useCallback((checked: boolean) => {
     if (!onSelectionChange) return;
 
     if (checked) {
@@ -167,10 +169,10 @@ const DataTableComponent = <T extends Record<string, any>>({
     } else {
       onSelectionChange([]);
     }
-  };
+  }, [onSelectionChange, processedData, keyField]);
 
   // Handle select row
-  const handleSelectRow = (rowKey: string, checked: boolean) => {
+  const handleSelectRow = React.useCallback((rowKey: string, checked: boolean) => {
     if (!onSelectionChange) return;
 
     if (checked) {
@@ -178,7 +180,7 @@ const DataTableComponent = <T extends Record<string, any>>({
     } else {
       onSelectionChange(selectedRows.filter((key) => key !== rowKey));
     }
-  };
+  }, [onSelectionChange, selectedRows]);
 
   const allSelected =
     selectable &&
@@ -230,11 +232,11 @@ const DataTableComponent = <T extends Record<string, any>>({
         </div>
       )}
 
-      {/* Table */}
-      <Card className="p-0 overflow-hidden border border-[#E5E7EB]">
+      {/* Table Content Container */}
+      <Card className="p-0 overflow-hidden border border-white/20 bg-white/45 backdrop-blur-xl">
         <div
-          className="overflow-x-auto"
-          style={{ minHeight: "200px", display: "block" }}
+          className="overflow-x-auto hover-scrollbar"
+          style={{ minHeight: "300px", display: "block" }}
         >
           <table
             className="w-full border-collapse"
@@ -256,7 +258,7 @@ const DataTableComponent = <T extends Record<string, any>>({
                     key={column.key}
                     className={cn(
                       "py-2.5 px-4 text-[11px] font-medium text-slate-600 uppercase tracking-widest transition-colors",
-                      column.align === "right"
+                      (column.align === "right" || column.isNumeric || column.isCurrency)
                         ? "text-right"
                         : column.align === "center"
                           ? "text-center"
@@ -306,13 +308,13 @@ const DataTableComponent = <T extends Record<string, any>>({
                     <tr
                       key={rowKey}
                       className={cn(
-                        "border-b border-slate-200/30 transition-colors",
-                        "hover:bg-blue-500/5",
-                        isSelected && "bg-blue-500/10",
+                        "group border-b border-slate-200/20 transition-all duration-200",
+                        "hover:bg-blue-600/[0.03]",
+                        isSelected && "bg-blue-600/[0.06]",
                       )}
                     >
                       {selectable && (
-                        <td className="px-4 py-4">
+                        <td className="px-4 py-2">
                           <Checkbox
                             checked={isSelected}
                             onChange={(e) =>
@@ -326,17 +328,23 @@ const DataTableComponent = <T extends Record<string, any>>({
                         <td
                           key={column.key}
                           className={cn(
-                            "py-3 px-4 text-[13px] font-medium text-slate-950 tabular-nums align-top",
-                            column.align === "right"
+                            "py-2 px-4 text-[13px] font-medium text-slate-950 tabular-nums align-middle border-r border-transparent group-hover:border-slate-100/50",
+                            (column.align === "right" || column.isNumeric || column.isCurrency)
                               ? "text-right"
                               : column.align === "center"
                                 ? "text-center"
                                 : "text-left",
                           )}
                         >
-                          {column.render
-                            ? column.render(row[column.key], row)
-                            : row[column.key]}
+                          {column.render ? (
+                            column.render(row[column.key], row)
+                          ) : column.isNumeric || column.isCurrency ? (
+                            <Accounting isCurrency={column.isCurrency}>
+                              {row[column.key]}
+                            </Accounting>
+                          ) : (
+                            row[column.key]
+                          )}
                         </td>
                       ))}
                     </tr>

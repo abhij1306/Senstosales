@@ -15,14 +15,8 @@ from app.routers import (
     po,
     dc,
     invoice,
-    settings as settings_router,
-    po_notes,
     reports,
-    srv,
-    common,
-    search,
-    buyers,
-    reconciliation
+    srv
 )
 
 # Setup structured logging
@@ -51,12 +45,6 @@ app.include_router(dc.router, prefix="/api/dc", tags=["Delivery Challans"])
 app.include_router(invoice.router, prefix="/api/invoice", tags=["Invoices"])
 app.include_router(srv.router, prefix="/api/srv", tags=["SRVs"])
 app.include_router(reports.router, prefix="/api/reports", tags=["Reports"])
-app.include_router(settings_router.router, prefix="/api/settings", tags=["Settings"])
-app.include_router(po_notes.router, prefix="/api/po-notes", tags=["PO Notes"])
-app.include_router(common.router, prefix="/api/common", tags=["Common"])
-app.include_router(search.router, prefix="/api/search", tags=["Search"])
-app.include_router(buyers.router)
-app.include_router(reconciliation.router, prefix="/api/reconciliation", tags=["Reconciliation"])
 
 
 @app.get("/")

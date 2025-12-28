@@ -17,12 +17,15 @@ import { api, DCListItem, DCStats } from "@/lib/api";
 import { formatDate, formatIndianCurrency } from "@/lib/utils";
 import { useDebouncedValue } from "@/lib/hooks/useDebounce";
 import { StatusBadge } from "@/components/design-system/organisms/StatusBadge";
+import { SearchBar } from "@/components/design-system/molecules/SearchBar";
 import { ListPageTemplate } from "@/components/design-system/templates/ListPageTemplate";
 import { Input } from "@/components/design-system/atoms/Input";
-import { Accounting } from "@/components/design-system/atoms/Typography";
+import { Accounting, Body } from "@/components/design-system/atoms/Typography";
 import { Button } from "@/components/design-system/atoms/Button";
-import type { Column } from "@/components/design-system/organisms/DataTable";
-import type { SummaryCardProps } from "@/components/design-system/organisms/SummaryCards";
+import { type Column } from "@/components/design-system/organisms/DataTable";
+import { type SummaryCardProps } from "@/components/design-system/organisms/SummaryCards";
+import { useCallback } from "react";
+import { Flex, Stack, Box } from "@/components/design-system/atoms/Layout";
 
 // --- OPTIMIZATION: Static Columns Definitions ---
 const columns: Column<DCListItem>[] = [
@@ -33,9 +36,9 @@ const columns: Column<DCListItem>[] = [
     width: "15%",
     render: (_value, dc) => (
       <Link href={`/dc/${dc.dc_number}`} className="block">
-        <div className="text-blue-600 font-semibold hover:underline">
+        <Body className="text-blue-600 font-semibold hover:underline">
           {dc.dc_number}
-        </div>
+        </Body>
       </Link>
     ),
   },
@@ -45,9 +48,9 @@ const columns: Column<DCListItem>[] = [
     sortable: true,
     width: "15%",
     render: (v) => (
-      <span className="text-slate-500 font-medium">
+      <Body className="text-slate-500 font-medium">
         {formatDate(String(v))}
-      </span>
+      </Body>
     ),
   },
   {
@@ -56,12 +59,12 @@ const columns: Column<DCListItem>[] = [
     sortable: true,
     width: "35%",
     render: (v) => (
-      <div className="flex items-center gap-2">
-        <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 font-bold shrink-0 border border-blue-100 uppercase text-[10px]">
+      <Flex align="center" gap={2}>
+        <Box className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 font-bold shrink-0 border border-blue-100 uppercase text-[10px]">
           {String(v).substring(0, 2)}
-        </div>
-        <span className="truncate text-sm text-slate-700">{String(v)}</span>
-      </div>
+        </Box>
+        <Body className="truncate text-slate-700">{String(v)}</Body>
+      </Flex>
     ),
   },
   {
@@ -70,9 +73,9 @@ const columns: Column<DCListItem>[] = [
     sortable: true,
     width: "18%",
     render: (v) => (
-      <span className="text-slate-500 font-medium text-sm">
+      <Body className="text-slate-500 font-medium">
         {String(v) || "N/A"}
-      </span>
+      </Body>
     ),
   },
   {
@@ -163,59 +166,43 @@ export default function DCListPage() {
         title: "Total Challans",
         value: stats?.total_challans || dcs.length,
         icon: <Activity size={24} />,
-        variant: "primary",
+        variant: "default",
       },
       {
         title: "Delivered",
         value: stats?.completed_delivery || 0,
         icon: <CheckCircle size={24} />,
-        variant: "success",
+        variant: "default",
       },
       {
         title: "Total Value",
         value: formatIndianCurrency(stats?.total_value || 0),
         icon: <Download size={24} />,
-        variant: "success",
+        variant: "default",
       },
       {
         title: "In Transit",
         value: stats?.pending_delivery || 0,
         icon: <Truck size={24} />,
-        variant: "warning",
+        variant: "default",
       },
     ],
     [dcs.length, stats],
   );
 
   // Master Reference: Toolbar Construction (Atomic)
+  const handleSearch = useCallback((val: string) => {
+    setSearchQuery(val);
+  }, []);
+
   const toolbar = (
-    <div className="flex items-center gap-3">
-      <div className="relative">
-        <Input
-          id="dc-search"
-          name="dc-search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search DCs..."
-          className="w-64 pl-9 bg-white/50 border-slate-200 focus:bg-white transition-all"
-        />
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
-        </div>
-      </div>
+    <Flex align="center" gap={3}>
+      <SearchBar
+        value={searchQuery}
+        onChange={handleSearch}
+        placeholder="Search DCs..."
+        className="w-64"
+      />
 
       <Button
         variant="default"
@@ -223,10 +210,12 @@ export default function DCListPage() {
         onClick={() => router.push("/dc/create")}
         className="bg-slate-900 text-white hover:bg-slate-800 shadow-md shadow-slate-900/10"
       >
-        <Plus size={16} className="mr-2" />
-        New DC
+        <Flex align="center">
+          <Plus size={16} className="mr-2" />
+          <Body className="text-inherit">New DC</Body>
+        </Flex>
       </Button>
-    </div>
+    </Flex>
   );
 
   return (

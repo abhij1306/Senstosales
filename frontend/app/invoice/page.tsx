@@ -19,12 +19,16 @@ import { api, InvoiceListItem, InvoiceStats } from "@/lib/api";
 import { formatDate, formatIndianCurrency } from "@/lib/utils";
 import { useDebouncedValue } from "@/lib/hooks/useDebounce";
 import { StatusBadge } from "@/components/design-system/organisms/StatusBadge";
+import { SearchBar } from "@/components/design-system/molecules/SearchBar";
 import { ListPageTemplate } from "@/components/design-system/templates/ListPageTemplate";
 import { Input } from "@/components/design-system/atoms/Input";
-import { Accounting } from "@/components/design-system/atoms/Typography";
+import { Accounting, Body, SmallText } from "@/components/design-system/atoms/Typography";
 import { Button } from "@/components/design-system/atoms/Button";
-import type { Column } from "@/components/design-system/organisms/DataTable";
-import type { SummaryCardProps } from "@/components/design-system/organisms/SummaryCards";
+import { Badge } from "@/components/design-system/atoms/Badge";
+import { type Column } from "@/components/design-system/organisms/DataTable";
+import { type SummaryCardProps } from "@/components/design-system/organisms/SummaryCards";
+import { useCallback } from "react";
+import { Flex, Stack, Box } from "@/components/design-system/atoms/Layout";
 
 // --- OPTIMIZATION: Static Columns Definitions ---
 const columns: Column<InvoiceListItem>[] = [
@@ -35,9 +39,9 @@ const columns: Column<InvoiceListItem>[] = [
     width: "12%",
     render: (_value, inv) => (
       <Link href={`/invoice/${inv.invoice_number}`} className="block">
-        <div className="text-blue-600 font-semibold hover:underline">
+        <Body className="text-blue-600 font-semibold hover:underline">
           {inv.invoice_number}
-        </div>
+        </Body>
       </Link>
     ),
   },
@@ -47,9 +51,9 @@ const columns: Column<InvoiceListItem>[] = [
     sortable: true,
     width: "10%",
     render: (v) => (
-      <span className="text-slate-500 font-medium whitespace-nowrap text-sm">
+      <Body className="text-slate-500 font-medium whitespace-nowrap">
         {formatDate(String(v))}
-      </span>
+      </Body>
     ),
   },
   {
@@ -57,7 +61,7 @@ const columns: Column<InvoiceListItem>[] = [
     label: "Linked DCs",
     width: "14%",
     render: (v) => (
-      <div className="flex flex-wrap gap-1">
+      <Flex wrap gap={1}>
         {String(v) && String(v) !== "null" ? (
           String(v).split(",").map((dc: string, i: number) => (
             <Link
@@ -66,15 +70,15 @@ const columns: Column<InvoiceListItem>[] = [
               className="no-underline"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors">
-                {dc.trim()}
-              </div>
+              <Box className="px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors">
+                <SmallText className="text-inherit font-bold leading-none">{dc.trim()}</SmallText>
+              </Box>
             </Link>
           ))
         ) : (
-          <span className="text-slate-400 italic text-xs">Direct</span>
+          <SmallText className="text-slate-400 italic">Direct</SmallText>
         )}
-      </div>
+      </Flex>
     ),
   },
   {
@@ -82,7 +86,7 @@ const columns: Column<InvoiceListItem>[] = [
     label: "Linked POs",
     width: "14%",
     render: (v) => (
-      <div className="flex flex-wrap gap-1">
+      <Flex wrap gap={1}>
         {String(v) && String(v) !== "null" ? (
           String(v).split(",").map((po: string, i: number) => (
             <Link
@@ -91,15 +95,15 @@ const columns: Column<InvoiceListItem>[] = [
               className="no-underline"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="px-1.5 py-0.5 rounded-full bg-slate-50 text-slate-600 text-[10px] font-bold border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
-                {po.trim()}
-              </div>
+              <Box className="px-1.5 py-0.5 rounded-full bg-slate-50 text-slate-600 border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
+                <SmallText className="text-inherit font-bold leading-none">{po.trim()}</SmallText>
+              </Box>
             </Link>
           ))
         ) : (
-          <span className="text-slate-400 italic text-xs">Direct</span>
+          <SmallText className="text-slate-400 italic">Direct</SmallText>
         )}
-      </div>
+      </Flex>
     ),
   },
   {
@@ -107,9 +111,9 @@ const columns: Column<InvoiceListItem>[] = [
     label: "CUSTOMER GSTIN",
     width: "15%",
     render: (v) => (
-      <span className="font-mono text-sm text-slate-600">
+      <Body className="font-mono text-slate-600">
         {String(v) || "N/A"}
-      </span>
+      </Body>
     ),
   },
   {
@@ -118,22 +122,14 @@ const columns: Column<InvoiceListItem>[] = [
     sortable: true,
     align: "right",
     width: "15%",
-    render: (v) => (
-      <Accounting isCurrency className="text-slate-950 font-medium">
-        {Number(v)}
-      </Accounting>
-    ),
+    isCurrency: true,
   },
   {
     key: "igst",
     label: "IGST",
     align: "right",
     width: "10%",
-    render: (v) => (
-      <span className="text-slate-500 tabular-nums text-sm">
-        {formatIndianCurrency(Number(v) || 0)}
-      </span>
-    ),
+    isCurrency: true,
   },
   {
     key: "status",
@@ -235,19 +231,19 @@ export default function InvoicePage() {
         title: "Paid Invoices",
         value: formatIndianCurrency(stats?.total_invoiced || 0),
         icon: <Clock size={24} />,
-        variant: "success",
+        variant: "default",
       },
       {
         title: "Pending Payments",
         value: formatIndianCurrency(stats?.pending_payments || 0),
         icon: <Clock size={24} />,
-        variant: "warning",
+        variant: "default",
       },
       {
         title: "Total Invoiced",
         value: formatIndianCurrency(stats?.total_invoiced || 0),
         icon: <Activity size={24} />,
-        variant: "success",
+        variant: "default",
       },
     ],
     [invoices.length, stats],
@@ -255,34 +251,18 @@ export default function InvoicePage() {
 
   // Toolbar
   // Master Reference: Toolbar Construction (Atomic)
+  const handleSearch = useCallback((val: string) => {
+    setSearchQuery(val);
+  }, []);
+
   const toolbar = (
-    <div className="flex items-center gap-3">
-      <div className="relative">
-        <Input
-          id="invoice-search"
-          name="invoice-search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search Invoices..."
-          className="w-64 pl-9 bg-white/50 border-slate-200 focus:bg-white transition-all"
-        />
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.3-4.3" />
-          </svg>
-        </div>
-      </div>
+    <Flex align="center" gap={3}>
+      <SearchBar
+        value={searchQuery}
+        onChange={handleSearch}
+        placeholder="Search Invoices..."
+        className="w-64"
+      />
 
       <Button
         variant="default"
@@ -290,10 +270,12 @@ export default function InvoicePage() {
         onClick={() => router.push("/invoice/create")}
         className="bg-slate-900 text-white hover:bg-slate-800 shadow-md shadow-slate-900/10"
       >
-        <Plus size={16} className="mr-2" />
-        New Invoice
+        <Flex align="center">
+          <Plus size={16} className="mr-2" />
+          <Body className="text-inherit">New Invoice</Body>
+        </Flex>
       </Button>
-    </div>
+    </Flex>
   );
 
   return (

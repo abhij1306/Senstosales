@@ -218,17 +218,23 @@ def get_invoice_detail(invoice_number: str, db: sqlite3.Connection = Depends(get
                 )
 
         # Fetch invoice items
+        # CRITICAL FIX: Join on BOTH po_item_no AND po_number to prevent row multiplication
+        # We CAST po_numbers to INTEGER to match po_item.po_number type
         items_rows = db.execute(
             """
             SELECT 
                 inv_item.*,
+                inv_item.total_amount as amount,
                 po_item.material_code,
                 po_item.ord_qty as ordered_quantity,
                 po_item.delivered_qty as dispatched_quantity
             FROM gst_invoice_items inv_item
             LEFT JOIN purchase_order_items po_item 
                 ON inv_item.po_sl_no = po_item.po_item_no
+            JOIN gst_invoices inv 
+                ON inv_item.invoice_number = inv.invoice_number
             WHERE inv_item.invoice_number = ?
+            AND (inv.po_numbers IS NULL OR CAST(inv.po_numbers AS INTEGER) = po_item.po_number)
             ORDER BY inv_item.id
         """,
             (invoice_number,),

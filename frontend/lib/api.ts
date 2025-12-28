@@ -55,6 +55,7 @@ export interface POListItem {
 
 export interface POStats {
   total_pos: number;
+  active_count: number; // Added for UI consumption
   total_value: number;
   pending_pos: number;
   completed_pos: number;

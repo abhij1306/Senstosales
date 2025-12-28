@@ -5,7 +5,7 @@
 "use client";
 
 import { useState } from "react";
-import PaginationControls from "@/components/ui/PaginationControls";
+import PaginationControls from "@/components/design-system/molecules/PaginationControls";
 import DownloadButton from "@/components/DownloadButton";
 import { API_BASE_URL } from "@/lib/api";
 

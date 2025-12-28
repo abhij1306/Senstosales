@@ -1,52 +1,55 @@
 "use client";
 
-import * as React from "react";
+import React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Badge Atom - Atomic Design System v1.0
- * Uses strict color palette with proper contrast
+ * Badge Atom - Atomic Design System v5.0
+ * High-density, professional indicators.
+ * Font: 10px, Semibold, Uppercase.
  */
 
 export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement> {
   variant?:
-    | "default"
-    | "secondary"
-    | "success"
-    | "warning"
-    | "error"
-    | "outline";
+  | "default"
+  | "secondary"
+  | "success"
+  | "warning"
+  | "error"
+  | "outline";
 }
 
-function Badge({ className, variant = "default", ...props }: BadgeProps) {
-  const variants = {
-    // Primary blue
-    default: "bg-[#1A3D7C]/10 text-[#1A3D7C] border-[#1A3D7C]/20",
-    // Teal secondary
-    secondary: "bg-[#2BB7A0]/10 text-[#2BB7A0] border-[#2BB7A0]/20",
-    // Success green
-    success: "bg-[#16A34A]/10 text-[#16A34A] border-[#16A34A]/20",
-    // Warning amber
-    warning: "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20",
-    // Error red
-    error: "bg-[#DC2626]/10 text-[#DC2626] border-[#DC2626]/20",
-    // Outline
-    outline: "bg-transparent text-[#111827] border-[#D1D5DB]",
-  };
+const BadgeInternal = React.forwardRef<HTMLDivElement, BadgeProps>(
+  ({ className, variant = "default", ...props }, ref) => {
+    const variants = {
+      // Primary blue - Enterprise Standard
+      default: "bg-blue-600/10 text-blue-600 border-blue-600/20",
+      // Emerald - Growth / Success
+      secondary: "bg-emerald-600/10 text-emerald-600 border-emerald-600/20",
+      success: "bg-emerald-600/10 text-emerald-600 border-emerald-600/20",
+      // Amber - Attention
+      warning: "bg-amber-500/10 text-amber-500 border-amber-500/20",
+      // Red - Critical
+      error: "bg-red-500/10 text-red-500 border-red-500/20",
+      // Outline - Subtle
+      outline: "bg-transparent text-slate-600 border-slate-200",
+    };
 
-  return (
-    <div
-      className={cn(
-        "inline-flex items-center rounded-full border px-2 py-0.5",
-        "text-[12px] font-medium uppercase tracking-tight",
-        "transition-all duration-200",
-        "mb-1 tabular-nums transition-all truncate",
-        variants[variant],
-        className,
-      )}
-      {...props}
-    />
-  );
-}
+    return (
+      <div
+        ref={ref}
+        className={cn(
+          "inline-flex items-center rounded-full border px-2 py-0.5",
+          "text-[10px] font-semibold uppercase tracking-wider",
+          "transition-all duration-200 tabular-nums truncate",
+          variants[variant],
+          className,
+        )}
+        {...props}
+      />
+    );
+  },
+);
+BadgeInternal.displayName = "Badge";
 
-export { Badge };
+export const Badge = React.memo(BadgeInternal);

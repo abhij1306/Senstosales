@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api, SearchResult } from "@/lib/api";
-import StatusBadge from "./ui/StatusBadge";
+import { StatusBadge } from "./StatusBadge";
 
 export function CommandBar() {
   const [open, setOpen] = useState(false);
@@ -164,80 +164,80 @@ export function CommandBar() {
               </div>
               {results.length > 0
                 ? results.map((result, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleResultClick(result)}
-                      onMouseEnter={() => setSelectedIndex(idx)}
-                      className={cn(
-                        "w-full flex items-center justify-between p-3 rounded-2xl transition-all duration-200 text-left mb-1 group",
-                        selectedIndex === idx
-                          ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
-                          : "hover:bg-slate-50 text-slate-700",
-                      )}
-                    >
-                      <div className="flex items-center gap-4">
+                  <button
+                    key={idx}
+                    onClick={() => handleResultClick(result)}
+                    onMouseEnter={() => setSelectedIndex(idx)}
+                    className={cn(
+                      "w-full flex items-center justify-between p-3 rounded-2xl transition-all duration-200 text-left mb-1 group",
+                      selectedIndex === idx
+                        ? "bg-blue-600 text-white shadow-lg shadow-blue-200"
+                        : "hover:bg-slate-50 text-slate-700",
+                    )}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={cn(
+                          "p-2.5 rounded-xl flex items-center justify-center transition-colors",
+                          selectedIndex === idx
+                            ? "bg-white/20 text-white"
+                            : "bg-slate-100 text-slate-500 group-hover:bg-white",
+                        )}
+                      >
+                        {result.type === "PO" ? (
+                          <ShoppingCart size={18} />
+                        ) : result.type === "DC" ? (
+                          <Truck size={18} />
+                        ) : result.type === "Invoice" ? (
+                          <Receipt size={18} />
+                        ) : result.type === "SRV" ? (
+                          <FileText size={18} />
+                        ) : (
+                          <Box size={18} />
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-bold tracking-tight">
+                          {result.number}
+                        </div>
                         <div
                           className={cn(
-                            "p-2.5 rounded-xl flex items-center justify-center transition-colors",
+                            "text-[11px] font-medium opacity-70",
                             selectedIndex === idx
-                              ? "bg-white/20 text-white"
-                              : "bg-slate-100 text-slate-500 group-hover:bg-white",
+                              ? "text-blue-50"
+                              : "text-slate-500",
                           )}
                         >
-                          {result.type === "PO" ? (
-                            <ShoppingCart size={18} />
-                          ) : result.type === "DC" ? (
-                            <Truck size={18} />
-                          ) : result.type === "Invoice" ? (
-                            <Receipt size={18} />
-                          ) : result.type === "SRV" ? (
-                            <FileText size={18} />
-                          ) : (
-                            <Box size={18} />
-                          )}
-                        </div>
-                        <div>
-                          <div className="font-bold tracking-tight">
-                            {result.number}
-                          </div>
-                          <div
-                            className={cn(
-                              "text-[11px] font-medium opacity-70",
-                              selectedIndex === idx
-                                ? "text-blue-50"
-                                : "text-slate-500",
-                            )}
-                          >
-                            {result.type_label} •{" "}
-                            {result.party || "No Reference Data"}
-                          </div>
+                          {result.type_label} •{" "}
+                          {result.party || "No Reference Data"}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 pr-2">
-                        {result.amount && (
-                          <div className="font-mono text-sm font-bold tracking-tighter">
-                            ₹{result.amount.toLocaleString("en-IN")}
-                          </div>
-                        )}
-                        <StatusBadge
-                          status={result.status || "Active"}
-                          variant={
-                            selectedIndex === idx ? "neutral" : "success"
-                          }
-                          className={cn(
-                            "px-2 py-0.5 text-[9px]",
-                            selectedIndex === idx &&
-                              "bg-white/20 text-white border-transparent",
-                          )}
-                        />
-                      </div>
-                    </button>
-                  ))
-                : !loading && (
-                    <div className="py-12 text-center text-slate-400">
-                      No results for "{search}"
                     </div>
-                  )}
+                    <div className="flex items-center gap-3 pr-2">
+                      {result.amount && (
+                        <div className="font-mono text-sm font-bold tracking-tighter">
+                          ₹{result.amount.toLocaleString("en-IN")}
+                        </div>
+                      )}
+                      <StatusBadge
+                        status={result.status || "Active"}
+                        variant={
+                          selectedIndex === idx ? "neutral" : "success"
+                        }
+                        className={cn(
+                          "px-2 py-0.5 text-[9px]",
+                          selectedIndex === idx &&
+                          "bg-white/20 text-white border-transparent",
+                        )}
+                      />
+                    </div>
+                  </button>
+                ))
+                : !loading && (
+                  <div className="py-12 text-center text-slate-400">
+                    No results for "{search}"
+                  </div>
+                )}
             </div>
           ) : (
             <div className="p-3">

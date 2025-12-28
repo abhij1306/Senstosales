@@ -20,7 +20,7 @@ const sizeMap = {
   lg: 24,
 };
 
-export const Icon: React.FC<IconProps> = ({
+const IconInternal: React.FC<IconProps> = ({
   name,
   size = "md",
   className,
@@ -44,3 +44,5 @@ export const Icon: React.FC<IconProps> = ({
     />
   );
 };
+
+export const Icon = React.memo(IconInternal);

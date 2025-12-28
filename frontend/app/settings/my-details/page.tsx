@@ -112,16 +112,16 @@ export default function MyDetailsPage() {
   return (
     <div className="space-y-10">
       {/* 1. Supplier Identity Section */}
-      <SpotlightCard className="overflow-hidden border-none shadow-premium bg-white/40 backdrop-blur-xl">
+      <Card className="overflow-hidden border-none shadow-premium bg-white/40 backdrop-blur-xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-4">
         <div className="px-8 py-6 border-b border-white/20 bg-gradient-to-r from-blue-600/5 to-transparent flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="p-2.5 bg-blue-600/10 rounded-xl text-blue-600">
               <Building size={22} />
             </div>
             <div>
-              <H3 className="text-[18px]">Supplier Profile</H3>
-              <SmallText className="text-slate-500">
-                Your registered business identity for invoices
+              <H3>Supplier Information</H3>
+              <SmallText className="text-slate-500 font-medium font-sans">
+                Official business identity for documentation
               </SmallText>
             </div>
           </div>
@@ -231,9 +231,9 @@ export default function MyDetailsPage() {
             </div>
           </div>
 
-          {/* Visual Sidebar Preview */}
-          <div className="lg:col-span-4 bg-white/20 backdrop-blur-sm rounded-2xl border border-white/30 p-6 space-y-6">
-            <Label className="text-blue-600">Document Header Preview</Label>
+          {/* Document Layout Summary */}
+          <div className="lg:col-span-4 bg-slate-50/50 backdrop-blur-sm rounded-2xl border border-slate-200/50 p-6 space-y-6">
+            <Label className="text-blue-600">Export Preview</Label>
             <Card className="p-5 border-dashed border-slate-300 bg-white/80 shadow-inner space-y-2 relative overflow-hidden group/doc">
               <div className="absolute top-0 right-0 p-2 opacity-10 group-hover/doc:opacity-30 transition-opacity">
                 <FileText size={40} />
@@ -253,17 +253,15 @@ export default function MyDetailsPage() {
               <DetailField
                 label="State Presence"
                 value={settings.supplier_state || "---"}
-                icon={<MapPin size={14} />}
               />
               <DetailField
                 label="Direct Link"
                 value={settings.supplier_contact || "---"}
-                icon={<Mail size={14} />}
               />
             </div>
           </div>
         </div>
-      </SpotlightCard>
+      </Card>
 
       {/* 2. Default Buyer Section */}
       <Card className="overflow-hidden border-none shadow-premium bg-white/40 backdrop-blur-xl">

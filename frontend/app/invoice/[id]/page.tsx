@@ -22,7 +22,6 @@ import {
   Label,
   Accounting,
 } from "@/components/design-system/atoms/Typography";
-// import { DocumentJourney } from "@/components/design-system/molecules/DocumentJourney";
 import { DocumentTemplate } from "@/components/design-system/templates/DocumentTemplate";
 import { Button } from "@/components/design-system/atoms/Button";
 import { Badge } from "@/components/design-system/atoms/Badge";
@@ -33,8 +32,7 @@ import {
   TabsTrigger,
   TabsContent,
 } from "@/components/design-system/molecules/Tabs";
-import type { Column } from "@/components/design-system/organisms/DataTable";
-// import { DataTable } from "@/components/design-system/organisms/DataTable";
+import { type Column } from "@/components/design-system/organisms/DataTable";
 import { motion, AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 
@@ -160,13 +158,13 @@ function InvoiceDetailContent() {
       width: "32%",
       render: (_v, row) => (
         <div className="space-y-0.5">
-          <div className="font-medium text-slate-950">
+          <Body className="text-slate-950">
             {row.material_description || row.description}
-          </div>
+          </Body>
           {row.drg_no && (
-            <div className="text-[10px] text-[#1A3D7C] font-medium uppercase tracking-tight">
+            <SmallText className="text-[#1A3D7C] font-black uppercase tracking-widest block">
               DRG: {row.drg_no}
-            </div>
+            </SmallText>
           )}
         </div>
       ),
@@ -201,9 +199,9 @@ function InvoiceDetailContent() {
       label: "Unit",
       width: "6%",
       render: (v) => (
-        <span className="text-[11px] font-medium text-slate-600 uppercase">
+        <SmallText className="text-slate-600 uppercase font-black tracking-widest">
           {v}
-        </span>
+        </SmallText>
       ),
     },
     {
@@ -245,25 +243,10 @@ function InvoiceDetailContent() {
 
         {/* Invoice Info Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-4 bg-slate-100/30 p-1 rounded-xl">
-            <TabsTrigger
-              value="buyer"
-              className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930"
-            >
-              Buyer
-            </TabsTrigger>
-            <TabsTrigger
-              value="references"
-              className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930"
-            >
-              Order Refs
-            </TabsTrigger>
-            <TabsTrigger
-              value="logistics"
-              className="text-[11px] py-1.5 font-medium text-slate-600 data-[state=active]:text-slate-930"
-            >
-              Logistics
-            </TabsTrigger>
+          <TabsList className="mb-4">
+            <TabsTrigger value="buyer">Buyer</TabsTrigger>
+            <TabsTrigger value="references">Order Refs</TabsTrigger>
+            <TabsTrigger value="logistics">Logistics</TabsTrigger>
           </TabsList>
 
           <AnimatePresence mode="wait">
@@ -278,24 +261,18 @@ function InvoiceDetailContent() {
                 <TabsContent value="buyer" className="mt-0">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        Buyer Name
-                      </Label>
+                      <Label>Buyer Name</Label>
                       <Body className="text-slate-930 font-medium">
                         {header.buyer_name || "-"}
                       </Body>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        Buyer GSTIN
-                      </Label>
+                      <Label>Buyer GSTIN</Label>
                       <Accounting>{header.buyer_gstin || "-"}</Accounting>
                     </div>
                     <div className="space-y-1.5 col-span-2">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        Buyer Address
-                      </Label>
-                      <Body className="text-slate-930 font-medium text-[13px]">
+                      <Label>Buyer Address</Label>
+                      <Body className="text-slate-930 font-medium">
                         {header.buyer_address || "-"}
                       </Body>
                     </div>
@@ -305,15 +282,11 @@ function InvoiceDetailContent() {
                 <TabsContent value="references" className="mt-0">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        Buyer's Order No
-                      </Label>
+                      <Label>Buyer's Order No</Label>
                       <Accounting>{header.buyers_order_no || "-"}</Accounting>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        Order Date
-                      </Label>
+                      <Label>Order Date</Label>
                       <Body className="text-slate-930 font-medium">
                         {header.buyers_order_date
                           ? formatDate(header.buyers_order_date)
@@ -321,9 +294,7 @@ function InvoiceDetailContent() {
                       </Body>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        Challan Number
-                      </Label>
+                      <Label>Challan Number</Label>
                       <Accounting
                         className="text-[#1A3D7C] cursor-pointer hover:underline"
                         onClick={() => router.push(`/dc/${header.dc_number}`)}
@@ -332,17 +303,13 @@ function InvoiceDetailContent() {
                       </Accounting>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        GEMC Number
-                      </Label>
+                      <Label>GEMC Number</Label>
                       <Body className="text-slate-930 font-medium">
                         {header.gemc_number || "-"}
                       </Body>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        GEMC Date
-                      </Label>
+                      <Label>GEMC Date</Label>
                       <Body className="text-slate-930 font-medium">
                         {header.gemc_date ? formatDate(header.gemc_date) : "-"}
                       </Body>
@@ -351,17 +318,13 @@ function InvoiceDetailContent() {
                       {/* Spacer or additional field */}
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        SRV Number
-                      </Label>
+                      <Label>SRV Number</Label>
                       <Body className="text-slate-930 font-medium">
                         {header.srv_no || "-"}
                       </Body>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        SRV Date
-                      </Label>
+                      <Label>SRV Date</Label>
                       <Body className="text-slate-930 font-medium">
                         {header.srv_date ? formatDate(header.srv_date) : "-"}
                       </Body>
@@ -372,42 +335,32 @@ function InvoiceDetailContent() {
                 <TabsContent value="logistics" className="mt-0">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        Dispatch Through
-                      </Label>
+                      <Label>Dispatch Through</Label>
                       <Body className="text-slate-930 font-medium">
                         {header.dispatch_through || "-"}
                       </Body>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        Destination
-                      </Label>
+                      <Label>Destination</Label>
                       <Body className="text-slate-930 font-medium">
                         {header.destination || "-"}
                       </Body>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        Terms of Delivery
-                      </Label>
-                      <Body className="text-slate-930 font-medium text-[13px]">
+                      <Label>Terms of Delivery</Label>
+                      <Body className="text-slate-930 font-medium">
                         {header.terms_of_delivery || "-"}
                       </Body>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        Despatch Document No
-                      </Label>
+                      <Label>Despatch Document No</Label>
                       <Body className="text-slate-930 font-medium">
                         {header.despatch_doc_no || "-"}
                       </Body>
                     </div>
                     <div className="space-y-1.5 col-span-2">
-                      <Label className="text-[10px] uppercase tracking-widest text-slate-600">
-                        Payment Terms
-                      </Label>
-                      <Body className="text-slate-930 font-medium text-[13px]">
+                      <Label>Payment Terms</Label>
+                      <Body className="text-slate-930 font-medium">
                         {header.payment_terms ||
                           header.mode_of_payment ||
                           "45 Days"}

@@ -23,7 +23,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { api, SearchResult } from "@/lib/api";
 import { cn } from "@/lib/utils";
-import StatusBadge from "@/components/ui/StatusBadge";
+import { StatusBadge } from "./StatusBadge";
 
 // --- Types ---
 type NavItem = {

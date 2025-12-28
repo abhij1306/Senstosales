@@ -5,7 +5,7 @@
 "use client";
 
 import { useState } from "react";
-import PaginationControls from "@/components/ui/PaginationControls";
+import PaginationControls from "@/components/design-system/molecules/PaginationControls";
 import DownloadButton from "@/components/DownloadButton";
 import { API_BASE_URL } from "@/lib/api";
 
@@ -124,11 +124,10 @@ export default function ChallanDateSummary({ data }: ChallanDateSummaryProps) {
                 </td>
                 <td className="py-3 px-4">
                   <span
-                    className={`inline-block px-2 py-1 rounded text-xs font-medium ${
-                      row.invoice_status === "Invoiced"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : "bg-amber-100 text-amber-700"
-                    }`}
+                    className={`inline-block px-2 py-1 rounded text-xs font-medium ${row.invoice_status === "Invoiced"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : "bg-amber-100 text-amber-700"
+                      }`}
                   >
                     {row.invoice_status}
                   </span>
