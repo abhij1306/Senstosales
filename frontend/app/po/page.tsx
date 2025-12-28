@@ -3,29 +3,29 @@
 import { useEffect, useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { api, POListItem, POStats } from "@/lib/api";
-import { Dialog } from "@/components/design-system/molecules/Dialog";
-import { FileText, Activity, Clock, Plus, Upload, X } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/design-system/molecules/Dialog";
+import { FileText, Activity, Clock, Plus, Upload, X, ShoppingCart } from "lucide-react";
 import { formatDate, formatIndianCurrency, cn } from "@/lib/utils";
 import { useDebouncedValue } from "@/lib/hooks/useDebounce";
-import { H1 } from "@/components/design-system/atoms/Typography";
 import {
   Accounting,
   Body,
-  SmallText,
+  H1,
+  H3,
   Label,
+  SmallText,
 } from "@/components/design-system/atoms/Typography";
-import { TableRowCell as TableCells } from "@/components/design-system/molecules/TableCells";
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from "@/components/design-system/molecules/Tabs";
 import { Button } from "@/components/design-system/atoms/Button";
 import { Badge } from "@/components/design-system/atoms/Badge";
 import { Input } from "@/components/design-system/atoms/Input";
+import { StatusBadge } from "@/components/design-system/organisms/StatusBadge";
 import { ListPageTemplate } from "@/components/design-system/templates/ListPageTemplate";
 import { Column } from "@/components/design-system/organisms/DataTable";
 import { SummaryCardProps } from "@/components/design-system/organisms/SummaryCards";
@@ -36,14 +36,11 @@ const columns: Column<POListItem>[] = [
     key: "po_number",
     label: "NUMBER",
     width: "10%",
-    render: (_v, row) => (
-      <Link
-        href={`/po/${row.po_number}`}
-        className="font-medium text-[#1A3D7C] hover:underline"
-      >
-        <motion.span layoutId={`po-title-${row.po_number}`}>
-          {row.po_number}
-        </motion.span>
+    render: (_value, po) => (
+      <Link href={`/po/${po.po_number}`} className="block">
+        <div className="text-blue-600 font-semibold hover:underline">
+          {po.po_number}
+        </div>
       </Link>
     ),
   },
@@ -51,8 +48,8 @@ const columns: Column<POListItem>[] = [
     key: "po_date",
     label: "DATE",
     width: "10%",
-    render: (_v, row) => (
-      <Body className="text-slate-600">{formatDate(row.po_date)}</Body>
+    render: (v) => (
+      <span className="text-slate-600 font-medium">{formatDate(String(v))}</span>
     ),
   },
   {
@@ -60,64 +57,69 @@ const columns: Column<POListItem>[] = [
     label: "VALUE",
     width: "13%",
     align: "right",
-    render: (_v, row) => <Accounting isCurrency>{row.po_value}</Accounting>,
+    render: (v) => <Accounting isCurrency>{Number(v)}</Accounting>,
   },
   {
     key: "total_items_count",
     label: "Items",
     width: "7%",
     align: "center",
-    render: (v) => <Accounting className="text-slate-500">{v}</Accounting>,
+    render: (v) => <Accounting className="text-slate-500">{Number(v)}</Accounting>,
   },
   {
     key: "total_ordered_quantity",
     label: "Ord",
     width: "9%",
     align: "right",
-    render: (v) => <Accounting>{v}</Accounting>,
+    render: (v) => <Accounting>{Number(v)}</Accounting>,
   },
   {
     key: "total_dispatched_quantity",
     label: "Dlv",
     width: "10%",
     align: "right",
-    render: (v) => <Accounting className="text-green-600">{v}</Accounting>,
+    render: (v) => <Accounting className="text-green-600">{Number(v)}</Accounting>,
   },
   {
     key: "total_pending_quantity",
     label: "Bal",
     width: "9%",
     align: "right",
-    render: (v) => <Accounting className="text-orange-600">{v}</Accounting>,
+    render: (v) => <Accounting className="text-orange-600">{Number(v)}</Accounting>,
   },
   {
     key: "total_received_quantity",
     label: "Rec",
     width: "10%",
     align: "right",
-    render: (v) => <Accounting className="text-blue-600">{v}</Accounting>,
+    render: (v) => <Accounting className="text-blue-600">{Number(v)}</Accounting>,
   },
   {
     key: "po_status",
     label: "Status",
     width: "12%",
-    render: (_v, row) => (
-      <Badge variant={row.po_status === "Active" ? "success" : "default"}>
-        {row.po_status}
-      </Badge>
+    render: (v) => (
+      <StatusBadge status={String(v)} />
     ),
   },
 ];
 
 export default function POListPage() {
   const router = useRouter();
-  const [pos, setPOs] = useState<POListItem[]>([]);
-  const [stats, setStats] = useState<POStats | null>(null);
-  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedSearch = useDebouncedValue(searchQuery, 300);
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
+  const [pos, setPOs] = useState<POListItem[]>([]);
+  const [stats, setStats] = useState<POStats>({
+    total_count: 0,
+    active_count: 0,
+    total_value: 0,
+    total_value_ytd: 0,
+    open_orders_count: 0,
+    pending_approval_count: 0,
+  });
+  const [loading, setLoading] = useState(true);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState({
@@ -126,37 +128,36 @@ export default function POListPage() {
   });
   const isCancelled = useRef(false);
 
+  // Fetch POs and stats on mount
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-        e.preventDefault();
-        document.getElementById("po-search")?.focus();
-      }
-      if (e.key === "/" && document.activeElement?.tagName !== "INPUT") {
-        e.preventDefault();
-        document.getElementById("po-search")?.focus();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
-  useEffect(() => {
-    const fetchData = async () => {
+    async function fetchPOs() {
+      setLoading(true);
       try {
-        const [posData, statsData] = await Promise.all([
-          api.listPOs(),
-          api.getPOStats(),
+        const [posResponse, statsResponse] = await Promise.all([
+          fetch("/api/po/"),
+          fetch("/api/po/stats"),
         ]);
-        setPOs(posData || []);
+
+        if (!posResponse.ok) {
+          throw new Error("Failed to fetch POs");
+        }
+
+        const posResult = await posResponse.json();
+        const statsResult = await statsResponse.json();
+
+        const posData = posResult.data || posResult;
+        const statsData = statsResult.data || statsResult;
+
+        setPOs(posData);
         setStats(statsData);
-      } catch (err) {
-        console.error("PO Load Error:", err);
+      } catch (error) {
+        console.error("Error fetching POs:", error);
       } finally {
         setLoading(false);
       }
-    };
-    fetchData();
+    }
+
+    fetchPOs();
   }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -182,7 +183,7 @@ export default function POListPage() {
         });
 
         // Brief delay to allow main thread to process UI updates
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
       if (!isCancelled.current) {
@@ -218,39 +219,25 @@ export default function POListPage() {
     (): SummaryCardProps[] => [
       {
         title: "Total Orders",
-        value: (
-          <Accounting className="text-xl text-white">{pos.length}</Accounting>
-        ),
+        value: pos.length,
         icon: <FileText size={24} />,
         variant: "primary",
       },
       {
         title: "Open Orders",
-        value: (
-          <Accounting className="text-xl text-white">
-            {stats?.open_orders_count || 0}
-          </Accounting>
-        ),
+        value: stats?.open_orders_count || 0,
         icon: <Activity size={24} />,
         variant: "success",
       },
       {
         title: "Pending Approval",
-        value: (
-          <Accounting className="text-xl text-white">
-            {stats?.pending_approval_count || 0}
-          </Accounting>
-        ),
+        value: stats?.pending_approval_count || 0,
         icon: <Clock size={24} />,
         variant: "warning",
       },
       {
         title: "Total Value",
-        value: (
-          <Accounting isCurrency short className="text-xl text-white">
-            {stats?.total_value_ytd || 0}
-          </Accounting>
-        ),
+        value: formatIndianCurrency(stats?.total_value_ytd || 0),
         icon: <Activity size={24} />,
         variant: "secondary",
       },
@@ -258,16 +245,36 @@ export default function POListPage() {
     [pos.length, stats],
   );
 
+  // Master Reference: Toolbar Construction (Atomic)
   const toolbar = (
     <div className="flex items-center gap-3">
-      <Input
-        id="po-search"
-        name="po-search"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
-        placeholder="Search POs..."
-        className="w-64"
-      />
+      <div className="relative">
+        <Input
+          id="po-search"
+          name="po-search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search POs..."
+          className="w-64 pl-9 bg-white/50 border-slate-200 focus:bg-white transition-all"
+        />
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+        </div>
+      </div>
+
       <div className="relative">
         <input
           type="file"
@@ -278,20 +285,27 @@ export default function POListPage() {
           id="po-upload"
         />
         <label htmlFor="po-upload">
-          <Button variant="secondary" size="sm" asChild>
-            <span className="cursor-pointer">
-              <Upload size={16} />
+          <Button
+            variant="secondary"
+            size="sm"
+            asChild
+            className="cursor-pointer bg-white text-slate-700 border border-slate-200 hover:bg-slate-50 shadow-sm"
+          >
+            <span>
+              <Upload size={16} className="mr-2 text-slate-500" />
               Upload HTML
             </span>
           </Button>
         </label>
       </div>
+
       <Button
         variant="default"
         size="sm"
         onClick={() => router.push("/po/create")}
+        className="bg-slate-900 text-white hover:bg-slate-800 shadow-md shadow-slate-900/10"
       >
-        <Plus size={16} />
+        <Plus size={16} className="mr-2" />
         New PO
       </Button>
     </div>
@@ -304,7 +318,7 @@ export default function POListPage() {
         subtitle="Track procurement contracts and delivery schedules"
         toolbar={toolbar}
         summaryCards={summaryCards}
-        columns={columns}
+        columns={columns as any}
         data={filteredPOs}
         keyField="po_number"
         page={page}
@@ -315,66 +329,174 @@ export default function POListPage() {
         emptyMessage="No purchase orders found"
       />
 
+      {/* Floating Action Button (FAB) */}
+      <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-50">
+        <AnimatePresence>
+          {selectedFiles.length > 0 && !uploading && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.5, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.5, y: 20 }}
+              onClick={handleUpload}
+              className="group flex items-center gap-3 px-6 py-4 bg-emerald-600 text-white rounded-2xl shadow-[0_20px_40px_rgba(16,185,129,0.3)] hover:bg-emerald-700 hover:shadow-[0_25px_50px_rgba(16,185,129,0.4)] transition-all active:scale-95"
+            >
+              <Upload size={20} className="group-hover:bounce" />
+              <span className="font-black uppercase tracking-[0.15em]">
+                Process {selectedFiles.length} Docs
+              </span>
+            </motion.button>
+          )}
+        </AnimatePresence>
+
+        <button
+          onClick={() => router.push("/po/create")}
+          className="w-16 h-16 bg-slate-900 text-white rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.2)] hover:bg-black hover:scale-110 transition-all active:scale-95 flex items-center justify-center group relative overflow-hidden"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <Plus
+            size={28}
+            className="group-hover:rotate-90 transition-transform duration-500"
+          />
+        </button>
+      </div>
+
       <Dialog
-        isOpen={uploading || selectedFiles.length > 0}
-        onClose={() => {
-          if (!uploading) setSelectedFiles([]);
+        open={uploading || selectedFiles.length > 0}
+        onOpenChange={(open) => {
+          if (!open && !uploading) setSelectedFiles([]);
         }}
-        title={uploading ? "Uploading Purchase Orders" : "Confirm Upload"}
-        maxWidth="max-w-md"
-        footer={
-          <div className="flex flex-col gap-3 w-full">
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{uploading ? "BATCH INGESTION" : "CONFIRM UPLOAD"}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
             {!uploading ? (
-              <Button variant="default" onClick={handleUpload} className="w-full">
-                Start Upload
+              <div className="text-center space-y-2">
+                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FileText size={32} />
+                </div>
+                <H3>{selectedFiles.length} Documents Ready</H3>
+                <Body className="text-slate-500">
+                  Purchase orders will be parsed and synchronized with the central
+                  ledger.
+                </Body>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {/* Cinematic Card Stack Animation */}
+                <div className="relative h-32 flex items-center justify-center perspective-1000">
+                  <AnimatePresence mode="popLayout">
+                    {selectedFiles
+                      .slice(uploadProgress.current, uploadProgress.current + 3)
+                      .map((file, idx) => (
+                        <motion.div
+                          key={file.name + idx}
+                          initial={{ opacity: 0, x: 50, scale: 0.8, rotate: 5 }}
+                          animate={{
+                            opacity: 1 - idx * 0.3,
+                            x: idx * 10,
+                            z: -idx * 50,
+                            scale: 1 - idx * 0.05,
+                            rotate: idx * 2,
+                          }}
+                          exit={{
+                            opacity: 0,
+                            x: -150,
+                            rotate: -15,
+                            transition: { duration: 0.4, ease: "circIn" },
+                          }}
+                          className="absolute w-48 h-24 bg-white border-2 border-slate-100 rounded-xl shadow-xl p-4 flex flex-col justify-between"
+                          style={{
+                            boxShadow: `0 ${10 + idx * 5}px ${20 + idx * 10}px rgba(0,0,0,${0.1 - idx * 0.02})`,
+                            zIndex: 10 - idx,
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
+                              <FileText size={12} className="text-white" />
+                            </div>
+                            <SmallText className="uppercase text-slate-400 truncate w-full">
+                              {file.name}
+                            </SmallText>
+                          </div>
+                          <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <motion.div
+                              className="h-full bg-emerald-500"
+                              initial={{ width: "0%" }}
+                              animate={{ width: idx === 0 ? "100%" : "0%" }}
+                              transition={{ duration: 0.5 }}
+                            />
+                          </div>
+                        </motion.div>
+                      ))}
+                  </AnimatePresence>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <Label className="text-blue-600 uppercase mb-1">
+                        Status
+                      </Label>
+                      <Body className="text-slate-900 font-medium">
+                        Processing {uploadProgress.current} of{" "}
+                        {uploadProgress.total} files
+                      </Body>
+                    </div>
+                    <div className="text-right">
+                      <Label className="text-slate-400 uppercase mb-1">
+                        Progress
+                      </Label>
+                      <div className="text-sm font-mono font-bold text-slate-900">
+                        {Math.round(
+                          (uploadProgress.current / uploadProgress.total) * 100,
+                        )}
+                        %
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                    <motion.div
+                      className="bg-blue-600 h-full"
+                      initial={{ width: 0 }}
+                      animate={{
+                        width: `${(uploadProgress.current / uploadProgress.total) * 100}%`,
+                      }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-3 w-full mt-4">
+            {!uploading ? (
+              <Button
+                variant="default"
+                onClick={handleUpload}
+                className="w-full py-6 text-sm font-bold uppercase tracking-widest"
+              >
+                <Upload size={18} className="mr-2" />
+                Start Processing
               </Button>
             ) : (
               <Button
                 variant="outline"
-                onClick={() => { isCancelled.current = true; }}
-                className="w-full"
+                onClick={() => {
+                  isCancelled.current = true;
+                }}
+                className="w-full border-rose-200 text-rose-600 hover:bg-rose-50"
               >
-                Cancel Upload
+                <X size={16} className="mr-2" />
+                Halt Operation
               </Button>
             )}
           </div>
-        }
-      >
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Body className="font-medium text-slate-700">
-              {uploading
-                ? "Processing files..."
-                : `${selectedFiles.length} files selected`}
-            </Body>
-          </div>
-
-          {uploading && (
-            <div className="space-y-2">
-              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                <motion.div
-                  className="bg-[#1A3D7C] h-full"
-                  initial={{ width: 0 }}
-                  animate={{
-                    width: `${(uploadProgress.current / uploadProgress.total) * 100}%`,
-                  }}
-                  transition={{ duration: 0.3 }}
-                />
-              </div>
-              <div className="flex justify-between text-xs text-slate-500">
-                <span>
-                  {uploadProgress.current} / {uploadProgress.total} processed
-                </span>
-                <span>
-                  {Math.round(
-                    (uploadProgress.current / uploadProgress.total) * 100,
-                  )}
-                  %
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
+        </DialogContent>
       </Dialog>
     </>
   );

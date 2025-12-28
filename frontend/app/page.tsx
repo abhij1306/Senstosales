@@ -210,7 +210,7 @@ export default function DashboardPage() {
             {
               title: "Total Sales",
               value: (
-                <Accounting isCurrency short className="text-xl text-white">
+                <Accounting isCurrency short className="text-xl">
                   {summary?.total_sales_month || 0}
                 </Accounting>
               ),
@@ -220,7 +220,7 @@ export default function DashboardPage() {
             {
               title: "Total Purchase",
               value: (
-                <Accounting isCurrency short className="text-xl text-white">
+                <Accounting isCurrency short className="text-xl">
                   {summary?.total_po_value || 0}
                 </Accounting>
               ),
@@ -230,7 +230,7 @@ export default function DashboardPage() {
             {
               title: "Active POs",
               value: (
-                <Accounting className="text-xl text-white">
+                <Accounting className="text-xl">
                   {summary?.active_po_count || 0}
                 </Accounting>
               ),
@@ -240,7 +240,7 @@ export default function DashboardPage() {
             {
               title: "Pipeline Volume",
               value: (
-                <Accounting isCurrency short className="text-xl text-white">
+                <Accounting isCurrency short className="text-xl">
                   {summary?.total_po_value || 0}
                 </Accounting>
               ),

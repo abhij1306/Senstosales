@@ -18,12 +18,11 @@ import { motion } from "framer-motion";
 import { api, InvoiceListItem, InvoiceStats } from "@/lib/api";
 import { formatDate, formatIndianCurrency } from "@/lib/utils";
 import { useDebouncedValue } from "@/lib/hooks/useDebounce";
+import { StatusBadge } from "@/components/design-system/organisms/StatusBadge";
 import { ListPageTemplate } from "@/components/design-system/templates/ListPageTemplate";
-import { SearchBar as AtomicSearchBar } from "@/components/design-system/molecules/SearchBar";
-import { Accounting, Body } from "@/components/design-system/atoms/Typography";
-import { TableRowCell as TableCells } from "@/components/design-system/molecules/TableCells";
+import { Input } from "@/components/design-system/atoms/Input";
+import { Accounting } from "@/components/design-system/atoms/Typography";
 import { Button } from "@/components/design-system/atoms/Button";
-import { Badge } from "@/components/design-system/atoms/Badge";
 import type { Column } from "@/components/design-system/organisms/DataTable";
 import type { SummaryCardProps } from "@/components/design-system/organisms/SummaryCards";
 
@@ -35,13 +34,10 @@ const columns: Column<InvoiceListItem>[] = [
     sortable: true,
     width: "12%",
     render: (_value, inv) => (
-      <Link
-        href={`/invoice/${encodeURIComponent(inv.invoice_number)}`}
-        className="text-[#1A3D7C] font-medium hover:underline"
-      >
-        <motion.span layoutId={`inv-title-${inv.invoice_number}`}>
+      <Link href={`/invoice/${inv.invoice_number}`} className="block">
+        <div className="text-blue-600 font-semibold hover:underline">
           {inv.invoice_number}
-        </motion.span>
+        </div>
       </Link>
     ),
   },
@@ -50,9 +46,9 @@ const columns: Column<InvoiceListItem>[] = [
     label: "DATE",
     sortable: true,
     width: "10%",
-    render: (_value, inv) => (
-      <span className="text-[#6B7280] whitespace-nowrap">
-        {formatDate(inv.invoice_date)}
+    render: (v) => (
+      <span className="text-slate-500 font-medium whitespace-nowrap text-sm">
+        {formatDate(String(v))}
       </span>
     ),
   },
@@ -60,26 +56,23 @@ const columns: Column<InvoiceListItem>[] = [
     key: "linked_dc_numbers",
     label: "Linked DCs",
     width: "14%",
-    render: (_value, inv) => (
+    render: (v) => (
       <div className="flex flex-wrap gap-1">
-        {inv.linked_dc_numbers ? (
-          inv.linked_dc_numbers.split(",").map((dc: string, i: number) => (
+        {String(v) && String(v) !== "null" ? (
+          String(v).split(",").map((dc: string, i: number) => (
             <Link
               key={i}
-              href={`/dc/${dc.trim()}`}
+              href={`/dc/`}
               className="no-underline"
               onClick={(e) => e.stopPropagation()}
             >
-              <Badge
-                variant="secondary"
-                className="cursor-pointer hover:bg-[#1A3D7C]/10 text-[10px]"
-              >
+              <div className="px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold border border-blue-100 cursor-pointer hover:bg-blue-100 transition-colors">
                 {dc.trim()}
-              </Badge>
+              </div>
             </Link>
           ))
         ) : (
-          <span className="text-[#9CA3AF] italic text-[11px]">Direct</span>
+          <span className="text-slate-400 italic text-xs">Direct</span>
         )}
       </div>
     ),
@@ -88,26 +81,23 @@ const columns: Column<InvoiceListItem>[] = [
     key: "po_numbers",
     label: "Linked POs",
     width: "14%",
-    render: (_value, inv) => (
+    render: (v) => (
       <div className="flex flex-wrap gap-1">
-        {inv.po_numbers ? (
-          inv.po_numbers.split(",").map((po: string, i: number) => (
+        {String(v) && String(v) !== "null" ? (
+          String(v).split(",").map((po: string, i: number) => (
             <Link
               key={i}
-              href={`/po/${po.trim()}`}
+              href={`/po/`}
               className="no-underline"
               onClick={(e) => e.stopPropagation()}
             >
-              <Badge
-                variant="outline"
-                className="cursor-pointer hover:bg-[#1A3D7C]/10"
-              >
+              <div className="px-1.5 py-0.5 rounded-full bg-slate-50 text-slate-600 text-[10px] font-bold border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
                 {po.trim()}
-              </Badge>
+              </div>
             </Link>
           ))
         ) : (
-          <span className="text-[#9CA3AF] italic text-[12px]">Direct</span>
+          <span className="text-slate-400 italic text-xs">Direct</span>
         )}
       </div>
     ),
@@ -116,9 +106,9 @@ const columns: Column<InvoiceListItem>[] = [
     key: "customer_gstin",
     label: "CUSTOMER GSTIN",
     width: "15%",
-    render: (_value, inv) => (
-      <span className="font-mono text-[12px]">
-        {inv.customer_gstin || "N/A"}
+    render: (v) => (
+      <span className="font-mono text-sm text-slate-600">
+        {String(v) || "N/A"}
       </span>
     ),
   },
@@ -128,9 +118,9 @@ const columns: Column<InvoiceListItem>[] = [
     sortable: true,
     align: "right",
     width: "15%",
-    render: (_value, inv) => (
+    render: (v) => (
       <Accounting isCurrency className="text-slate-950 font-medium">
-        {inv.total_invoice_value}
+        {Number(v)}
       </Accounting>
     ),
   },
@@ -139,9 +129,9 @@ const columns: Column<InvoiceListItem>[] = [
     label: "IGST",
     align: "right",
     width: "10%",
-    render: (_value, inv) => (
-      <span className="text-[#6B7280] text-[12px] tabular-nums">
-        {formatIndianCurrency(inv.igst || 0)}
+    render: (v) => (
+      <span className="text-slate-500 tabular-nums text-sm">
+        {formatIndianCurrency(Number(v) || 0)}
       </span>
     ),
   },
@@ -150,10 +140,8 @@ const columns: Column<InvoiceListItem>[] = [
     label: "STATUS",
     sortable: true,
     width: "10%",
-    render: (_value, inv) => (
-      <Badge variant={inv.status === "Paid" ? "success" : "warning"}>
-        {inv.status || "Pending"}
-      </Badge>
+    render: (v) => (
+      <StatusBadge status={String(v || "Pending")} />
     ),
   },
 ];
@@ -184,21 +172,41 @@ export default function InvoicePage() {
   }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
+    async function fetchInvoices() {
+      setLoading(true);
       try {
-        const [invoicesData, statsData] = await Promise.all([
-          api.listInvoices(),
-          api.getInvoiceStats(),
-        ]);
-        setInvoices(invoicesData || []);
-        setStats(statsData);
-      } catch (err) {
-        console.error("Invoice Load Error:", err);
+        // Fetch invoice stats
+        const statsResponse = await fetch("/api/invoice/stats");
+        if (!statsResponse.ok) {
+          throw new Error("Failed to fetch invoice stats");
+        }
+        const statsResult = await statsResponse.json();
+        setStats(statsResult);
+
+        // Fetch invoices list
+        const response = await fetch("/api/invoice/");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch invoices");
+        }
+
+        const result = await response.json();
+
+        // Handle unified response format
+        const invoicesData = result.data || result;
+
+        setInvoices(invoicesData);
+        // Assuming filteredInvoices is now derived from invoices or managed separately
+        // If filteredInvoices was a state, it would need to be declared and set here.
+        // For now, we'll rely on the useMemo below to filter `invoices`.
+      } catch (error) {
+        console.error("Error fetching invoices:", error);
       } finally {
         setLoading(false);
       }
-    };
-    fetchData();
+    }
+
+    fetchInvoices();
   }, []);
 
   const filteredInvoices = useMemo(() => {
@@ -219,70 +227,72 @@ export default function InvoicePage() {
     (): SummaryCardProps[] => [
       {
         title: "Total Invoices",
-        value: (
-          <Accounting className="text-xl text-white">
-            {invoices.length}
-          </Accounting>
-        ),
+        value: invoices.length,
         icon: <Receipt size={24} />,
-        variant: "primary",
+        variant: "default",
       },
       {
         title: "Paid Invoices",
-        value: (
-          <Accounting isCurrency short className="text-xl text-white">
-            {stats?.total_invoiced || 0}
-          </Accounting>
-        ),
+        value: formatIndianCurrency(stats?.total_invoiced || 0),
         icon: <Clock size={24} />,
         variant: "success",
       },
       {
         title: "Pending Payments",
-        value: (
-          <Accounting isCurrency short className="text-xl text-white">
-            {stats?.pending_payments || 0}
-          </Accounting>
-        ),
+        value: formatIndianCurrency(stats?.pending_payments || 0),
         icon: <Clock size={24} />,
         variant: "warning",
       },
       {
         title: "Total Invoiced",
-        value: (
-          <Accounting isCurrency short className="text-xl text-white">
-            {stats?.total_invoiced || 0}
-          </Accounting>
-        ),
+        value: formatIndianCurrency(stats?.total_invoiced || 0),
         icon: <Activity size={24} />,
-        variant: "secondary",
+        variant: "success",
       },
     ],
     [invoices.length, stats],
   );
 
   // Toolbar
+  // Master Reference: Toolbar Construction (Atomic)
   const toolbar = (
-    <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-      <div className="flex-1 w-full max-w-md">
-        <AtomicSearchBar
+    <div className="flex items-center gap-3">
+      <div className="relative">
+        <Input
           id="invoice-search"
           name="invoice-search"
           value={searchQuery}
-          onChange={setSearchQuery}
-          placeholder="Search by invoice number or GSTIN..."
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search Invoices..."
+          className="w-64 pl-9 bg-white/50 border-slate-200 focus:bg-white transition-all"
         />
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+        </div>
       </div>
-      <div className="flex items-center gap-3">
-        <Button
-          variant="default"
-          size="sm"
-          onClick={() => router.push("/invoice/create")}
-        >
-          <Plus size={16} />
-          Create New
-        </Button>
-      </div>
+
+      <Button
+        variant="default"
+        size="sm"
+        onClick={() => router.push("/invoice/create")}
+        className="bg-slate-900 text-white hover:bg-slate-800 shadow-md shadow-slate-900/10"
+      >
+        <Plus size={16} className="mr-2" />
+        New Invoice
+      </Button>
     </div>
   );
 
@@ -292,20 +302,13 @@ export default function InvoicePage() {
       subtitle="Manage all billing documentation and compliance"
       toolbar={toolbar}
       summaryCards={summaryCards}
-      columns={columns}
+      columns={columns as any}
       data={filteredInvoices}
       keyField="invoice_number"
       page={page}
       pageSize={pageSize}
       totalItems={filteredInvoices.length}
       onPageChange={(newPage) => setPage(newPage)}
-      exportable
-      onExport={() =>
-        window.open(
-          `${api.baseUrl}/api/reports/register/invoice?export=true`,
-          "_blank",
-        )
-      }
       loading={loading}
       emptyMessage="No invoices found"
     />

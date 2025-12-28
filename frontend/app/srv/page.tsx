@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Upload,
   CheckCircle2,
@@ -15,210 +16,75 @@ import {
   Activity,
   FileText,
   AlertCircle,
-  TrendingUp,
+  Plus,
+  Search,
+  X,
+  ExternalLink,
+  ChevronRight
 } from "lucide-react";
-import { API_BASE_URL } from "@/lib/api";
-import { formatDate } from "@/lib/utils";
+
+import { api, API_BASE_URL } from "@/lib/api";
+import { formatDate, cn } from "@/lib/utils";
+
+// Atomic Design Components
+import { DocumentTemplate } from "@/components/design-system/templates/DocumentTemplate";
 import { ListPageTemplate } from "@/components/design-system/templates/ListPageTemplate";
-import { SearchBar as AtomicSearchBar } from "@/components/design-system/molecules/SearchBar";
+import { GlassContainer } from "@/components/design-system/atoms/GlassContainer";
 import {
   Accounting,
-  Body,
+  H1,
+  H3,
   Label,
+  Body,
+  SmallText
 } from "@/components/design-system/atoms/Typography";
-import { Badge } from "@/components/design-system/atoms/Badge";
-import { Card } from "@/components/design-system/atoms/Card";
 import { Button } from "@/components/design-system/atoms/Button";
+import { Input } from "@/components/design-system/atoms/Input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/design-system/molecules/Dialog";
+import { StatusBadge } from "@/components/design-system/organisms/StatusBadge";
 import type { Column } from "@/components/design-system/organisms/DataTable";
 import type { SummaryCardProps } from "@/components/design-system/organisms/SummaryCards";
 
-interface SRVListItem {
-  srv_number: string;
-  srv_date: string;
-  po_number: string;
-  total_received_qty: number;
-  total_rejected_qty: number;
-  total_order_qty: number;
-  total_challan_qty: number;
-  total_accepted_qty: number;
-  challan_numbers?: string;
-  invoice_numbers?: string;
-}
-
-interface SRVStats {
-  total_srvs: number;
-  total_received_qty: number;
-  total_rejected_qty: number;
-  rejection_rate: number;
-}
-
-// --- OPTIMIZATION: Static Columns Definitions using Link ---
-const columns: Column<SRVListItem>[] = [
-  {
-    key: "srv_number",
-    label: "SRV Number",
-    sortable: true,
-    width: "10%",
-    render: (_value, srv) => (
-      <Link href={`/srv/${srv.srv_number}`} className="block">
-        <div className="text-[#1A3D7C] font-medium hover:underline">
-          SRV-{srv.srv_number}
-        </div>
-      </Link>
-    ),
-  },
-  {
-    key: "srv_date",
-    label: "SRV DATE",
-    sortable: true,
-    width: "10%",
-    render: (v) => (
-      <div className="text-[12px] text-[#6B7280]">
-        {formatDate(v as string)}
-      </div>
-    ),
-  },
-  {
-    key: "po_number",
-    label: "PO REF",
-    sortable: true,
-    width: "8%",
-    render: (_value, srv) => <Badge variant="outline">{srv.po_number}</Badge>,
-  },
-  {
-    key: "challan_numbers",
-    label: "Challan Nos",
-    width: "14%",
-    render: (_value, srv) => (
-      <div className="flex flex-wrap gap-1">
-        {srv.challan_numbers ? (
-          srv.challan_numbers
-            .split(",")
-            .slice(0, 2)
-            .map((num: string, i: number) => (
-              <Badge key={i} variant="outline" className="text-[10px]">
-                {num.trim()}
-              </Badge>
-            ))
-        ) : (
-          <span className="text-[#9CA3AF] text-[12px]">-</span>
-        )}
-      </div>
-    ),
-  },
-  {
-    key: "invoice_numbers",
-    label: "Invoice Nos",
-    width: "14%",
-    render: (_value, srv) => (
-      <div className="flex flex-wrap gap-1">
-        {srv.invoice_numbers ? (
-          srv.invoice_numbers
-            .split(",")
-            .slice(0, 2)
-            .map((inv: string, i: number) => (
-              <Badge key={i} variant="default" className="text-[10px]">
-                {inv.trim()}
-              </Badge>
-            ))
-        ) : (
-          <span className="text-[#9CA3AF] text-[12px]">None</span>
-        )}
-      </div>
-    ),
-  },
-  {
-    key: "total_order_qty",
-    label: "ORDERED",
-    align: "right",
-    width: "8%",
-    render: (v) => <Accounting className="text-[#6B7280]">{v}</Accounting>,
-  },
-  {
-    key: "total_received_qty",
-    label: "RECEIVED",
-    align: "right",
-    width: "8%",
-    render: (v) => (
-      <Accounting className="font-medium text-[#1A3D7C]">{v}</Accounting>
-    ),
-  },
-  {
-    key: "total_accepted_qty",
-    label: "ACCEPTED",
-    align: "right",
-    width: "8%",
-    render: (v) => <Accounting className="text-[#16A34A]">{v}</Accounting>,
-  },
-  {
-    key: "total_rejected_qty",
-    label: "REJECTED",
-    align: "right",
-    width: "8%",
-    render: (v) => <Accounting className="text-[#DC2626]">{v}</Accounting>,
-  },
-  // Note: Actions column with Delete needs a handler.
-  // We can inject a custom component or handle it differently if we want strict static.
-  // But for now, we will omit the delete action from the STATIC definition if it requires the parent's handler.
-  // Wait, the delete handler depends on `handleDelete` which is inside the component.
-  // Strategy: Pass the handleDelete function to the row or use a context?
-  // Simpler: The delete button is an action. We can actually define this specific column INSIDE the component if needed,
-  // OR use a context-aware component.
-  // For the purpose of this optimization, I will use a hybrid approach: Define the actions column dynamically or just keep it static and assume we can pass a handler? No, we can't pass handler to static.
-  // Correct approach: Use a `cell` component that uses a hook? No, `handleDelete` is local state.
-  // I will KEEP the actions column defined inside, or use `useMemo` for the full columns array if we have one dynamic column.
-  // But wait, the goal is "Static Column Definitions".
-  // If I have to use `useMemo` for one column, I should use `useMemo` for the whole array.
-  // However, I can define the STATIC part outside, and merge it inside?
-  // Let's use `useMemo` for the columns array inside the component for SRV page since it has a specific action handler.
-  // It still satisfies the "Stabilize Columns" goal (prevents re-creation on every render).
-];
-
-export default function SRVPage() {
+export default function SRVListPage() {
   const router = useRouter();
-  const [srvs, setSrvs] = useState<SRVListItem[]>([]);
-  const [stats, setStats] = useState<SRVStats | null>(null);
+  const [srvs, setSrvs] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [totalItems, setTotalItems] = useState(0);
+
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [uploadProgress, setUploadProgress] = useState({
     current: 0,
     total: 0,
   });
   const isCancelled = useRef(false);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
-        e.preventDefault();
-        document.getElementById("srv-search")?.focus();
-      }
-      if (e.key === "/" && document.activeElement?.tagName !== "INPUT") {
-        e.preventDefault();
-        document.getElementById("srv-search")?.focus();
-      }
-    };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [searchQuery, page, pageSize]);
 
   const loadData = async () => {
     try {
-      const [srvRes, statsRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/srv`),
-        fetch(`${API_BASE_URL}/api/srv/stats`),
+      setLoading(true);
+      const [srvData, statsData] = await Promise.all([
+        api.listSRVs(undefined, (page - 1) * pageSize, pageSize),
+        api.getSRVStats()
       ]);
-      const srvData = await srvRes.json();
-      const statsData = await statsRes.json();
-      setSrvs(Array.isArray(srvData) ? srvData : []);
+
+      setSrvs(srvData);
       setStats(statsData);
-    } catch (error) {
-      console.error("Load Error:", error);
+      setTotalItems(statsData?.total_srvs || 0);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -232,219 +98,359 @@ export default function SRVPage() {
     if (selectedFiles.length === 0) return;
     setUploading(true);
     setUploadProgress({ current: 0, total: selectedFiles.length });
-    isCancelled.current = false;
+    let processedCount = 0;
 
     try {
-      const CHUNK_SIZE = 25;
+      const CHUNK_SIZE = 5; // Smaller chunk for SRVs initially
       for (let i = 0; i < selectedFiles.length; i += CHUNK_SIZE) {
         if (isCancelled.current) break;
         const chunk = selectedFiles.slice(i, i + CHUNK_SIZE);
-        const formData = new FormData();
-        chunk.forEach((file) => formData.append("files", file));
-        await fetch(`${API_BASE_URL}/api/srv/upload/batch`, {
-          method: "POST",
-          body: formData,
-        });
+        await api.uploadSRVBatch(chunk);
+        processedCount += chunk.length;
         setUploadProgress({
-          current: Math.min(i + CHUNK_SIZE, selectedFiles.length),
+          current: processedCount,
           total: selectedFiles.length,
         });
+        // Brief delay for UI updates
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
-      await loadData();
-      setSelectedFiles([]);
+
+      if (!isCancelled.current) {
+        await loadData();
+        setSelectedFiles([]);
+      }
     } catch (err) {
       console.error("Upload Error:", err);
     } finally {
       setUploading(false);
+      isCancelled.current = false;
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent, srv_number: string) => {
-    e.stopPropagation();
-    if (!confirm(`Delete SRV ${srv_number}?`)) return;
+  const handleDelete = useCallback(async (srvNumber: string) => {
+    if (!confirm(`Permanently delete SRV #${srvNumber}?`)) return;
     try {
-      await fetch(`${API_BASE_URL}/api/srv/${srv_number}`, {
-        method: "DELETE",
-      });
+      await fetch(`${API_BASE_URL}/api/srv/${srvNumber}`, { method: "DELETE" });
       await loadData();
     } catch (err) {
-      console.error("Delete Error:", err);
+      console.error(err);
     }
+  }, []);
+
+  const columns: Column<any>[] = useMemo(() => [
+    {
+      key: "srv_number",
+      label: "SRV VOUCHER",
+      width: "15%",
+      render: (v: any) => (
+        <div className="flex flex-col">
+          <Link href={`/srv/${v}`} className="font-black text-blue-600 hover:underline flex items-center gap-1">
+            #{v}
+            <ChevronRight size={12} />
+          </Link>
+          <SmallText className="text-slate-400 font-medium uppercase tracking-tighter">Inbound Receipt</SmallText>
+        </div>
+      ),
+    },
+    {
+      key: "srv_date",
+      label: "DATE",
+      width: "12%",
+      render: (v) => (
+        <span className="text-slate-600 font-bold">{formatDate(v as string)}</span>
+      ),
+    },
+    {
+      key: "po_number",
+      label: "PO REFERENCE",
+      width: "12%",
+      render: (v, row) => (
+        <div className="flex items-center gap-2">
+          <Link href={`/po/${v}`} className="px-2 py-1 rounded-lg bg-slate-100 text-slate-700 text-[11px] font-black border border-slate-200 hover:bg-slate-200 transition-colors">
+            {v}
+          </Link>
+          {!row.po_found && (
+            <AlertCircle size={14} className="text-rose-500" />
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "total_accepted_qty",
+      label: "ACCEPTED",
+      align: "right",
+      width: "12%",
+      render: (v) => (
+        <Accounting className="text-emerald-600 font-black">{v}</Accounting>
+      ),
+    },
+    {
+      key: "total_rejected_qty",
+      label: "REJECTED",
+      align: "right",
+      width: "12%",
+      render: (v) => (
+        <Accounting className={cn(Number(v) > 0 ? "text-rose-500 font-bold" : "text-slate-300 font-medium")}>{v}</Accounting>
+      ),
+    },
+    {
+      key: "actions",
+      label: "",
+      width: "5%",
+      render: (_, row) => (
+        <Button variant="ghost" size="sm" onClick={() => handleDelete(row.srv_number)} className="text-slate-300 hover:text-rose-600">
+          <Trash2 size={14} />
+        </Button>
+      )
+    }
+  ], [handleDelete]);
+
+  const summaryCards: SummaryCardProps[] = useMemo(() => [
+    {
+      title: "Active Vouchers",
+      value: stats?.total_srvs || 0,
+      icon: <Layers size={20} />,
+      variant: "default",
+    },
+    {
+      title: "Accepted Volume",
+      value: stats?.total_received_qty || 0,
+      icon: <CheckCircle2 size={20} />,
+      variant: "success",
+    },
+    {
+      title: "Rejection Rate",
+      value: `${stats?.rejection_rate || 0}%`,
+      icon: <XCircle size={20} />,
+      variant: "warning",
+    },
+  ], [stats]);
+
+  const filteredData = useMemo(() => {
+    if (!searchQuery) return srvs;
+    const q = searchQuery.toLowerCase();
+    return srvs.filter(s =>
+      s.srv_number?.toLowerCase().includes(q) ||
+      s.po_number?.toString().includes(q)
+    );
+  }, [srvs, searchQuery]);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUploadClick = () => {
+    fileInputRef.current?.click();
   };
 
-  const filteredSrvs = useMemo(
-    () =>
-      srvs.filter(
-        (srv) =>
-          (srv.srv_number || "")
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()) ||
-          (srv.po_number && srv.po_number.toString().includes(searchQuery)),
-      ),
-    [srvs, searchQuery],
-  );
-
-  // --- OPTIMIZATION: Memoize columns including the Action column ---
-  const memoizedColumns = useMemo(
-    () => [
-      ...columns,
-      {
-        key: "actions",
-        label: "",
-        width: "6%",
-        render: (_value: any, srv: SRVListItem) => (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => handleDelete(e as any, srv.srv_number)}
-            className="text-[#DC2626] hover:text-[#991B1B]"
-          >
-            <Trash2 size={16} />
-          </Button>
-        ),
-      } as Column<SRVListItem>,
-    ],
-    [],
-  ); // Empty dependency array as handleDelete is stable? No, handleDelete depends on state/closure?
-  // Actually, handleDelete calls loadData which depends on closure?
-  // loadData is defined inside.
-  // To be safe, we should include handleDelete in dependency, but handleDelete changes on every render.
-  // Best practice: Wrap handleDelete in useCallback.
-  // But since I'm rewriting the file, I can wrap handleDelete in useCallback!
-
-  // --- OPTIMIZATION: Memoized Summary Cards ---
-  const summaryCards = useMemo(
-    (): SummaryCardProps[] => [
-      {
-        title: "Total SRVs",
-        value: (
-          <Accounting className="text-xl text-white">
-            {stats?.total_srvs || 0}
-          </Accounting>
-        ),
-        icon: <Layers size={24} />,
-        variant: "primary",
-      },
-      {
-        title: "Total Received",
-        value: (
-          <Accounting className="text-xl text-white">
-            {stats?.total_received_qty || 0}
-          </Accounting>
-        ),
-        icon: <CheckCircle2 size={24} />,
-        variant: "success",
-      },
-      {
-        title: "Total Rejected",
-        value: (
-          <Accounting className="text-xl text-white">
-            {stats?.total_rejected_qty || 0}
-          </Accounting>
-        ),
-        icon: <XCircle size={24} />,
-        variant: "warning",
-      },
-      {
-        title: "Rejection Rate",
-        value: (
-          <Accounting className="text-xl text-white font-medium">{`${((stats?.rejection_rate || 0) * 100).toFixed(1)}%`}</Accounting>
-        ),
-        icon: <Receipt size={24} />,
-        variant: "secondary",
-      },
-    ],
-    [stats],
-  );
-
-  // Toolbar with upload
+  // Master Reference: Toolbar Construction (Atomic)
   const toolbar = (
-    <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-      <div className="flex-1 w-full max-w-md">
-        <AtomicSearchBar
+    <div className="flex items-center gap-4 w-full justify-between">
+      <div className="w-80 relative">
+        <Input
           id="srv-search"
           name="srv-search"
           value={searchQuery}
-          onChange={setSearchQuery}
-          placeholder="Search by SRV number or PO..."
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Filter by SRV or PO..."
+          className="pl-10 h-11 bg-white/50 border-slate-200/60 rounded-xl focus:ring-2 focus:ring-blue-500/20"
         />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
       </div>
-
-      {selectedFiles.length > 0 || uploading ? (
-        <Card className="p-4 flex items-center gap-4 min-w-96">
-          {uploading ? (
-            <>
-              <Loader2 className="animate-spin text-[#1A3D7C]" size={20} />
-              <div className="flex-1">
-                <div className="text-[14px] font-semibold">
-                  Uploading SRVs...
-                </div>
-                <div className="text-[12px] text-[#6B7280]">
-                  {uploadProgress.current} of {uploadProgress.total} processed
-                </div>
-              </div>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => {
-                  isCancelled.current = true;
-                }}
-              >
-                Stop
-              </Button>
-            </>
-          ) : (
-            <>
-              <div className="flex-1">
-                <div className="text-[14px] font-semibold">
-                  {selectedFiles.length} files selected
-                </div>
-              </div>
-              <Button variant="default" size="sm" onClick={handleUpload}>
-                <Upload size={16} />
-                Upload
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setSelectedFiles([])}
-              >
-                Cancel
-              </Button>
-            </>
-          )}
-        </Card>
-      ) : (
-        <label>
-          <input
-            type="file"
-            multiple
-            accept=".pdf,.xlsx"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          <Button variant="secondary" size="sm" asChild>
-            <span>
-              <Upload size={16} />
-              Upload SRVs
-            </span>
-          </Button>
-        </label>
-      )}
+      <div className="flex items-center gap-3">
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept=".html"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        <Button
+          variant="default"
+          size="default"
+          className="shadow-lg shadow-blue-500/20 px-6 font-bold uppercase tracking-wider text-[10px] cursor-pointer"
+          onClick={handleUploadClick}
+        >
+          <Upload size={16} className="mr-2" />
+          Ingest HTML
+        </Button>
+      </div>
     </div>
   );
 
   return (
-    <ListPageTemplate
-      title="Store Receipt Vouchers"
-      subtitle="Manage inbound material receipt and quality inspection"
-      toolbar={toolbar}
-      summaryCards={summaryCards}
-      columns={memoizedColumns}
-      data={filteredSrvs}
-      keyField="srv_number"
-      loading={loading}
-      emptyMessage="No store receipt vouchers found"
-    />
+    <>
+      <ListPageTemplate
+        title="MATERIAL RECEIPTS"
+        subtitle="Comprehensive audit trail for Stores Receipt Vouchers (SRV)"
+        columns={columns}
+        data={filteredData}
+        loading={loading}
+        keyField="srv_number"
+        summaryCards={summaryCards}
+        toolbar={toolbar}
+        page={page}
+        pageSize={pageSize}
+        totalItems={totalItems}
+        onPageChange={setPage}
+      />
+
+      {/* Floating Action Button (FAB) - Appears when files selected */}
+      <div className="fixed bottom-8 right-8 flex flex-col gap-4 z-50">
+        <AnimatePresence>
+          {selectedFiles.length > 0 && !uploading && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.5, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.5, y: 20 }}
+              onClick={handleUpload}
+              className="group flex items-center gap-3 px-6 py-4 bg-emerald-600 text-white rounded-2xl shadow-[0_20px_40px_rgba(16,185,129,0.3)] hover:bg-emerald-700 hover:shadow-[0_25px_50px_rgba(16,185,129,0.4)] transition-all active:scale-95"
+            >
+              <Upload size={20} className="group-hover:bounce" />
+              <span className="font-black uppercase tracking-[0.15em]">
+                Process {selectedFiles.length} SRVs
+              </span>
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </div>
+
+      <Dialog
+        open={uploading || selectedFiles.length > 0}
+        onOpenChange={(open) => {
+          if (!open && !uploading) setSelectedFiles([]);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{uploading ? "BATCH INGESTION" : "CONFIRM SRV UPLOAD"}</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {!uploading ? (
+              <div className="text-center space-y-2">
+                <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <FileText size={32} />
+                </div>
+                <H3>{selectedFiles.length} Documents Selected</H3>
+                <Body className="text-slate-500">
+                  SRV HTML files will be parsed, items extracted, and linked to POs.
+                </Body>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {/* Cinematic Card Stack Animation */}
+                <div className="relative h-32 flex items-center justify-center perspective-1000">
+                  <AnimatePresence mode="popLayout">
+                    {selectedFiles
+                      .slice(uploadProgress.current, uploadProgress.current + 3)
+                      .map((file, idx) => (
+                        <motion.div
+                          key={file.name + idx}
+                          initial={{ opacity: 0, x: 50, scale: 0.8, rotate: 5 }}
+                          animate={{
+                            opacity: 1 - idx * 0.3,
+                            x: idx * 10,
+                            z: -idx * 50,
+                            scale: 1 - idx * 0.05,
+                            rotate: idx * 2,
+                          }}
+                          exit={{
+                            opacity: 0,
+                            x: -150,
+                            rotate: -15,
+                            transition: { duration: 0.4, ease: "circIn" },
+                          }}
+                          className="absolute w-48 h-24 bg-white border-2 border-slate-100 rounded-xl shadow-xl p-4 flex flex-col justify-between"
+                          style={{
+                            boxShadow: `0 ${10 + idx * 5}px ${20 + idx * 10}px rgba(0,0,0,${0.1 - idx * 0.02})`,
+                            zIndex: 10 - idx,
+                          }}
+                        >
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
+                              <FileText size={12} className="text-white" />
+                            </div>
+                            <SmallText className="uppercase text-slate-400 truncate w-full">
+                              {file.name}
+                            </SmallText>
+                          </div>
+                          <div className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
+                            <motion.div
+                              className="h-full bg-emerald-500"
+                              initial={{ width: "0%" }}
+                              animate={{ width: idx === 0 ? "100%" : "0%" }}
+                              transition={{ duration: 0.5 }}
+                            />
+                          </div>
+                        </motion.div>
+                      ))}
+                  </AnimatePresence>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <Label className="text-blue-600 uppercase mb-1">
+                        Status
+                      </Label>
+                      <Body className="text-slate-900 font-medium">
+                        Processing {uploadProgress.current} of{" "}
+                        {uploadProgress.total} files
+                      </Body>
+                    </div>
+                    <div className="text-right">
+                      <Label className="text-slate-400 uppercase mb-1">
+                        Progress
+                      </Label>
+                      <div className="text-sm font-mono font-bold text-slate-900">
+                        {Math.round(
+                          (uploadProgress.current / uploadProgress.total) * 100,
+                        ) || 0}
+                        %
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                    <motion.div
+                      className="bg-blue-600 h-full"
+                      initial={{ width: 0 }}
+                      animate={{
+                        width: `${(uploadProgress.current / uploadProgress.total) * 100}%`,
+                      }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-3 w-full mt-4">
+            {!uploading ? (
+              <Button
+                variant="default"
+                onClick={handleUpload}
+                className="w-full py-6 text-sm font-bold uppercase tracking-widest"
+              >
+                <Upload size={18} className="mr-2" />
+                Start Processing
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  isCancelled.current = true;
+                }}
+                className="w-full border-rose-200 text-rose-600 hover:bg-rose-50"
+              >
+                <X size={16} className="mr-2" />
+                Halt Operation
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

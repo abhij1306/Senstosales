@@ -1,6 +1,7 @@
 import uvicorn
 import os
 import sys
+import signal
 import multiprocessing
 import traceback
 
@@ -9,25 +10,35 @@ import traceback
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
+from app.db import validate_database_path, verify_wal_mode
+
+# Graceful shutdown handler
+def shutdown_handler(signum, frame):
+    """Handle shutdown signals gracefully."""
+    print(f"\nReceived signal {signum}. Shutting down gracefully...")
+    sys.exit(0)
+
 if __name__ == "__main__":
     # Essential for PyInstaller + multiprocessing
     multiprocessing.freeze_support()
 
-    # Run the server
-    # We use string import "app.main:app" if possible, but passing the app object directly
-    # is often safer with PyInstaller to avoid import string issues,
-    # UNLESS the app is inside a package.
+    # Register signal handlers
+    signal.signal(signal.SIGTERM, shutdown_handler)  # Docker/K8s stop
+    signal.signal(signal.SIGINT, shutdown_handler)   # Ctrl+C
 
-    # However, "app.main:app" requires 'app' to be a package in python path.
-    # Since we added current_dir to sys.path, and 'app' is a folder there, it should work.
-
-    print("Starting SenstoSales Server on http://localhost:8000")
-    print("Press Ctrl+C to stop.")
-
+    print("=== SenstoSales ERP Backend ===")
+    print("Initializing database...")
+    validate_database_path()
+    
+    print("Starting server...")
     try:
-        from app.main import app
-
-        uvicorn.run(app, host="0.0.0.0", port=8000, log_level="info")
+        uvicorn.run(
+            "app.main:app",
+            host="0.0.0.0",
+            port=8000,
+            reload=True,
+            log_level="info"
+        )
     except Exception as e:
         error_msg = (
             f"Failed to start server: {e}\n\nFull traceback:\n{traceback.format_exc()}"

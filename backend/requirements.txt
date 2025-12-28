@@ -11,3 +11,5 @@ pydantic-settings>=2.0.0
 
 pandas
 xlsxwriter
+pydantic-settings
+sqlalchemy
