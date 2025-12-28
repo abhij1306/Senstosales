@@ -1,6 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap");
 @import "tailwindcss";
+@import "./tokens.css";
 
 @layer base {
   :root {
@@ -35,8 +36,23 @@
 
   .glass-premium {
     background: var(--glass-bg);
-    backdrop-filter: blur(24px);
+    backdrop-filter: var(--sys-effect-glass-high);
     border: 1px solid var(--glass-border);
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Grain Overlay */
+  .glass-premium::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: var(--sys-effect-grain);
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: -1;
   }
 
   body {

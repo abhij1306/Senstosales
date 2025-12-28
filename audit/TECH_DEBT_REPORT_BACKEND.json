@@ -1,0 +1,11 @@
+{
+    "module": "Backend",
+    "debt_found": true,
+    "desired_state": "Code in 'app/routers', 'app/services', 'app/repositories', 'app/models.py' only. No 'utils' folder.",
+    "current_state": "Found 'app/utils' containing generic helpers (date, number, logger).",
+    "delta": [
+        "+app/utils/ (Forbidden Folder)"
+    ],
+    "severity": "medium",
+    "auto_fixable": false
+}

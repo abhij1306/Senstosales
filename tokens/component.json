@@ -1,0 +1,27 @@
+{
+    "comp": {
+        "card": {
+            "kpi": {
+                "bg": {
+                    "value": "{sys.color.bg.surface}"
+                },
+                "text": {
+                    "value": "{sys.color.text.primary}"
+                },
+                "icon_bg": {
+                    "value": "{color.slate.100}"
+                }
+            }
+        },
+        "input": {
+            "bg": {
+                "default": {
+                    "value": "{color.slate.100}"
+                },
+                "glass": {
+                    "value": "rgba(255, 255, 255, 0.5)"
+                }
+            }
+        }
+    }
+}

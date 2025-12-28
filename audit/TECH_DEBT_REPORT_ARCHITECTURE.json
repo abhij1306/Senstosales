@@ -1,0 +1,12 @@
+{
+    "module": "Architecture",
+    "debt_found": true,
+    "desired_state": "Root folders: backend, frontend, docs, scripts, migrations, db, logs, audit, mcp-servers. No 'utils' in backend.",
+    "current_state": "Found 'deployment' folder in root. Found 'app/utils' in backend.",
+    "delta": [
+        "+deployment/ (Unauthorized Root Folder)",
+        "+backend/app/utils/ (Forbidden Module)"
+    ],
+    "severity": "high",
+    "auto_fixable": true
+}

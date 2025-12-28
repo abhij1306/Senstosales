@@ -1,4 +1,4 @@
-import { Inter, Outfit } from "next/font/google";
+import { Inter, Outfit, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { SidebarNav } from "@/components/design-system/organisms/SidebarNav";
 import GlobalSearch from "@/components/design-system/organisms/GlobalSearch";
@@ -9,6 +9,7 @@ import PageTransition from "@/components/PageTransition";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const outfit = Outfit({ subsets: ["latin"], variable: "--font-heading" });
+const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export default function RootLayout({
   children,
@@ -17,7 +18,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn(inter.variable, outfit.variable, "font-sans antialiased")}>
+      <body className={cn(inter.variable, outfit.variable, mono.variable, "font-sans antialiased")}>
         <Providers>
           <div className="flex h-screen bg-background overflow-hidden">
             {/* Standardized Non-collapsible Sidebar */}

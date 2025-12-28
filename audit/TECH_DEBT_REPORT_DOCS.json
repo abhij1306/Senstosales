@@ -1,0 +1,12 @@
+{
+    "module": "Documentation",
+    "debt_found": true,
+    "desired_state": "All architecture documents present.",
+    "current_state": "Missing BACKEND_ARCHITECTURE.md and TECHNICAL_DEBT.md.",
+    "delta": [
+        "-docs/BACKEND_ARCHITECTURE.md",
+        "-docs/TECHNICAL_DEBT.md"
+    ],
+    "severity": "medium",
+    "auto_fixable": false
+}

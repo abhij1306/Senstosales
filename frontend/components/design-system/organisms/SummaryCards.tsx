@@ -60,14 +60,14 @@ export const SummaryCard = React.memo(function SummaryCard({
     <Card
       className={cn(
         "relative flex flex-col justify-between min-h-[110px] h-full",
-        "hover:shadow-lg hover:-translate-y-0.5", // Keep hover effects as they add interactivity
+        "bg-comp-card-kpi-bg hover:shadow-lg hover:-translate-y-0.5", // Keep hover effects as they add interactivity
         className,
       )}
     >
       <div className="flex justify-between items-start">
         <SmallText className={cn(
           "uppercase tracking-widest font-bold text-[11px]",
-          variant !== "default" ? variantTextStyles[variant] : "text-slate-500"
+          variant !== "default" ? variantTextStyles[variant] : "text-sys-color-text-secondary"
         )}>
           {title}
         </SmallText>

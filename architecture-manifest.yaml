@@ -25,6 +25,7 @@ folders:
     - logs
     - audit
     - mcp-servers
+    - tokens
   
   backend_allowed:
     - app/routers

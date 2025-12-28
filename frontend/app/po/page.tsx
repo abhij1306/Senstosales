@@ -416,10 +416,11 @@ export default function POListPage() {
                           </Flex>
                           <Box className="h-1 w-full bg-slate-100 rounded-full overflow-hidden">
                             <motion.div
-                              className="h-full bg-emerald-500"
-                              initial={{ width: "0%" }}
-                              animate={{ width: idx === 0 ? "100%" : "0%" }}
+                              className="h-full bg-emerald-500 origin-left"
+                              initial={{ scaleX: 0 }}
+                              animate={{ scaleX: idx === 0 ? 1 : 0 }}
                               transition={{ duration: 0.5 }}
+                              style={{ width: "100%" }}
                             />
                           </Box>
                         </motion.div>
@@ -453,12 +454,13 @@ export default function POListPage() {
 
                   <Box className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
                     <motion.div
-                      className="bg-blue-600 h-full"
-                      initial={{ width: 0 }}
+                      className="bg-blue-600 h-full origin-left"
+                      initial={{ scaleX: 0 }}
                       animate={{
-                        width: `${(uploadProgress.current / uploadProgress.total) * 100}%`,
+                        scaleX: uploadProgress.total > 0 ? (uploadProgress.current / uploadProgress.total) : 0,
                       }}
                       transition={{ duration: 0.3 }}
+                      style={{ width: "100%" }}
                     />
                   </Box>
                 </Stack>

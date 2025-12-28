@@ -233,7 +233,7 @@ const DataTableComponent = <T extends Record<string, any>>({
       )}
 
       {/* Table Content Container */}
-      <Card className="p-0 overflow-hidden border border-white/20 bg-white/45 backdrop-blur-xl">
+      <Card className="p-0 overflow-hidden border border-sys-color-surface-glass_border bg-sys-color-surface-glass backdrop-blur-xl">
         <div
           className="overflow-x-auto hover-scrollbar"
           style={{ minHeight: "300px", display: "block" }}
@@ -265,7 +265,7 @@ const DataTableComponent = <T extends Record<string, any>>({
                           : "text-left",
                       column.sortable &&
                       (currentSortKey === column.key
-                        ? "bg-slate-200/50 text-slate-950"
+                        ? "bg-sys-color-bg-mesh text-sys-color-text-primary"
                         : "hover:bg-slate-100/50 cursor-pointer"),
                     )}
                     style={{ width: column.width }}
@@ -328,7 +328,7 @@ const DataTableComponent = <T extends Record<string, any>>({
                         <td
                           key={column.key}
                           className={cn(
-                            "py-2 px-4 text-[13px] font-medium text-slate-950 tabular-nums align-middle border-r border-transparent group-hover:border-slate-100/50",
+                            "py-2 px-4 text-[13px] font-medium text-sys-color-text-primary font-sys-type-body-numeric tabular-nums align-middle border-r border-transparent group-hover:border-slate-100/50",
                             (column.align === "right" || column.isNumeric || column.isCurrency)
                               ? "text-right"
                               : column.align === "center"

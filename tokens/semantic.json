@@ -1,0 +1,75 @@
+{
+    "sys": {
+        "color": {
+            "bg": {
+                "primary": {
+                    "value": "{color.slate.50}"
+                },
+                "surface": {
+                    "value": "{color.white}"
+                },
+                "mesh": {
+                    "value": "radial-gradient(circle at top left, #f0f4f8, #e2e8f0 30%, #dbeafe 100%)"
+                }
+            },
+            "text": {
+                "primary": {
+                    "value": "{color.slate.900}"
+                },
+                "secondary": {
+                    "value": "{color.slate.500}"
+                },
+                "accent": {
+                    "value": "{color.blue.600}"
+                }
+            },
+            "surface": {
+                "glass": {
+                    "value": "rgba(255, 255, 255, 0.45)"
+                },
+                "glass_border": {
+                    "value": "rgba(255, 255, 255, 0.2)"
+                }
+            }
+        },
+        "type": {
+            "body": {
+                "regular": {
+                    "value": "{font.sans}"
+                },
+                "mono": {
+                    "value": "{font.mono}"
+                },
+                "numeric": {
+                    "value": "{font.mono}"
+                }
+            }
+        },
+        "effect": {
+            "shadow": {
+                "neo_highlight": {
+                    "value": "-8px -8px 20px rgba(255, 255, 255, 0.9)"
+                },
+                "neo_shadow": {
+                    "value": "8px 8px 20px rgba(163, 177, 198, 0.5)"
+                }
+            },
+            "blur": {
+                "glass": {
+                    "value": "blur(24px)"
+                }
+            },
+            "glass": {
+                "low": {
+                    "value": "blur(12px)"
+                },
+                "high": {
+                    "value": "blur(24px)"
+                }
+            },
+            "grain": {
+                "value": "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E\")"
+            }
+        }
+    }
+}
