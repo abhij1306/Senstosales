@@ -89,3 +89,14 @@ After every remediation step, the Agent MUST:
 1.  **Log CLS Value**: Console output confirming layout stability.
 2.  **Audit Tokens**: confirm no new hardcoded values.
 3.  **Check Invariants**: Verify DOM depth and Glass limitations.
+
+---
+
+## AI Agent Protocol (New Feature Checklist)
+When implementing new pages/components, Agents MUST verify:
+
+1.  [ ] **Performance**: Tables defined *outside* component? Computed values memoized?
+2.  [ ] **Structure**: Used `ListPageTemplate` or `DocumentTemplate`? (No scratch layouts).
+3.  [ ] **Design**: Header `H1` uppercase? Labels uppercase/tracking-widest?
+4.  [ ] **Consistency**: All numbers wrapped in `Accounting` atom?
+5.  [ ] **Zero Shift**: `loading={true}` or exact-height Skeletons used?
