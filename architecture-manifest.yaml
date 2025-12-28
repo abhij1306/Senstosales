@@ -1,0 +1,84 @@
+---
+# ARCHITECTURE MANIFEST
+# Canonical source of truth for system invariants
+# Last updated: 2025-12-28T13:15:28+05:30
+
+system:
+  name: SenstoSales
+  type: ERP
+  runtime: Python + Node.js
+
+database:
+  canonical_path: db/business.db
+  count_allowed: 1
+  backup_path: db/backups/
+  migration_path: migrations/
+
+folders:
+  allowed_root:
+    - backend
+    - frontend
+    - docs
+    - scripts
+    - migrations
+    - db
+    - logs
+    - audit
+    - mcp-servers
+  
+  backend_allowed:
+    - app/routers
+    - app/services
+    - app/repositories
+    - app/models.py
+    - scripts/
+  
+  frontend_allowed:
+    - app/
+    - components/
+    - hooks/
+    - lib/
+  
+  forbidden:
+    - backend/utils
+    - frontend/backend_imports
+    - random_scripts_in_modules
+
+invariants:
+  database:
+    - exactly_one_db_file
+    - no_path_modification_via_ai
+    - schema_changes_via_migrations_only
+  
+  folder_boundary:
+    - no_new_root_folders
+    - features_in_approved_locations_only
+  
+  code_pollution:
+    - no_utility_scripts_in_modules
+    - feature_code_in_requested_module_only
+    - no_hallucinated_schema_fields
+  
+  import:
+    - frontend_no_backend_db_imports
+    - backend_no_ui_generation
+    - atomic_design_import_hierarchy
+  
+  llm_inside_tx:
+    - no_ai_calls_inside_db_transactions
+  
+  deployment:
+    - orchestrated_via_scripts_deploy_only
+    - timestamped_backup_before_deploy
+    - rollback_restores_db_and_commit
+
+deployment:
+  entry_script: scripts/deploy.sh
+  backup_before_deploy: true
+  rollback_command: scripts/rollback.sh
+
+guards:
+  file_watcher: false  # TODO: Implement
+  openapi_validator: false  # TODO: Implement
+  import_validator: false  # TODO: Implement
+  trace_grader: true  # Active
